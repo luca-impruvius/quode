@@ -1,0 +1,46 @@
+name: Task
+description: A unit of work that fits 1-2 evenings
+labels: []
+body:
+  - type: textarea
+    id: goal
+    attributes:
+      label: Goal
+      description: What this task achieves, in one or two sentences.
+    validations:
+      required: true
+  - type: dropdown
+    id: mode
+    attributes:
+      label: Mode
+      description: Also add the matching mode label.
+      options:
+        - Solo (I write, AI hints and reviews)
+        - Pair (I design, AI implements, I adjust)
+        - Delegate (AI writes, I review)
+    validations:
+      required: true
+  - type: textarea
+    id: criteria
+    attributes:
+      label: Acceptance criteria
+      description: A checklist that proves the task is done.
+      value: |
+        - [ ]
+    validations:
+      required: true
+  - type: textarea
+    id: decisions
+    attributes:
+      label: Decisions needed
+      description: Anything to decide before or during the task. If it affects other modules, it becomes an ADR.
+  - type: input
+    id: depends
+    attributes:
+      label: Depends on
+      placeholder: "#12, #13"
+  - type: input
+    id: spec
+    attributes:
+      label: Spec or design link
+      placeholder: docs/specs/... or canvas screen name

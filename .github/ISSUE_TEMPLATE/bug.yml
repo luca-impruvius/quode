@@ -1,0 +1,30 @@
+name: Bug
+description: Something is broken
+labels: ["bug"]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you did, what you expected, what you saw.
+    validations:
+      required: true
+  - type: input
+    id: ref
+    attributes:
+      label: Error reference ID
+      description: The "ref" shown on the error screen, if any.
+      placeholder: 7f3a2c
+  - type: input
+    id: when
+    attributes:
+      label: When (date and time, Europe/Bucharest)
+  - type: input
+    id: version
+    attributes:
+      label: Version or commit
+      description: From /api/actuator/info, if known.
+  - type: textarea
+    id: cause
+    attributes:
+      label: Root cause (fill in when fixed)
