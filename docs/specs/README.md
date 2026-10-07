@@ -28,7 +28,7 @@ Rules, states, edge cases. Link domain rules in ../domain.md instead of repeatin
 Endpoints, request/response shapes, error cases (Problem Details).
 
 ## Data
-New tables or columns (as Liquibase changesets).
+New tables or columns (as Flyway migrations).
 
 ## Acceptance criteria
 - [ ] ...

@@ -34,7 +34,8 @@ Quode: mobile-first spaced-repetition study app. Single user for now (Phase 1). 
 - Timestamps `timestamptz` in UTC; "today" uses the user's time zone via an injected `Clock`.
 
 ## Never
-- Never edit a Liquibase changeset that is already merged; add a new one. Destructive schema changes take two releases.
+- Never edit a Flyway migration that is already merged; add a new one. Destructive schema changes take two releases.
+- Never add a dependency without stating its license; flag anything that is not OSI open source (see `docs/conventions.md`).
 - Never commit secrets, `.env` files or credentials. Never print secrets in logs.
 - Never skip, disable or delete failing tests to make a build pass; fix the cause.
 - Never push to `main` directly or force-push.

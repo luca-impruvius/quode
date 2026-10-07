@@ -15,7 +15,7 @@ Milestone **M0 · Walking skeleton** in progress. See the [M0 milestone](../../m
 | Layer | Choice |
 |---|---|
 | Backend | Java 25, Spring Boot 4, Spring Modulith, Spring Data JPA, virtual threads |
-| Database | PostgreSQL, Liquibase |
+| Database | PostgreSQL, Flyway |
 | Frontend | React, TypeScript, Vite, TanStack Query, Tailwind CSS, installable PWA |
 | Auth | Google sign-in (Spring Security OAuth2), sessions in PostgreSQL |
 | Hosting | One VPS with Docker Compose and Caddy |

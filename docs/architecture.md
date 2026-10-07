@@ -10,7 +10,7 @@ Living document. Constraint: total running cost ≤ €6/month; free plans every
 | Backend | Spring Boot 4.x + Spring Modulith; Gradle (Kotlin DSL) | 0014 |
 | Concurrency | Spring MVC on virtual threads; `RestClient` for outgoing HTTP | 0034 |
 | Persistence | Spring Data JPA; native SQL where needed | 0028 |
-| Database | PostgreSQL in Docker on the VPS; Liquibase migrations | 0019 |
+| Database | PostgreSQL in Docker on the VPS; Flyway migrations | 0019, 0037 |
 | Auth | Google sign-in (Spring Security OAuth2), email allowlist; sessions in Postgres (Spring Session JDBC) | 0015, 0017 |
 | API | REST under `/api/v1`, OpenAPI via springdoc, Problem Details (RFC 9457), page-based pagination, Java records as DTOs | 0030, 0033 |
 | Frontend | React + TypeScript + Vite, TanStack Query, React Router, Tailwind CSS, React Hook Form + Zod, vite-plugin-pwa, react-markdown; English UI, translation-ready | 0031, 0032 |
@@ -101,13 +101,13 @@ Each module is a top-level package. Its root package holds the public API (servi
 
 - **Pull request:** backend build + unit, Modulith and Testcontainers tests; frontend lint, type-check, tests, build; gitleaks; PR-title check.
 - **Merge to main:** build both images, tag with the git commit, push to GitHub Container Registry, SSH into the VPS, `docker compose pull && docker compose up -d`, then a health check.
-- Liquibase runs on backend startup.
+- Flyway runs on backend startup.
 
 ## 10. Testing strategy
 
 - **Unit:** domain logic and the scheduler (pure Java, injected `Clock`).
 - **Architecture:** Spring Modulith `verify()`.
-- **Integration:** Testcontainers Postgres for repositories, changelogs and recursive topic queries.
+- **Integration:** Testcontainers Postgres for repositories, migrations and recursive topic queries.
 - **Web:** controller slice tests including security rules.
 - **Frontend:** Vitest + Testing Library; Playwright end-to-end from M4.
 
