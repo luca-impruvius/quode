@@ -14,5 +14,5 @@ Closes #
 - [ ] Tests cover the acceptance criteria
 - [ ] Living docs updated, or no doc impact
 - [ ] I can explain every line (Solo and Pair tasks)
-- [ ] Liquibase: only new changesets, none edited
+- [ ] Flyway: only new migrations, none edited
 - [ ] No secrets, `.env` files or credentials in the diff

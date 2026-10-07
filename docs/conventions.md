@@ -79,7 +79,7 @@ After two failed corrections in one session, start a fresh session with a better
 | Dependencies | Dependabot weekly, grouped |
 | PR title | Conventional Commits check |
 
-**Migrations:** never edit an applied Liquibase changeset. Destructive changes take two releases: add the new thing first, remove the old later.
+**Migrations:** never edit an applied Flyway migration (ADR-0037). Destructive changes take two releases: add the new thing first, remove the old later.
 
 ## 8. Environments
 
@@ -134,3 +134,11 @@ See [runbooks/production-debugging.md](runbooks/production-debugging.md).
 5. Living docs updated.
 6. Deployed and smoke-checked.
 7. 1–3 Quode questions added about what I learned.
+
+## 14. Dependencies and licenses
+
+- Prefer OSI-approved open-source licenses: Apache-2.0, MIT, BSD, EPL, MPL; SIL OFL for fonts; GPLv2 with Classpath Exception for the JDK (so Eclipse Temurin, not Oracle JDK).
+- Anything else must be flagged to Luca before it is added, and recorded in an ADR if accepted: source-available licenses (FSL, BSL, SSPL), free-for-personal-use, usage-limited "community" editions, paid tiers.
+- State the license whenever a dependency is proposed.
+- Re-check licenses on major upgrades, because licenses change (example: Liquibase 5, ADR-0037).
+- External services use free plans only; their limits are listed in [architecture.md](architecture.md).

@@ -27,4 +27,4 @@ Product brief, MVP scope, roadmap and backlog, working agreement, learning plan.
 
 ## Source of truth
 
-The database schema's source of truth is the Liquibase changelog in `backend/`. `domain.md` describes concepts and rules, not exact columns.
+The database schema's source of truth is the set of Flyway migrations in `backend/src/main/resources/db/migration`. `domain.md` describes concepts and rules, not exact columns.

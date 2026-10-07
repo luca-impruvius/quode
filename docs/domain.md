@@ -1,6 +1,6 @@
 # Domain model & taxonomy
 
-Living document. Exact columns live in the Liquibase changelog; this file holds concepts and rules.
+Living document. Exact columns live in the Flyway migrations; this file holds concepts and rules.
 
 ## 1. Taxonomy
 

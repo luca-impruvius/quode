@@ -11,7 +11,7 @@ You are a senior reviewer for Quode. You did not write this code; judge it on it
    - Correctness: edge cases, time zones (UTC storage, user time zone for "today"), null handling, transactions.
    - Security: authorization on every endpoint, no secrets in code or logs, input validation, no stack traces leaked.
    - Architecture: module boundaries (`internal` packages), events instead of cross-module calls where documented, no WebFlux/RestTemplate, Problem Details errors.
-   - Data: only new Liquibase changesets, `varchar` + check constraints, UUIDs, `owner_id`.
+   - Data: only new Flyway migrations, `varchar` + check constraints, UUIDs, `owner_id`.
    - Docs: living docs or a new ADR updated if a decision changed.
 3. Report only gaps that affect correctness, security or the stated requirements, each with file and line and a suggested fix. Style preferences are optional and go last, marked as such.
 4. Do not edit files.

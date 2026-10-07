@@ -22,7 +22,7 @@ One file per decision. Accepted ADRs are never edited; a changed decision gets a
 | [0016](0016-single-container-deployment.md) | Single-container deployment | Rejected |
 | [0017](0017-sessions-in-postgresql-via-spring-session-jdbc.md) | Sessions in PostgreSQL via Spring Session JDBC | Accepted |
 | [0018](0018-engineering-docs-live-in-the-repo.md) | Engineering docs live in the repo | Accepted |
-| [0019](0019-everything-on-one-ovhcloud-vps.md) | Everything on one OVHcloud VPS | Accepted |
+| [0019](0019-everything-on-one-ovhcloud-vps.md) | Everything on one OVHcloud VPS | Partially superseded by ADR-0037 |
 | [0020](0020-own-domain-single-origin.md) | Own domain, single origin | Accepted |
 | [0021](0021-tasks-in-github-issues.md) | Tasks in GitHub Issues | Accepted |
 | [0022](0022-task-modes-solo-pair-delegate.md) | Task modes: Solo, Pair, Delegate | Accepted |
@@ -40,6 +40,7 @@ One file per decision. Accepted ADRs are never edited; a changed decision gets a
 | [0034](0034-spring-mvc-on-virtual-threads-restclient-for-outgoing-http.md) | Spring MVC on virtual threads, RestClient for outgoing HTTP | Accepted |
 | [0035](0035-design-system-first-hi-fi-screens-just-in-time.md) | Design system first, hi-fi screens just in time | Accepted |
 | [0036](0036-backups-on-cloudflare-r2.md) | Backups on Cloudflare R2 | Accepted |
+| [0037](0037-flyway-community-instead-of-liquibase.md) | Flyway Community instead of Liquibase | Accepted |
 
 ## Template
 
