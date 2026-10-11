@@ -1,0 +1,33 @@
+spring:
+  application:
+    name: quode
+  threads:
+    virtual:
+      # Tomcat handles each request on a virtual thread (ADR-0034).
+      enabled: true
+
+server:
+  servlet:
+    # Caddy forwards /api/* unchanged, so every backend URL starts with /api.
+    context-path: /api
+
+management:
+  server:
+    # A separate port keeps Actuator off the public port entirely.
+    port: 8081
+    # Localhost only by default; in a container set MANAGEMENT_SERVER_ADDRESS=0.0.0.0
+    # and publish the port on 127.0.0.1 of the host only (reach it through an SSH tunnel).
+    address: ${MANAGEMENT_SERVER_ADDRESS:127.0.0.1}
+  endpoints:
+    web:
+      exposure:
+        include: health, info, loggers
+  endpoint:
+    health:
+      group:
+        public:
+          include: "*"
+          show-details: never
+          show-components: never
+          # Also serve this group on the main server (under the context path): /api/health.
+          additional-path: server:/health

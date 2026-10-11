@@ -103,7 +103,7 @@ After two failed corrections in one session, start a fresh session with a better
 
 | What | How | Alerts when |
 |---|---|---|
-| App is up | `/api/actuator/health` + UptimeRobot (5 min) | Down 5+ minutes |
+| App is up | `/api/health` + UptimeRobot (5 min) | Down 5+ minutes |
 | Backups ran | Backup script pings healthchecks.io | No ping arrives |
 | Disk space | Daily script pings healthchecks.io while < 80% | Disk filling up |
 | Logs | Structured JSON + Docker log rotation | Read on demand |
@@ -117,9 +117,9 @@ A server can't report its own death, so uptime and backup monitoring run outside
 1. Trace ID on every request: in logs, a response header and every error body. The UI shows "Something went wrong · ref 7f3a2c".
 2. Structured JSON logs with trace ID, user, module and duration.
 3. `POST /api/client-errors` logs frontend errors next to server logs.
-4. `/api/actuator/info` shows the running git commit and build time.
+4. `/actuator/info` on the management port shows the running git commit and build time.
 5. Actuator `loggers` changes a module's log level at runtime.
-6. Only `/api/actuator/health` is public; other Actuator endpoints are on a localhost-only management port (SSH tunnel).
+6. Only `/api/health` is public (status only, no details), served on the main port through a health group's additional path. All Actuator endpoints, including `health`, live on management port 8081, localhost-only by default (`MANAGEMENT_SERVER_ADDRESS`), reached through an SSH tunnel. `/api/actuator/**` does not exist.
 7. Read-only database role for debugging.
 8. Docker images tagged with the git commit.
 

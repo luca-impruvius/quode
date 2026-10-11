@@ -7,7 +7,7 @@ Living document. Constraint: total running cost ≤ €6/month; free plans every
 | Layer | Choice | ADR |
 |---|---|---|
 | Language | Java 25 (LTS) | 0009 |
-| Backend | Spring Boot 4.x + Spring Modulith; Gradle (Kotlin DSL) | 0014 |
+| Backend | Spring Boot 4.x + Spring Modulith; Gradle (Kotlin DSL), self-contained in `backend/` (own `settings.gradle.kts`, wrapper and version catalog `gradle/libs.versions.toml`) | 0014 |
 | Concurrency | Spring MVC on virtual threads; `RestClient` for outgoing HTTP | 0034 |
 | Persistence | Spring Data JPA; native SQL where needed | 0028 |
 | Database | PostgreSQL in Docker on the VPS; Flyway migrations | 0019, 0037 |
@@ -58,7 +58,7 @@ Google OAuth clients: **Quode local** (redirects to `localhost:5173` and `localh
 quode/
 ├── CLAUDE.md, AGENTS.md
 ├── docs/            architecture, domain, spaced-repetition, conventions, adr/, specs/, runbooks/
-├── backend/         build.gradle.kts, src/main/java/com/quode/{shared,user,taxonomy,question,quiz,study,review}
+├── backend/         settings.gradle.kts, build.gradle.kts, gradlew, gradle/libs.versions.toml, src/main/java/com/quode/{shared,user,taxonomy,question,quiz,study,review}
 ├── frontend/        src/{api,features,components,routes}
 ├── deploy/          compose.yml, Caddyfile, backup/
 ├── compose.dev.yml  local stack
@@ -85,7 +85,7 @@ Each module is a top-level package. Its root package holds the public API (servi
 
 - Non-root deploy user; SSH keys only; root and password login disabled.
 - Firewall: only 22, 80, 443. Automatic security updates; fail2ban.
-- Compose services restart automatically; health via `/api/actuator/health`.
+- Compose services restart automatically; health via `/api/health` (public, status only). All Actuator endpoints (`health`, `info`, `loggers`) are on management port 8081, bound to `MANAGEMENT_SERVER_ADDRESS` (default `127.0.0.1`); in the container it is published on the host's localhost only and reached through an SSH tunnel.
 - Secrets only in the server's `.env` and GitHub Actions secrets.
 - JVM memory capped (e.g. `-Xmx768m`) so backend, Postgres and Caddy share 4 GB.
 

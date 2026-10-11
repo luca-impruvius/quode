@@ -3,8 +3,8 @@
 1. **Get the reference ID** from the error screen, or note the time it happened.
 2. **Read the logs:** SSH into the VPS, then
    `docker compose logs backend --since 1h | grep <ref>` (pipe through `jq` for readability).
-3. **Check health and version** through an SSH tunnel: `/api/actuator/health`, `/api/actuator/info`.
-4. **More detail if needed:** raise the affected module to DEBUG via the Actuator `loggers` endpoint, reproduce, then set it back.
+3. **Check health and version** through an SSH tunnel to the management port (`ssh -L 8081:localhost:8081 <vps>`): `localhost:8081/actuator/health`, `localhost:8081/actuator/info` (git commit and build time). The public check is `/api/health`.
+4. **More detail if needed:** raise the affected module to DEBUG via the Actuator `loggers` endpoint (`POST localhost:8081/actuator/loggers/com.quode.<module>` with `{"configuredLevel":"DEBUG"}`, same tunnel), reproduce, then set it back.
 5. **Inspect data** read-only with the debug database role (database tool over an SSH tunnel).
 6. **If urgent, roll back first:** redeploy the previous commit's image tag. Safe because destructive migrations take two releases.
 7. **Reproduce locally** with a failing test. For data-dependent bugs, restore last night's backup into the local database.
