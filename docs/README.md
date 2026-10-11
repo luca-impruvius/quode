@@ -6,6 +6,7 @@ Every fact has one home. Engineering lives here, versioned with the code. Produc
 
 | Doc | Answers | Kind |
 |---|---|---|
+| [onboarding.md](onboarding.md) | I'm new: how do I set up and make my first PR? | Living |
 | [architecture.md](architecture.md) | How is the system built and deployed? | Living |
 | [domain.md](domain.md) | What are the concepts, tables and business rules? | Living |
 | [spaced-repetition.md](spaced-repetition.md) | How does scheduling and the daily queue work? | Living |

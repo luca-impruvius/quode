@@ -90,6 +90,7 @@ After two failed corrections in one session, start a fresh session with a better
 
 - Every fact has one home. Engineering docs live in `docs/`; product and planning in Notion.
 - Living docs change in the same PR as the code. ADRs are frozen once accepted; supersede with a new ADR.
+- A PR that changes setup, tools or commands updates `docs/onboarding.md` in the same PR.
 - Specs (`docs/specs/`) are written before a feature and frozen once shipped.
 - `CLAUDE.md` stays short (~50 lines) and points here. If a rule can be a check (test, hook, CI), make it a check.
 
