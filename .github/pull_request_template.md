@@ -13,6 +13,7 @@ Closes #
 - [ ] Linked issue and spec
 - [ ] Tests cover the acceptance criteria
 - [ ] Living docs updated, or no doc impact
+- [ ] Setup, tools or commands changed → `docs/onboarding.md` updated, or not applicable
 - [ ] I can explain every line (Solo and Pair tasks)
 - [ ] Flyway: only new migrations, none edited
 - [ ] No secrets, `.env` files or credentials in the diff

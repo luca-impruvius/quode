@@ -34,6 +34,8 @@ docs/       Architecture, domain model, conventions, ADRs, specs, runbooks
 
 ## Documentation
 
+**New here? Start with [docs/onboarding.md](docs/onboarding.md).**
+
 Start at [docs/README.md](docs/README.md). Every non-obvious decision is recorded as an ADR in [docs/adr](docs/adr).
 
 ## How this project is built
