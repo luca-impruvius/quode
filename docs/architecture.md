@@ -47,7 +47,7 @@ flowchart LR
 
 1. The SPA calls the API; without a session it gets **401** and navigates to `/api/oauth2/authorization/google`.
 2. Google signs the user in and redirects to `/api/login/oauth2/code/google`. Spring Security checks the email against `quode.security.allowed-emails`; anyone else gets 403.
-3. On first login the seeded `app_user` row is linked to the Google account (`sub`).
+3. On the first allowed login the `app_user` row is created (email lowercased, Google `sub`, display name, default time zone); later logins find it by `sub`.
 4. Session cookie: HttpOnly, Secure, SameSite=Lax, stored in Postgres (Spring Session JDBC). CSRF via a cookie token the SPA sends back in a header.
 
 Google OAuth clients: **Quode local** (redirects to `localhost:5173` and `localhost:8080` under `/api/login/oauth2/code/google`) and **Quode production** (the domain). The production secret exists only on the server.
