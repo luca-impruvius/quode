@@ -19,7 +19,6 @@ dependencies {
   implementation(libs.spring.modulith.starter.core)
   implementation(libs.spring.boot.micrometer.tracing.opentelemetry)
   implementation(libs.micrometer.tracing.bridge.otel)
-  testImplementation(libs.spring.boot.micrometer.tracing.test)
   testImplementation(libs.spring.boot.starter.webmvc.test)
   testImplementation(libs.spring.boot.starter.actuator.test)
   testImplementation(libs.spring.boot.starter.validation.test)

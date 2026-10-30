@@ -43,12 +43,47 @@ class ClientErrorControllerTests {
   @Test
   void truncatesLongFields(CapturedOutput output) {
     String longMessage = "m".repeat(ClientErrorReport.MAX_MESSAGE + 50);
+    String longUrl = "u".repeat(ClientErrorReport.MAX_URL + 50);
 
-    post("{\"message\":\"" + longMessage + "\"}").expectStatus().isNoContent();
+    post("{\"message\":\"" + longMessage + "\",\"url\":\"" + longUrl + "\"}")
+        .expectStatus()
+        .isNoContent();
 
     assertThat(output)
         .contains("m".repeat(ClientErrorReport.MAX_MESSAGE))
-        .doesNotContain("m".repeat(ClientErrorReport.MAX_MESSAGE + 1));
+        .doesNotContain("m".repeat(ClientErrorReport.MAX_MESSAGE + 1))
+        .contains("u".repeat(ClientErrorReport.MAX_URL))
+        .doesNotContain("u".repeat(ClientErrorReport.MAX_URL + 1));
+  }
+
+  @Test
+  void truncatesTheStack() {
+    String stack = "s".repeat(ClientErrorReport.MAX_STACK + 50);
+
+    ClientErrorReport report = new ClientErrorReport("m", stack, null).truncated();
+
+    assertThat(report.stack()).hasSize(ClientErrorReport.MAX_STACK);
+  }
+
+  @Test
+  void rejectsANullBody() {
+    post("null")
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON);
+  }
+
+  @Test
+  void acceptsJsonOnly() {
+    client
+        .post()
+        .uri("/api/client-errors")
+        .contentType(MediaType.TEXT_PLAIN)
+        .body("{\"message\":\"x\"}")
+        .exchange()
+        .expectStatus()
+        .isEqualTo(415);
   }
 
   @Test

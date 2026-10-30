@@ -6,6 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
@@ -31,7 +32,9 @@ class ClientErrorController {
     this.jsonMapper = jsonMapper;
   }
 
-  @PostMapping("/client-errors")
+  // JSON only: browsers send cross-site JSON posts only after a CORS preflight, which fails here,
+  // so other websites can't make their visitors write to our logs.
+  @PostMapping(value = "/client-errors", consumes = MediaType.APPLICATION_JSON_VALUE)
   @ResponseStatus(HttpStatus.NO_CONTENT)
   void report(HttpServletRequest request) throws IOException {
     // Read at most one byte past the limit, so an oversized or chunked body is never buffered
@@ -44,19 +47,25 @@ class ClientErrorController {
 
     ClientErrorReport report;
     try {
-      report = jsonMapper.readValue(body, ClientErrorReport.class).truncated();
+      report = jsonMapper.readValue(body, ClientErrorReport.class);
     } catch (JacksonException e) {
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Malformed JSON");
     }
-    if (report.message() == null || report.message().isBlank()) {
+    // A body of `null` parses to no report at all.
+    if (report == null || report.message() == null || report.message().isBlank()) {
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "message is required");
     }
+    report = report.truncated();
+    String userAgent =
+        ClientErrorReport.cut(
+            request.getHeader(HttpHeaders.USER_AGENT), ClientErrorReport.MAX_USER_AGENT);
 
     // URL and message go in the text, readable in every log format. Stack and user agent become
-    // fields of the production JSON log, which also escapes them so client text can't forge lines.
+    // fields of the production JSON log, which escapes all values so client text can't forge
+    // lines (the local plain-text log does not escape newlines).
     log.atWarn()
         .addKeyValue("client.stack", report.stack())
-        .addKeyValue("client.user_agent", request.getHeader(HttpHeaders.USER_AGENT))
+        .addKeyValue("client.user_agent", userAgent)
         .log("Client error at {}: {}", report.url(), report.message());
   }
 }

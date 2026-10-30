@@ -32,6 +32,20 @@ class TraceIdTests {
     assertThat(second).matches(TRACE_ID).isNotEqualTo(first);
   }
 
+  @Test
+  void ignoresAClientChosenTraceId() {
+    String incoming = "4bf92f3577b34da6a3ce929d0e0e4736";
+
+    String traceId =
+        traceIdOf(
+            client
+                .get()
+                .uri("/api/health")
+                .header("traceparent", "00-" + incoming + "-00f067aa0ba902b7-01"));
+
+    assertThat(traceId).matches(TRACE_ID).isNotEqualTo(incoming);
+  }
+
   private static String traceIdOf(RestTestClient.RequestHeadersSpec<?> request) {
     return request
         .exchange()

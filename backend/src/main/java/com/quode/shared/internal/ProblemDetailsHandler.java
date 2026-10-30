@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.core.annotation.AnnotatedElementUtils;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
@@ -14,9 +15,11 @@ import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 /**
  * Turns every error into Problem Details (RFC 9457) with the request's trace ID. Spring's base
@@ -55,6 +58,14 @@ class ProblemDetailsHandler extends ResponseEntityExceptionHandler {
     return handleExceptionInternal(ex, problem, headers, status, request);
   }
 
+  // Spring's own detail names the static-resource handler and echoes the path.
+  @Override
+  protected ResponseEntity<Object> handleNoResourceFoundException(
+      NoResourceFoundException ex, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
+    ProblemDetail problem = ProblemDetail.forStatusAndDetail(status, "Not found");
+    return handleExceptionInternal(ex, problem, headers, status, request);
+  }
+
   @ExceptionHandler
   ResponseEntity<Object> handleNotFound(NotFoundException ex, WebRequest request) {
     return problem(ex, HttpStatus.NOT_FOUND, ex.getMessage(), request);
@@ -66,7 +77,13 @@ class ProblemDetailsHandler extends ResponseEntityExceptionHandler {
   }
 
   @ExceptionHandler
-  ResponseEntity<Object> handleUnexpected(Exception ex, WebRequest request) {
+  ResponseEntity<Object> handleUnexpected(Exception ex, WebRequest request) throws Exception {
+    // Exceptions that declare their own status keep it: Spring's ResponseStatusExceptionResolver
+    // answers them, and the error controller renders the Problem Details. Spring Security's
+    // exceptions (M0-04) are answered by its own filters before they reach MVC.
+    if (AnnotatedElementUtils.hasAnnotation(ex.getClass(), ResponseStatus.class)) {
+      throw ex;
+    }
     // The full exception goes to the log only; the trace ID ties the response to it.
     log.error("Unexpected error", ex);
     return problem(

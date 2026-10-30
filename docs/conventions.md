@@ -116,7 +116,8 @@ A server can't report its own death, so uptime and backup monitoring run outside
 ## 12. Built-in observability (ADR-0027)
 
 1. Trace ID on every request (Micrometer Tracing with the OpenTelemetry bridge, no exporter): `traceId` in every log line, the `X-Trace-Id` response header and the `traceId` field of every error body. The UI shows its first characters: "Something went wrong · ref 7f3a2c"; grep the logs for them.
-   - Errors are Problem Details (RFC 9457) from one global handler: validation errors list `errors[{field, message}]`; modules throw `com.quode.shared.NotFoundException` (404) or `ForbiddenException` (403); anything unexpected is logged with its stack trace and answered with a generic 500, never internals.
+   - Errors are Problem Details (RFC 9457) from one global handler: validation errors list `errors[{field, message}]`; modules throw `com.quode.shared.NotFoundException` (404) or `ForbiddenException` (403); anything unexpected is logged with its stack trace and answered with a generic 500, never internals. Errors raised outside MVC (filters) get the same shape from the error controller.
+   - Incoming trace-context headers (`traceparent`, `tracestate`, `b3`, `baggage`) are ignored: the backend is the edge, so a client can't choose the reference its log lines appear under. Requests Tomcat rejects before the app (malformed URLs or headers) get Tomcat's plain 400 without a trace ID.
 2. Structured JSON logs with trace ID, user, module and duration.
 3. `POST /api/client-errors` logs frontend errors next to server logs: open without sign-in (so login-screen errors are caught), body `{message, url, stack}` capped at 8 KB (413 above), fields truncated, logged at WARN; returns 204.
 4. `/actuator/info` on the management port shows the running git commit and build time.
