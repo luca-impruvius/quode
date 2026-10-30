@@ -1,0 +1,21 @@
+# Secret scanning rules for the pre-commit hook and CI (see docs/onboarding.md §4).
+# Personal rules (your own email, phone, ...) go in the git-ignored .gitleaks.local.toml.
+title = "quode"
+
+[extend]
+useDefault = true
+
+# gitleaks' default rules miss Google OAuth client secrets unless a keyword like
+# "secret" happens to sit next to them.
+[[rules]]
+id = "google-oauth-client-secret"
+description = "Google OAuth client secret"
+regex = '''GOCSPX-[A-Za-z0-9_-]{20,}'''
+keywords = ["gocspx-"]
+
+# The fake secret in onboarding's "check the hook works" step, only in that file.
+[[rules.allowlists]]
+description = "Onboarding test string"
+condition = "AND"
+paths = ['''^docs/onboarding\.md$''']
+regexes = ['''GOCSPX-test1234567890abcdefghij''']

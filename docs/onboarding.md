@@ -41,7 +41,7 @@ Steps marked *(from M0-xx)* only apply once that task is merged. Check the [Proj
 | JDK | **Eclipse Temurin 25** | Not Oracle JDK (its free-use terms change between versions). |
 | IDE | IntelliJ IDEA (free tier) **2026.2 or newer**, or VS Code with the Java extensions | Don't start the paid Ultimate trial. Older IntelliJ versions show `backend/build.gradle.kts` all red (Gradle 9.7 scripts use Kotlin 2.4); the build itself still works. |
 | Docker | Docker Desktop (free for personal use and small companies), Rancher Desktop, or Podman | Needed for the local database and Testcontainers. |
-| **gitleaks** | latest | *(from M0-08)* **Required.** The pre-commit hook refuses to run without it. Check with `gitleaks version`. |
+| **gitleaks** | latest | **Required.** The pre-commit hook refuses to run without it. Check with `gitleaks version`. |
 | Node.js | current LTS (with npm) | For the frontend. |
 | GitHub CLI (`gh`) | optional | Handy for issues and PRs. |
 | Claude Code or other AI tools | optional, your own subscription | Must follow `CLAUDE.md`. Never paste secrets or personal data into any AI tool. |
@@ -55,7 +55,7 @@ git clone https://github.com/luca-impruvius/quode.git
 cd quode
 ```
 
-Secret scanning *(from M0-08)*:
+Secret scanning:
 
 ```bash
 # One-time: turn on the shared git hooks (secret scanning before every commit)
@@ -65,7 +65,7 @@ git config core.hooksPath .githooks
 cp .gitleaks.local.toml.example .gitleaks.local.toml   # git-ignored, never commit it
 ```
 
-**Check the hook works** *(from M0-08)*: create a file containing `GOCSPX-test1234567890abcdefghij`, `git add` it and try to commit. The commit must be **refused**. Then delete the file.
+**Check the hook works**: create a file containing `GOCSPX-test1234567890abcdefghij`, `git add` it and try to commit. The commit must be **refused**. Then delete the file.
 
 Backend:
 
@@ -92,6 +92,7 @@ npm install
 npm run dev            # http://localhost:5173, forwards /api to the backend on :8080
 npm test               # Vitest
 npm run lint           # ESLint + Prettier check (npm run format fixes formatting)
+npm run typecheck      # TypeScript only, faster than a build
 npm run build          # type-check and production build
 npm run generate:api   # with the backend running: regenerate src/api/schema.d.ts
 ```
@@ -106,7 +107,7 @@ The Tailwind theme is generated from `design-system/tokens.json` before each of 
 - **Branch** from an up-to-date `main`: `feat/<issue>-short-name`, `fix/…`, `chore/…`, `docs/…`.
 - **Commits and PR titles** follow Conventional Commits, for example `feat(review): …`. Scopes are module names, `frontend`, `infra`, `deps` or `adr`.
 - **Small PRs** (under about 400 lines), using the PR template, with `Closes #<issue>`.
-- **Tests first** from the acceptance criteria. CI must be green; the owner reviews, and Claude squash-merges once the owner approves (ADR-0039).
+- **Tests first** from the acceptance criteria. CI (`.github/workflows/ci.yml`: backend, frontend, gitleaks, PR title) must be green; the owner reviews, and Claude squash-merges once the owner approves (ADR-0039).
 - **Decisions:** if something in `docs/` stops being true, update it in the same PR or add an ADR.
 - **New dependency?** State its license in the PR. Anything that isn't OSI open source must be discussed first.
 - **Database migrations** (Flyway): never edit a migration that is already merged. Add a new one.
@@ -124,7 +125,7 @@ The Tailwind theme is generated from `design-system/tokens.json` before each of 
 
 **Never bypass the hooks** (`--no-verify`). If gitleaks blocks something you believe is harmless, ask; we fix the rule, not the check.
 
-**If you leak something, tell the owner immediately.** Rotating the secret comes first (a step-by-step `runbooks/secret-leak.md` is still to be written). Rewriting git history does not undo a leak on a public repo. There is no blame: a fast report is what counts.
+**If you leak something, tell the owner immediately.** Rotating the secret comes first; follow [runbooks/secret-leak.md](runbooks/secret-leak.md). Rewriting git history does not undo a leak on a public repo. There is no blame: a fast report is what counts.
 
 ---
 

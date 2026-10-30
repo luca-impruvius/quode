@@ -68,7 +68,7 @@ Living docs change in the same PR whenever a decision changes. After two failed 
 | Frontend formatting and lint | Prettier + ESLint; TypeScript strict |
 | Backend tests | JUnit, Testcontainers, Spring Modulith `verify()` |
 | Frontend tests | Vitest + Testing Library |
-| Coverage | JaCoCo report; target 70% on domain and service code (reported, not blocking in MVP) |
+| Coverage | JaCoCo report; target 70% on domain and service code (reported, not blocking in MVP; not wired into CI yet) |
 | Secret leaks | gitleaks (CI + pre-commit) and GitHub secret scanning |
 | Dependencies | Dependabot weekly, grouped |
 | PR title | Conventional Commits check |

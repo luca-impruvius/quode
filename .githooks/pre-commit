@@ -1,0 +1,15 @@
+#!/bin/sh
+# Scans staged changes for secrets and personal data before every commit.
+# Enable once per clone: git config core.hooksPath .githooks
+set -eu
+
+if ! command -v gitleaks >/dev/null 2>&1; then
+  echo "pre-commit: gitleaks is not installed; see docs/onboarding.md §3." >&2
+  exit 1
+fi
+
+gitleaks git --pre-commit --staged --redact --no-banner --verbose --config .gitleaks.toml
+
+if [ -f .gitleaks.local.toml ]; then
+  gitleaks git --pre-commit --staged --redact --no-banner --verbose --config .gitleaks.local.toml
+fi

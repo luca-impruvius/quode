@@ -5,6 +5,7 @@
 *.pem
 *.key
 client_secret*.json
+.gitleaks.local.toml
 
 # --- Java / Gradle ---
 .gradle/
