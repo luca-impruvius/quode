@@ -3,3 +3,7 @@ logging:
     format:
       # One JSON object per line (Elastic Common Schema), readable with jq.
       console: ecs
+springdoc:
+  api-docs:
+    # The OpenAPI spec is for generating frontend types locally, not served in production.
+    enabled: false

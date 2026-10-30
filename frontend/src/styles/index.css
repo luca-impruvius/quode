@@ -1,0 +1,14 @@
+@import 'tailwindcss';
+@import './theme.generated.css';
+
+@layer base {
+  body {
+    @apply bg-bg font-sans text-body text-ink antialiased;
+  }
+
+  /* Design rule: a 3px focus ring with a 2px offset on every interactive element. */
+  :focus-visible {
+    outline: 3px solid var(--qd-focus);
+    outline-offset: 2px;
+  }
+}
