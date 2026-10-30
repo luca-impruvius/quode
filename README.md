@@ -40,7 +40,7 @@ Start at [docs/README.md](docs/README.md). Every non-obvious decision is recorde
 
 ## How this project is built
 
-Developed with Claude Code as a pair programmer, under explicit rules: every task has a mode (Solo, Pair or Delegate), every change goes through a pull request with tests and a review, and nothing is merged that the author cannot explain. See [docs/conventions.md](docs/conventions.md).
+Implemented by Claude Code under explicit rules: the owner approves each milestone plan, every change goes through a pull request with tests, an automated review and the owner's review, and only the owner merges. See [docs/conventions.md](docs/conventions.md).
 
 ## License
 

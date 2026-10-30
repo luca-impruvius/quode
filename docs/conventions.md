@@ -6,25 +6,19 @@ Living document. Built for a solo developer working with Claude Code on free pla
 
 - Public GitHub repository (ADR-0024). Secrets never live in the code.
 - Tasks are GitHub Issues on the Project board, grouped by milestone (ADR-0021).
-- Labels: `mode:solo`, `mode:pair`, `mode:delegate`, `learning-debt`, `bug`.
+- Labels: `review:careful` (I read the whole diff), `bug`.
+- Each issue body states **Review:** Careful or Standard, and its **Depends on:** issues.
 
-## 2. Task modes (ADR-0022)
+## 2. Working model (ADR-0038)
 
-| Mode | Who writes | AI's role |
-|---|---|---|
-| Solo | Me | Hints on request (concept → direction → snippet), then review |
-| Pair | AI implements my signatures and tests | I review, adjust and explain back |
-| Delegate | AI | I review line by line |
+| Who | Does |
+|---|---|
+| Claude | Implements all code, tests, migrations and docs; runs the build and the `reviewer` agent; opens the PR. Never merges. |
+| Me | Approve milestone plans, review every PR, merge. |
 
-**Who decides:** Claude proposes a mode with a reason during task breakdown; I decide.
+**Claude stops and asks when:** something is ambiguous or not covered by docs or ADRs; a new decision is needed (it proposes an ADR); a dependency isn't OSI open source; a step needs my accounts, secrets, money or the production server; CI fails and it can't find the cause.
 
-**Rules:**
-1. Interview-relevant or core domain logic → Solo.
-2. Repetitive work I already understand → Delegate.
-3. Everything else → Pair.
-- Security code is never Delegate.
-- Tired-evening rule: a task may step down one level; add `learning-debt` and keep the explain-back gate.
-- Review the mode mix and learning debt at the end of each milestone. Target ≈ 25% Solo, 40% Pair, 35% Delegate.
+**`review:careful`** goes on security, data, CI, infrastructure and backup work: the smallest possible diff, risks spelled out, and I read every line.
 
 ## 3. Branching: trunk-based (ADR-0025)
 
@@ -47,24 +41,24 @@ docs(adr): ADR-0037 ...
 - Only the PR title is enforced (squash-merge makes it the commit message).
 - Commits Claude Code helped write keep its `Co-Authored-By` line.
 
-## 5. Task loop with Claude Code (ADR-0023)
+## 5. Task loop with Claude Code (ADR-0023, ADR-0038)
 
-1. Pick an issue; read its spec and mode.
-2. Plan in plan mode; I approve before code.
-3. Tests first from the acceptance criteria.
-4. Implement in small steps, respecting the mode.
-5. Verify: tests and build output shown as evidence.
-6. Fresh-context review: `/code-review` or the `reviewer` agent, against the spec.
-7. My review on GitHub + explain-back gate (Solo/Pair).
-8. Squash-merge → automatic deploy → smoke check on my phone.
-9. Update docs if a decision changed; add 1–3 Quode questions about what I learned.
+The `/next-task` skill runs steps 1–6.
 
-After two failed corrections in one session, start a fresh session with a better prompt.
+1. Take the next Todo issue whose dependencies are merged and that needs nothing from me; assign it and move it to In Progress.
+2. Read its spec; plan multi-file changes in plan mode. I approve milestone plans, and task plans on `review:careful` issues.
+3. Tests first from the acceptance criteria, then the code.
+4. Verify: full build, with test and build output pasted as evidence.
+5. Fresh-context review with the `reviewer` agent; fix every Blocking and Should-fix item.
+6. Open the PR with `Closes #n`; move the card to In review.
+7. My review on GitHub → squash-merge → automatic deploy → smoke check on my phone.
+
+Living docs change in the same PR whenever a decision changes. After two failed corrections in one session, start a fresh session with a better prompt.
 
 ## 6. Pull requests
 
 - Aim for under ~400 changed lines; bigger means split the issue.
-- Use the PR template checklist.
+- Description sections: **What**, **Why**, **Risks**, **How it was verified** (pasted test/build output), **Review focus**, plus the template checklist.
 
 ## 7. Quality gates (CI)
 
@@ -92,7 +86,7 @@ After two failed corrections in one session, start a fresh session with a better
 - Living docs change in the same PR as the code. ADRs are frozen once accepted; supersede with a new ADR.
 - A PR that changes setup, tools or commands updates `docs/onboarding.md` in the same PR.
 - Specs (`docs/specs/`) are written before a feature and frozen once shipped.
-- `CLAUDE.md` stays short (~50 lines) and points here. If a rule can be a check (test, hook, CI), make it a check.
+- `CLAUDE.md` stays short (~70 lines) and points here. If a rule can be a check (test, hook, CI), make it a check.
 
 ## 10. Design (ADR-0035)
 
@@ -118,9 +112,11 @@ A server can't report its own death, so uptime and backup monitoring run outside
 
 ## 12. Built-in observability (ADR-0027)
 
-1. Trace ID on every request: in logs, a response header and every error body. The UI shows "Something went wrong · ref 7f3a2c".
+1. Trace ID on every request (Micrometer Tracing with the OpenTelemetry bridge, no exporter): `traceId` in every log line, the `X-Trace-Id` response header and the `traceId` field of every error body. The UI shows its first characters: "Something went wrong · ref 7f3a2c"; grep the logs for them.
+   - Errors are Problem Details (RFC 9457) from one global handler: validation errors list `errors[{field, message}]`; modules throw `com.quode.shared.NotFoundException` (404) or `ForbiddenException` (403); anything unexpected is logged with its stack trace and answered with a generic 500, never internals. Errors raised outside MVC (filters) get the same shape from the error controller.
+   - Incoming trace-context headers (`traceparent`, `tracestate`, `b3`, `baggage`) are ignored: the backend is the edge, so a client can't choose the reference its log lines appear under. Requests Tomcat rejects before the app (malformed URLs or headers) get Tomcat's plain 400 without a trace ID.
 2. Structured JSON logs with trace ID, user, module and duration.
-3. `POST /api/client-errors` logs frontend errors next to server logs.
+3. `POST /api/client-errors` logs frontend errors next to server logs: open without sign-in (so login-screen errors are caught), body `{message, url, stack}` capped at 8 KB (413 above), fields truncated, logged at WARN; returns 204. JSON only (`Content-Type: application/json`), so the SPA sends it with `fetch(..., {keepalive: true})`, not `navigator.sendBeacon` with text.
 4. `/actuator/info` on the management port shows the running git commit and build time.
 5. Actuator `loggers` changes a module's log level at runtime.
 6. Only `/api/health` is public (status only, no details), served on the main port through a health group's additional path. All Actuator endpoints, including `health`, live on management port 8081, localhost-only by default (`MANAGEMENT_SERVER_ADDRESS`), reached through an SSH tunnel. `/api/actuator/**` does not exist.
@@ -133,11 +129,9 @@ See [runbooks/production-debugging.md](runbooks/production-debugging.md).
 
 1. Acceptance criteria pass, with tests.
 2. CI green.
-3. Reviewed by Claude in a fresh context, and by me.
-4. Explain-back done (Solo/Pair).
-5. Living docs updated.
-6. Deployed and smoke-checked.
-7. 1–3 Quode questions added about what I learned.
+3. Reviewed by the `reviewer` agent (no Blocking or Should-fix items left), then by me.
+4. Living docs updated.
+5. Deployed and smoke-checked.
 
 ## 14. Dependencies and licenses
 
@@ -147,3 +141,13 @@ See [runbooks/production-debugging.md](runbooks/production-debugging.md).
 - Re-check licenses on major upgrades, because licenses change (example: Liquibase 5, ADR-0037).
 - External services use free plans only; their limits are listed in [architecture.md](architecture.md).
 - Accepted exception: build-time data packages that never ship to the browser, `caniuse-lite` (CC-BY-4.0) and `mdn-data` (CC0-1.0), pulled in by the frontend tooling (accepted in PR #21).
+- Docker Desktop is accepted for local development only (free personal-use license, not part of the app); Rancher Desktop is the open-source alternative.
+
+## 15. Data
+
+- **Migrations:** Flyway, plain SQL in `backend/src/main/resources/db/migration`, named `V<n>__<snake_case_description>.sql` (`V1__create_app_user.sql`). Never edit a merged migration (ADR-0037).
+- **Primary keys:** UUIDv7 (time-ordered). Entities use Hibernate `@UuidGenerator(style = VERSION_7)`; the column also has `DEFAULT uuidv7()` (PostgreSQL 18) for plain SQL inserts.
+- **Emails:** stored trimmed and lowercased (`Locale.ROOT`), and lookups normalize the argument the same way; uniqueness ignores case through a unique index on `lower(email)`; lookups use `lower(email) = lower(:email)` so they hit that index (never a derived `...IgnoreCase` query, which uses `upper()`).
+- **Schema checks:** Hibernate runs with `ddl-auto=validate` and `open-in-view=false`; Flyway owns the schema.
+- **Timestamps:** `created_at` and `updated_at` come from the database clock (`now()`, Hibernate `@CurrentTimestamp(source = DB)`), for entity and plain SQL writes alike.
+- **Tests:** every `@SpringBootTest` imports the shared `TestcontainersConfiguration` (`postgres:18`, `@ServiceConnection`).

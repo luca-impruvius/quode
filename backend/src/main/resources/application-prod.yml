@@ -7,3 +7,9 @@ springdoc:
   api-docs:
     # The OpenAPI spec is for generating frontend types locally, not served in production.
     enabled: false
+spring:
+  datasource:
+    # No defaults: production fails fast instead of falling back to the dev credentials.
+    url: ${DB_URL}
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}

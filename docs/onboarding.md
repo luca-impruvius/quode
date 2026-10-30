@@ -9,7 +9,7 @@ Steps marked *(from M0-xx)* only apply once that task is merged. Check the [Proj
 ## 1. Before anything else: read these (about 30 minutes)
 
 1. [`README.md`](../README.md): what Quode is.
-2. [`CLAUDE.md`](../CLAUDE.md): task modes, workflow, architecture rules and the "Never" list. These rules apply to people too, not only to AI tools.
+2. [`CLAUDE.md`](../CLAUDE.md): working model, workflow, architecture rules and the "Never" list. These rules apply to people too, not only to AI tools.
 3. [`docs/README.md`](README.md): index of all engineering docs.
 4. [`architecture.md`](architecture.md) and [`conventions.md`](conventions.md), especially sections 3–7 (branching, commits, task loop, PRs, quality gates) and 14 (dependencies and licenses). The privacy rules are in section 6 of this page.
 5. [`adr/README.md`](adr/README.md): skim the titles so you know which decisions already exist. Don't reopen a decision without proposing a new ADR.
@@ -70,13 +70,17 @@ cp .gitleaks.local.toml.example .gitleaks.local.toml   # git-ignored, never comm
 Backend:
 
 ```bash
-docker compose -f compose.dev.yml up -d   # local Postgres (from M0-03)
+docker compose -f compose.dev.yml up -d   # local Postgres 18 on 127.0.0.1:5432 (Docker must be running)
 cd backend
 ./gradlew build                           # compiles, runs tests and checks formatting
 ./gradlew spotlessApply                   # fixes formatting if the build complains
 ./gradlew bootRun                         # API on :8080 under /api, Actuator on :8081
-curl -i localhost:8080/api/health         # expect 200 {"status":"UP"}
+curl -i localhost:8080/api/health         # expect 200 {"status":"UP"}; 503 DOWN if the database is down
 ```
+
+The local database uses dev-only credentials (`quode` / `quode`, database `quode`), which are also the backend's defaults; override them with `DB_URL`, `DB_USER` and `DB_PASSWORD`. Production has no defaults. `./gradlew build` starts its own throwaway Postgres through Testcontainers, so Docker must be running for the tests too.
+
+If `docker compose` reports that port 5432 is not available, another PostgreSQL (for example a native Windows install) is already using it: stop that service, or set it to manual start.
 
 Google sign-in locally *(from M0-04)*: you need the local OAuth client values in a git-ignored `.env`. The owner shares them through a password manager, never through chat, email or issues. Your Google account must also be on the app's allowlist and on the Google "test users" list (section 8).
 
@@ -98,7 +102,7 @@ The Tailwind theme is generated from `design-system/tokens.json` before each of 
 
 ## 5. How we work
 
-- **Pick work from the board.** Every task is a GitHub issue with a `mode:*` label (solo / pair / delegate; see `CLAUDE.md`). Assign it to yourself before starting.
+- **Pick work from the board.** Every task is a GitHub issue; its body lists what it depends on, and `review:careful` marks work where the owner reads the whole diff (see `CLAUDE.md`). Assign it to yourself before starting.
 - **Branch** from an up-to-date `main`: `feat/<issue>-short-name`, `fix/…`, `chore/…`, `docs/…`.
 - **Commits and PR titles** follow Conventional Commits, for example `feat(review): …`. Scopes are module names, `frontend`, `infra`, `deps` or `adr`.
 - **Small PRs** (under about 400 lines), using the PR template, with `Closes #<issue>`.

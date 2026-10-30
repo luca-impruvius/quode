@@ -1,6 +1,6 @@
 # ADR-0022: Task modes: Solo, Pair, Delegate
 
-- **Status:** Accepted
+- **Status:** Superseded by ADR-0038
 - **Date:** 2026-10-06
 
 ## Context

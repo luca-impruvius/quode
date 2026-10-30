@@ -25,8 +25,8 @@ One file per decision. Accepted ADRs are never edited; a changed decision gets a
 | [0019](0019-everything-on-one-ovhcloud-vps.md) | Everything on one OVHcloud VPS | Partially superseded by ADR-0037 |
 | [0020](0020-own-domain-single-origin.md) | Own domain, single origin | Accepted |
 | [0021](0021-tasks-in-github-issues.md) | Tasks in GitHub Issues | Accepted |
-| [0022](0022-task-modes-solo-pair-delegate.md) | Task modes: Solo, Pair, Delegate | Accepted |
-| [0023](0023-claude-code-with-minimal-context-and-automated-checks.md) | Claude Code with minimal context and automated checks | Accepted |
+| [0022](0022-task-modes-solo-pair-delegate.md) | Task modes: Solo, Pair, Delegate | Superseded by ADR-0038 |
+| [0023](0023-claude-code-with-minimal-context-and-automated-checks.md) | Claude Code with minimal context and automated checks | Partially superseded by ADR-0038 |
 | [0024](0024-public-github-repository.md) | Public GitHub repository | Accepted |
 | [0025](0025-trunk-based-development-with-conventional-commits.md) | Trunk-based development with Conventional Commits | Accepted |
 | [0026](0026-free-monitoring-baseline.md) | Free monitoring baseline | Accepted |
@@ -41,6 +41,7 @@ One file per decision. Accepted ADRs are never edited; a changed decision gets a
 | [0035](0035-design-system-first-hi-fi-screens-just-in-time.md) | Design system first, hi-fi screens just in time | Accepted |
 | [0036](0036-backups-on-cloudflare-r2.md) | Backups on Cloudflare R2 | Accepted |
 | [0037](0037-flyway-community-instead-of-liquibase.md) | Flyway Community instead of Liquibase | Accepted |
+| [0038](0038-ai-implements-owner-reviews.md) | AI implements, owner reviews | Accepted |
 
 ## Template
 

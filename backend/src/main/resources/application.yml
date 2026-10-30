@@ -5,6 +5,17 @@ spring:
     virtual:
       # Tomcat handles each request on a virtual thread (ADR-0034).
       enabled: true
+  datasource:
+    # Local defaults match compose.dev.yml; production sets all three (application-prod.yml).
+    url: ${DB_URL:jdbc:postgresql://127.0.0.1:5432/quode}
+    username: ${DB_USER:quode}
+    password: ${DB_PASSWORD:quode}
+  jpa:
+    hibernate:
+      # Flyway owns the schema; Hibernate only checks that the entities match it.
+      ddl-auto: validate
+    # No lazy loading during view rendering: transactions end in the service layer.
+    open-in-view: false
 
 server:
   servlet:
@@ -18,6 +29,10 @@ management:
     # Localhost only by default; in a container set MANAGEMENT_SERVER_ADDRESS=0.0.0.0
     # and publish the port on 127.0.0.1 of the host only (reach it through an SSH tunnel).
     address: ${MANAGEMENT_SERVER_ADDRESS:127.0.0.1}
+  tracing:
+    sampling:
+      # Trace every request: there is no exporter, the ID only links responses to log lines.
+      probability: 1.0
   endpoints:
     web:
       exposure:

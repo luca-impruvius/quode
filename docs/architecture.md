@@ -10,7 +10,7 @@ Living document. Constraint: total running cost ≤ €6/month; free plans every
 | Backend | Spring Boot 4.x + Spring Modulith; Gradle (Kotlin DSL), self-contained in `backend/` (own `settings.gradle.kts`, wrapper and version catalog `gradle/libs.versions.toml`) | 0014 |
 | Concurrency | Spring MVC on virtual threads; `RestClient` for outgoing HTTP | 0034 |
 | Persistence | Spring Data JPA; native SQL where needed | 0028 |
-| Database | PostgreSQL in Docker on the VPS; Flyway migrations | 0019, 0037 |
+| Database | PostgreSQL 18 (official `postgres:18` image, the same locally, in tests and in production) in Docker on the VPS; Flyway migrations | 0019, 0037 |
 | Auth | Google sign-in (Spring Security OAuth2), email allowlist; sessions in Postgres (Spring Session JDBC) | 0015, 0017 |
 | API | REST under `/api/v1`, OpenAPI via springdoc, Problem Details (RFC 9457), page-based pagination, Java records as DTOs | 0030, 0033 |
 | Frontend | React + TypeScript (strict) + Vite, TanStack Query, React Router, Tailwind CSS v4 (theme generated from `design-system/tokens.json`), React Hook Form + Zod, self-hosted fonts (Fontsource), API types generated from the backend's OpenAPI spec (springdoc, off in production), vite-plugin-pwa, react-markdown; English UI, translation-ready | 0031, 0032 |
@@ -47,7 +47,7 @@ flowchart LR
 
 1. The SPA calls the API; without a session it gets **401** and navigates to `/api/oauth2/authorization/google`.
 2. Google signs the user in and redirects to `/api/login/oauth2/code/google`. Spring Security checks the email against `quode.security.allowed-emails`; anyone else gets 403.
-3. On first login the seeded `app_user` row is linked to the Google account (`sub`).
+3. On the first allowed login the `app_user` row is created (email lowercased, Google `sub`, display name, default time zone); later logins find it by `sub`.
 4. Session cookie: HttpOnly, Secure, SameSite=Lax, stored in Postgres (Spring Session JDBC). CSRF via a cookie token the SPA sends back in a header.
 
 Google OAuth clients: **Quode local** (redirects to `localhost:5173` and `localhost:8080` under `/api/login/oauth2/code/google`) and **Quode production** (the domain). The production secret exists only on the server.
