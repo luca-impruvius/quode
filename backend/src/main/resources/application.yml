@@ -29,6 +29,10 @@ management:
     # Localhost only by default; in a container set MANAGEMENT_SERVER_ADDRESS=0.0.0.0
     # and publish the port on 127.0.0.1 of the host only (reach it through an SSH tunnel).
     address: ${MANAGEMENT_SERVER_ADDRESS:127.0.0.1}
+  tracing:
+    sampling:
+      # Trace every request: there is no exporter, the ID only links responses to log lines.
+      probability: 1.0
   endpoints:
     web:
       exposure:

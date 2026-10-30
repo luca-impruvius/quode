@@ -1,0 +1,202 @@
+/* Generated from design-system/tokens.json by scripts/generate-theme.mjs. Do not edit. */
+:root,
+[data-theme='light'] {
+  color-scheme: light;
+  --qd-bg: #F3F3EF;
+  --qd-surface: #FFFFFF;
+  --qd-surface-sunken: #EAEAE4;
+  --qd-ink: #17171A;
+  --qd-ink-muted: #55555E;
+  --qd-line: #D6D6CE;
+  --qd-outline: #17171A;
+  --qd-accent: #F5C518;
+  --qd-on-accent: #17171A;
+  --qd-correct: #1F55C2;
+  --qd-correct-bg: #E5EDFC;
+  --qd-partial: #6A4BB8;
+  --qd-partial-bg: #EEE8FA;
+  --qd-missed: #B4470E;
+  --qd-missed-bg: #FCE9DD;
+  --qd-focus: #1F55C2;
+  --qd-shadow-pop: 3px 3px 0 #17171A;
+}
+
+[data-theme='dark'] {
+  color-scheme: dark;
+  --qd-bg: #111113;
+  --qd-surface: #1B1B1F;
+  --qd-surface-sunken: #26262B;
+  --qd-ink: #F2F2EE;
+  --qd-ink-muted: #A6A6B0;
+  --qd-line: #33333A;
+  --qd-outline: #D9D9D4;
+  --qd-accent: #F5C518;
+  --qd-on-accent: #17171A;
+  --qd-correct: #8CB0FF;
+  --qd-correct-bg: #1D2A45;
+  --qd-partial: #BBA6FF;
+  --qd-partial-bg: #2A2240;
+  --qd-missed: #FF9A5C;
+  --qd-missed-bg: #3A2416;
+  --qd-focus: #8CB0FF;
+  --qd-shadow-pop: 3px 3px 0 #000000;
+}
+
+/* No explicit choice: follow the system setting. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    color-scheme: dark;
+    --qd-bg: #111113;
+    --qd-surface: #1B1B1F;
+    --qd-surface-sunken: #26262B;
+    --qd-ink: #F2F2EE;
+    --qd-ink-muted: #A6A6B0;
+    --qd-line: #33333A;
+    --qd-outline: #D9D9D4;
+    --qd-accent: #F5C518;
+    --qd-on-accent: #17171A;
+    --qd-correct: #8CB0FF;
+    --qd-correct-bg: #1D2A45;
+    --qd-partial: #BBA6FF;
+    --qd-partial-bg: #2A2240;
+    --qd-missed: #FF9A5C;
+    --qd-missed-bg: #3A2416;
+    --qd-focus: #8CB0FF;
+    --qd-shadow-pop: 3px 3px 0 #000000;
+  }
+}
+
+/* dark: follows the same rule as the tokens, so data-theme wins over the system setting. */
+@custom-variant dark {
+  &:where([data-theme='dark'], [data-theme='dark'] *) {
+    @slot;
+  }
+  @media (prefers-color-scheme: dark) {
+    &:where(:root:not([data-theme='light']), :root:not([data-theme='light']) *) {
+      @slot;
+    }
+  }
+}
+
+@theme inline {
+  --color-*: initial;
+  --shadow-*: initial;
+  --inset-shadow-*: initial;
+  --drop-shadow-*: initial;
+  --text-shadow-*: initial;
+  --radius-*: initial;
+  --text-*: initial;
+  --font-*: initial;
+  --color-bg: var(--qd-bg);
+  --color-surface: var(--qd-surface);
+  --color-surface-sunken: var(--qd-surface-sunken);
+  --color-ink: var(--qd-ink);
+  --color-ink-muted: var(--qd-ink-muted);
+  --color-line: var(--qd-line);
+  --color-outline: var(--qd-outline);
+  --color-accent: var(--qd-accent);
+  --color-on-accent: var(--qd-on-accent);
+  --color-correct: var(--qd-correct);
+  --color-correct-bg: var(--qd-correct-bg);
+  --color-partial: var(--qd-partial);
+  --color-partial-bg: var(--qd-partial-bg);
+  --color-missed: var(--qd-missed);
+  --color-missed-bg: var(--qd-missed-bg);
+  --color-focus: var(--qd-focus);
+  --shadow-pop: var(--qd-shadow-pop);
+  --font-display: "Bricolage Grotesque", "IBM Plex Sans", system-ui, sans-serif;
+  --font-sans: "IBM Plex Sans", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+  --spacing-space-1: 4px;
+  --spacing-space-2: 8px;
+  --spacing-space-3: 12px;
+  --spacing-space-4: 16px;
+  --spacing-space-5: 20px;
+  --spacing-space-6: 32px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-pill: 999px;
+}
+
+@utility type-number-xl {
+  font-family: var(--font-display);
+  font-size: 56px;
+  line-height: 56px;
+  font-weight: 700;
+  letter-spacing: -1px;
+}
+
+@utility type-display {
+  font-family: var(--font-display);
+  font-size: 40px;
+  line-height: 44px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+
+@utility type-title {
+  font-family: var(--font-display);
+  font-size: 24px;
+  line-height: 30px;
+  font-weight: 700;
+  letter-spacing: normal;
+}
+
+@utility type-question {
+  font-family: var(--font-sans);
+  font-size: 21px;
+  line-height: 28px;
+  font-weight: 600;
+  letter-spacing: normal;
+}
+
+@utility type-heading {
+  font-family: var(--font-sans);
+  font-size: 17px;
+  line-height: 24px;
+  font-weight: 600;
+  letter-spacing: normal;
+}
+
+@utility type-body {
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 400;
+  letter-spacing: normal;
+}
+
+@utility type-body-sm {
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 400;
+  letter-spacing: normal;
+}
+
+@utility type-label {
+  font-family: var(--font-sans);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+}
+
+@utility type-code {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 20px;
+  font-weight: 400;
+  letter-spacing: normal;
+}
+
+@utility border-hair {
+  border-style: solid;
+  border-width: 1px;
+}
+
+@utility border-bold {
+  border-style: solid;
+  border-width: 2px;
+}
