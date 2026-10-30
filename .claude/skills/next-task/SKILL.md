@@ -1,10 +1,10 @@
 ---
 name: next-task
-description: Take the next unblocked issue from the Quode board and carry it to an open PR (assign, branch, tests first, build, reviewer agent, PR, card to In review). Use when Luca says "run /next-task" or asks for the next task.
+description: Take the next unblocked issue from the Quode board and carry it to an open PR (assign, branch, tests first, build, reviewer agent, PR, card to In review). Step 7, the merge, runs only on a later message where Luca approves the PR. Use when Luca says "run /next-task" or asks for the next task.
 ---
 # Next task
 
-Board: GitHub Project 3 (`--owner luca-impruvius`), repo `luca-impruvius/quode`. You implement; Luca reviews and merges. Never merge.
+Board: GitHub Project 3 (`--owner luca-impruvius`), repo `luca-impruvius/quode`. You implement; Luca reviews. Merge only after Luca approves the PR in the session (step 7).
 
 ## 1. Pick the issue
 1. List the board: `gh project item-list 3 --owner luca-impruvius --format json`.
@@ -39,3 +39,11 @@ Board: GitHub Project 3 (`--owner luca-impruvius`), repo `luca-impruvius/quode`.
 
 ## 6. Report
 Tell Luca: the PR link, what to look at first, which candidates were skipped and exactly what each needs from him, and which issue comes next.
+
+## 7. Merge (only after Luca approves)
+Luca's approval names the PR or clearly covers it ("merge #21"). A broad approval ("you can merge the PRs") covers only PRs Luca has reviewed that are open when he gives it; if it doesn't name the numbers, list them back and wait for his confirmation before the first merge. Several PRs: one at a time, in dependency order.
+1. Bring the branch up to date with `main` (`git merge origin/main`), resolve conflicts, rerun the full build, commit and push. If resolving conflicts changes behaviour beyond the two sides combined, stop and ask Luca to approve again.
+2. Check: required CI green once CI exists; no open Blocking or Should-fix item.
+3. `gh pr merge <n> --squash --delete-branch --match-head-commit <sha you pushed>`. Never `--admin` or `--auto`.
+4. `git switch main && git pull --ff-only origin main`, run the full build, confirm the issue is closed as completed and the card is Done (set it if not).
+5. Report each merge commit and the build result.
