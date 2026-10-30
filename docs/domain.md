@@ -30,7 +30,7 @@ Rejected: strict hierarchy only (one-home paralysis), free tags only (duplicates
 
 | Entity | Purpose | Key fields |
 |---|---|---|
-| `app_user` | Owner of everything; one seeded row in Phase 1 | id, email, display_name, google_sub, time_zone (default Europe/Bucharest), created_at |
+| `app_user` | Owner of everything; created on the first allowed Google login (no seed row) | id (UUIDv7), email (lowercased, unique ignoring case), display_name, google_sub, time_zone (default Europe/Bucharest), created_at, updated_at |
 | `topic` | Node in the topic tree | id, owner_id, parent_id, name, slug |
 | `question` | A unit of knowledge | id, owner_id, type, prompt_md, answer_md, explanation_md, difficulty, status, source_url, flagged_at, learn_next, created_at, updated_at, archived_at |
 | `answer_option` | Choices for choice questions | id, question_id, text_md, is_correct, position |

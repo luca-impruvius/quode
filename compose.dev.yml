@@ -1,0 +1,27 @@
+# Local development only. Credentials are dev defaults, never used in production.
+services:
+  postgres:
+    image: postgres:18
+    # Comes back after a Docker restart; `docker compose -f compose.dev.yml stop` keeps it stopped.
+    restart: unless-stopped
+    # Docker's 64 MB default /dev/shm is too small for parallel queries.
+    shm_size: 256mb
+    environment:
+      POSTGRES_USER: ${DB_USER:-quode}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-quode}
+      # Fixed: the backend default DB_URL expects this name.
+      POSTGRES_DB: quode
+    ports:
+      # Loopback only: the database is never reachable from the network.
+      - "127.0.0.1:5432:5432"
+    volumes:
+      # postgres:18 keeps its data under /var/lib/postgresql/<major>/, so mount the parent.
+      - postgres-data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  postgres-data:

@@ -6,6 +6,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.boot.test.web.server.LocalManagementPort;
 import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.json.JsonCompareMode;
 import org.springframework.test.web.servlet.client.RestTestClient;
 
@@ -14,6 +15,7 @@ import org.springframework.test.web.servlet.client.RestTestClient;
 @SpringBootTest(
     webEnvironment = WebEnvironment.RANDOM_PORT,
     properties = "management.server.port=0")
+@Import(TestcontainersConfiguration.class)
 class HealthEndpointTests {
 
   @LocalServerPort private int serverPort;
@@ -36,6 +38,7 @@ class HealthEndpointTests {
 
   @Test
   void publicHealthIsUpWithoutDetails() {
+    // Includes the database check: UP means Postgres answered.
     server
         .get()
         .uri("/api/health")
