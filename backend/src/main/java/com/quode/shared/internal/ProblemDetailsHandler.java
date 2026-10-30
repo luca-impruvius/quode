@@ -97,8 +97,9 @@ class ProblemDetailsHandler extends ResponseEntityExceptionHandler {
   @Override
   protected ResponseEntity<Object> createResponseEntity(
       Object body, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
-    if (body instanceof ProblemDetail problem) {
-      problem.setProperty("traceId", TraceIdFilter.currentTraceId(tracer));
+    String traceId = TraceIdFilter.currentTraceId(tracer);
+    if (body instanceof ProblemDetail problem && traceId != null) {
+      problem.setProperty("traceId", traceId);
     }
     return super.createResponseEntity(body, headers, status, request);
   }

@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
@@ -41,7 +42,7 @@ class IncomingTraceContextFilter extends OncePerRequestFilter {
     }
 
     private static boolean hidden(String name) {
-      return name != null && HIDDEN.contains(name.toLowerCase(java.util.Locale.ROOT));
+      return name != null && HIDDEN.contains(name.toLowerCase(Locale.ROOT));
     }
 
     @Override
