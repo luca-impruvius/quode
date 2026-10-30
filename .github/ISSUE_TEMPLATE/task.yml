@@ -10,14 +10,13 @@ body:
     validations:
       required: true
   - type: dropdown
-    id: mode
+    id: review
     attributes:
-      label: Mode
-      description: Also add the matching mode label.
+      label: Review
+      description: Careful for security, data, CI, infrastructure or backups; also add the review:careful label.
       options:
-        - Solo (I write, AI hints and reviews)
-        - Pair (I design, AI implements, I adjust)
-        - Delegate (AI writes, I review)
+        - Standard
+        - Careful (owner reads the whole diff)
     validations:
       required: true
   - type: textarea

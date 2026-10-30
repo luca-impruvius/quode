@@ -1,6 +1,6 @@
 # ADR-0023: Claude Code with minimal context and automated checks
 
-- **Status:** Accepted
+- **Status:** Partially superseded by ADR-0038 (explain-back, CLAUDE.md length)
 - **Date:** 2026-10-06
 
 ## Context

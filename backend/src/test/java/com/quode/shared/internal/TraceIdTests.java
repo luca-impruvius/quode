@@ -2,14 +2,17 @@ package com.quode.shared.internal;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.quode.TestcontainersConfiguration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.web.servlet.client.RestTestClient;
 
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
+@Import(TestcontainersConfiguration.class)
 class TraceIdTests {
 
   private static final String TRACE_ID = "[0-9a-f]{32}";

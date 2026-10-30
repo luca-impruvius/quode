@@ -2,6 +2,7 @@ package com.quode.shared.internal;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.quode.TestcontainersConfiguration;
 import com.quode.shared.ForbiddenException;
 import com.quode.shared.NotFoundException;
 import jakarta.servlet.Filter;
@@ -36,7 +37,11 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
-@Import({ProblemDetailsTests.FailingController.class, ProblemDetailsTests.FailingFilter.class})
+@Import({
+  TestcontainersConfiguration.class,
+  ProblemDetailsTests.FailingController.class,
+  ProblemDetailsTests.FailingFilter.class
+})
 @ExtendWith(OutputCaptureExtension.class)
 class ProblemDetailsTests {
 
