@@ -1,18 +1,25 @@
 # CLAUDE.md
 
-Quode: mobile-first spaced-repetition study app. Single user for now (Phase 1). Solo developer learning for interviews: **understanding beats speed**.
+Quode: mobile-first spaced-repetition study app. Single user for now (Phase 1). Claude implements; Luca approves plans, reviews every PR and merges (ADR-0038).
 
-## Task modes (check the issue's `mode:*` label before writing code)
-- `mode:solo`: do NOT write implementation code. Give hints only when asked (concept → direction → snippet, one step at a time), then review. Only "switch this task to Pair" changes this.
-- `mode:pair`: Luca writes signatures and tests; you implement; explain non-obvious lines.
-- `mode:delegate`: you implement; Luca reviews line by line.
-- Security code is never treated as delegate.
+## Working model
+- You implement all code, tests, migrations and docs. Luca approves milestone plans, reviews every PR and merges. You never merge.
+- Stop and ask when:
+  - something is ambiguous or not covered by the docs or ADRs;
+  - a new decision is needed (propose an ADR);
+  - a dependency isn't OSI open source;
+  - a step needs Luca's accounts, secrets, money or the production server;
+  - CI fails and you can't find the cause.
+- Issues labelled `review:careful` get extra care: the smallest possible diff and explicit risks.
+- PR description sections: **What**, **Why**, **Risks**, **How it was verified** (paste test/build output), **Review focus** (where Luca's attention matters most).
 
 ## Workflow
-1. Read the issue and its spec in `docs/specs/`. Plan first (plan mode) and wait for approval on multi-file changes.
-2. Tests first from the acceptance criteria. Show test/build output as evidence; don't claim success without it.
-3. Small PRs (< ~400 lines). PR title in Conventional Commits: `feat(review): ...`, scopes = module names, `frontend`, `infra`, `deps`, `adr`.
-4. If a decision changes, update the living doc (`docs/architecture.md`, `docs/domain.md`, `docs/spaced-repetition.md`, `docs/conventions.md`) in the same PR, or add a new ADR in `docs/adr/`.
+1. `/next-task` picks the next issue from the board. Read the issue and its spec in `docs/specs/`. Plan multi-file changes in plan mode; on `review:careful` issues wait for Luca's approval of the plan, otherwise proceed and summarize the plan in the PR.
+2. Branch `<type>/<issue>-<slug>` from an up-to-date `main`.
+3. Tests first from the acceptance criteria. Run the full build and paste the output as evidence; don't claim success without it.
+4. Commit, then run the `reviewer` agent; fix every Blocking and Should-fix item.
+5. Small PRs (< ~400 lines) using the PR template, with `Closes #<issue>`. Title in Conventional Commits: `feat(review): ...`, scopes = module names, `frontend`, `infra`, `deps`, `adr`.
+6. If a decision changes, update the living doc (`docs/architecture.md`, `docs/domain.md`, `docs/spaced-repetition.md`, `docs/conventions.md`, `docs/onboarding.md`) in the same PR, or add a new ADR in `docs/adr/`.
 
 ## Commands
 <!-- Backend confirmed by task 2; frontend commands confirmed by task 6. -->
@@ -34,11 +41,11 @@ Quode: mobile-first spaced-repetition study app. Single user for now (Phase 1). 
 - Timestamps `timestamptz` in UTC; "today" uses the user's time zone via an injected `Clock`.
 
 ## Never
+- Never merge a PR, push to `main` directly or force-push.
 - Never edit a Flyway migration that is already merged; add a new one. Destructive schema changes take two releases.
 - Never add a dependency without stating its license; flag anything that is not OSI open source (see `docs/conventions.md`).
-- Never commit secrets, `.env` files or credentials. Never print secrets in logs.
+- Never commit secrets, `.env` files, credentials or personal data. Never print secrets in logs.
 - Never skip, disable or delete failing tests to make a build pass; fix the cause.
-- Never push to `main` directly or force-push.
 - Never change production data or servers from a session unless Luca explicitly asks.
 
 ## More context

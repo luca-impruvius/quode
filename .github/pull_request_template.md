@@ -1,19 +1,29 @@
-## What and why
+## What
 
-<!-- One or two sentences. -->
+<!-- What changes, in a few bullets. -->
 
 Closes #
 
-## How I verified
+## Why
 
-<!-- Test output, command run, or screenshot. Evidence, not "it works". -->
+<!-- The issue, spec or decision this implements. -->
+
+## Risks
+
+<!-- What could break, and how it would show. "None" only if you mean it. -->
+
+## How it was verified
+
+<!-- Paste the test and build output, commands run, or screenshots. Evidence, not "it works". -->
+
+## Review focus
+
+<!-- Where the reviewer's attention matters most: files, lines, decisions. -->
 
 ## Checklist
 
-- [ ] Linked issue and spec
-- [ ] Tests cover the acceptance criteria
+- [ ] Tests cover every acceptance criterion
 - [ ] Living docs updated, or no doc impact
-- [ ] Setup, tools or commands changed → `docs/onboarding.md` updated, or not applicable
-- [ ] I can explain every line (Solo and Pair tasks)
 - [ ] Flyway: only new migrations, none edited
-- [ ] No secrets, `.env` files or credentials in the diff
+- [ ] Setup, tools or commands changed → `docs/onboarding.md` updated, or not applicable
+- [ ] No secrets, `.env` files, credentials or personal data in the diff
