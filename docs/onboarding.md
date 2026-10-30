@@ -70,13 +70,17 @@ cp .gitleaks.local.toml.example .gitleaks.local.toml   # git-ignored, never comm
 Backend:
 
 ```bash
-docker compose -f compose.dev.yml up -d   # local Postgres (from M0-03)
+docker compose -f compose.dev.yml up -d   # local Postgres 18 on 127.0.0.1:5432 (Docker must be running)
 cd backend
 ./gradlew build                           # compiles, runs tests and checks formatting
 ./gradlew spotlessApply                   # fixes formatting if the build complains
 ./gradlew bootRun                         # API on :8080 under /api, Actuator on :8081
-curl -i localhost:8080/api/health         # expect 200 {"status":"UP"}
+curl -i localhost:8080/api/health         # expect 200 {"status":"UP"}; 503 DOWN if the database is down
 ```
+
+The local database uses dev-only credentials (`quode` / `quode`, database `quode`), which are also the backend's defaults; override them with `DB_URL`, `DB_USER` and `DB_PASSWORD`. Production has no defaults. `./gradlew build` starts its own throwaway Postgres through Testcontainers, so Docker must be running for the tests too.
+
+If `docker compose` reports that port 5432 is not available, another PostgreSQL (for example a native Windows install) is already using it: stop that service, or set it to manual start.
 
 Google sign-in locally *(from M0-04)*: you need the local OAuth client values in a git-ignored `.env`. The owner shares them through a password manager, never through chat, email or issues. Your Google account must also be on the app's allowlist and on the Google "test users" list (section 8).
 
