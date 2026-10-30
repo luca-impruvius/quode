@@ -61,6 +61,7 @@ describe('generateTheme', () => {
       'shadow',
       'inset-shadow',
       'drop-shadow',
+      'text-shadow',
       'radius',
       'text',
       'font',
@@ -74,6 +75,13 @@ describe('generateTheme', () => {
     broken.color.tokens[0].value = { light: '#ffffff' };
 
     expect(() => generateTheme(broken)).toThrow(/no dark value/);
+  });
+
+  it('fails on a type group with an unknown family', () => {
+    const broken = structuredClone(tokens);
+    broken.type.groups[0].family = 'nope';
+
+    expect(() => generateTheme(broken)).toThrow(/unknown family/);
   });
 
   it('fails on a token category it does not map', () => {

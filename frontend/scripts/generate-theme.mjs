@@ -59,6 +59,7 @@ export function generateTheme(tokens) {
     '  --shadow-*: initial;',
     '  --inset-shadow-*: initial;',
     '  --drop-shadow-*: initial;',
+    '  --text-shadow-*: initial;',
     '  --radius-*: initial;',
     '  --text-*: initial;',
     '  --font-*: initial;',
