@@ -41,7 +41,7 @@ Steps marked *(from M0-xx)* only apply once that task is merged. Check the [Proj
 | JDK | **Eclipse Temurin 25** | Not Oracle JDK (its free-use terms change between versions). |
 | IDE | IntelliJ IDEA (free tier) **2026.2 or newer**, or VS Code with the Java extensions | Don't start the paid Ultimate trial. Older IntelliJ versions show `backend/build.gradle.kts` all red (Gradle 9.7 scripts use Kotlin 2.4); the build itself still works. |
 | Docker | Docker Desktop (free for personal use and small companies), Rancher Desktop, or Podman | Needed for the local database and Testcontainers. |
-| **gitleaks** | latest | **Required.** The pre-commit hook refuses to run without it. Check with `gitleaks version`. |
+| **gitleaks** | **8.30 or newer** (CI pins 8.30.1) | **Required.** The pre-commit hook refuses to run without it. Check with `gitleaks version`. |
 | Node.js | current LTS (with npm) | For the frontend. |
 | GitHub CLI (`gh`) | optional | Handy for issues and PRs. |
 | Claude Code or other AI tools | optional, your own subscription | Must follow `CLAUDE.md`. Never paste secrets or personal data into any AI tool. |
@@ -105,7 +105,7 @@ The Tailwind theme is generated from `design-system/tokens.json` before each of 
 
 - **Pick work from the board.** Every task is a GitHub issue; its body lists what it depends on, and `review:careful` marks work where the owner reads the whole diff (see `CLAUDE.md`). Assign it to yourself before starting.
 - **Branch** from an up-to-date `main`: `feat/<issue>-short-name`, `fix/…`, `chore/…`, `docs/…`.
-- **Commits and PR titles** follow Conventional Commits, for example `feat(review): …`. Scopes are module names, `frontend`, `infra`, `deps` or `adr`.
+- **Commits and PR titles** follow Conventional Commits, for example `feat(review): …`. Scopes are module names, `frontend`, `infra`, `deps` (`deps-dev` from Dependabot) or `adr`.
 - **Small PRs** (under about 400 lines), using the PR template, with `Closes #<issue>`.
 - **Tests first** from the acceptance criteria. CI (`.github/workflows/ci.yml`: backend, frontend, gitleaks, PR title) must be green; the owner reviews, and Claude squash-merges once the owner approves (ADR-0039).
 - **Decisions:** if something in `docs/` stops being true, update it in the same PR or add an ADR.

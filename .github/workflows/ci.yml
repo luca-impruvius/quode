@@ -1,11 +1,11 @@
 # Checks every pull request and every push to main (docs/architecture.md §9).
+# The PR-title check lives in pr-title.yml, so editing a title doesn't re-run the build.
 # Job names are required checks in main's branch protection: rename them only together with it.
 # Actions are pinned to commit SHAs; Dependabot updates them.
 name: CI
 
 on:
   pull_request:
-    types: [opened, edited, synchronize, reopened]
   push:
     branches: [main]
 
@@ -87,21 +87,3 @@ jobs:
           sudo install gitleaks /usr/local/bin/gitleaks
       # Whole history: a secret removed in a later commit is still public.
       - run: gitleaks git --config .gitleaks.toml --redact --verbose --no-banner .
-
-  pr-title:
-    if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      # The title arrives through env, never interpolated into the script.
-      - name: Check the title follows Conventional Commits
-        env:
-          TITLE: ${{ github.event.pull_request.title }}
-        run: |
-          pattern='^(feat|fix|chore|docs|ci|build|refactor|perf|test|style|revert)(\([a-z0-9-]+\))?!?: [^ ].*$'
-          if printf '%s' "$TITLE" | grep -Eq "$pattern"; then
-            echo "PR title OK: $TITLE"
-          else
-            echo "::error::PR title must follow Conventional Commits, for example 'feat(review): add due queue'. Got: $TITLE"
-            exit 1
-          fi
