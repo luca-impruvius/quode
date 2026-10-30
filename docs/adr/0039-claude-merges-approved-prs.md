@@ -23,7 +23,7 @@ Claude merges a PR only after I approve it in the session, naming the PR or clea
 - Several PRs merge one at a time, in dependency order, each brought up to date with the new `main` first.
 - After merging: build `main`, confirm the linked issue closed and its card is Done, and report each merge commit.
 - Claude still never pushes to `main` directly and never force-pushes.
-- The repo's Claude Code settings deny `--admin` and `--auto`, and deny merges through `gh api`, and don't pre-allow `gh pr merge`, so each merge still asks for permission in the session. These patterns are a guard, not a guarantee (combined short flags such as `-dm` slip past); GitHub allowing squash merges only is the real limit on merge style.
+- The repo's Claude Code settings deny `--admin`, `--auto` and merges through `gh api`, and don't pre-allow `gh pr merge`, so each merge still asks for permission in the session. These patterns are a guard, not a guarantee (combined short flags such as `-dm` slip past); GitHub allowing squash merges only is the real limit on merge style.
 
 ## Consequences
 
