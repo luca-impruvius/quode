@@ -17,6 +17,7 @@ dependencies {
   implementation(libs.spring.boot.starter.actuator)
   implementation(libs.spring.boot.starter.validation)
   implementation(libs.spring.modulith.starter.core)
+  implementation(libs.springdoc.openapi.starter.webmvc.api)
   implementation(libs.spring.boot.micrometer.tracing.opentelemetry)
   implementation(libs.micrometer.tracing.bridge.otel)
   implementation(libs.spring.boot.starter.data.jpa)

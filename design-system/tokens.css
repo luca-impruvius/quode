@@ -1,0 +1,128 @@
+/* Quode Design System — generated from tokens.json */
+:root, [data-theme="light"] {
+  --bg: #f3f3ef; /* Page background behind cards and lists. */
+  --surface: #ffffff; /* Cards, inputs, tab bar, sheets. */
+  --surface-sunken: #eaeae4; /* Quiet fills: chips at rest, info boxes, progress track, inline code. */
+  --ink: #17171a; /* Primary text and icons on bg, surface and surface-sunken. */
+  --ink-muted: #55555e; /* Secondary text: meta lines, captions, inactive tabs. Passes 4.5:1 on bg and surface in both themes. */
+  --line: #d6d6ce; /* Hairline dividers between list rows; resting chip borders. */
+  --outline: #17171a; /* The bold 2px outline on buttons, cards, inputs and options: the Quode sticker look. */
+  --accent: #f5c518; /* Beak yellow. Fill of the ONE primary action per screen, the active tab, the add button. Never text on bg. */
+  --on-accent: #17171a; /* Text and icons on accent. Always dark, in both themes. */
+  --correct: #1f55c2; /* Correct answer, Got it outcome. Always paired with a label or icon. */
+  --correct-bg: #e5edfc; /* Background of a correct option or Got it result; text on it uses ink. */
+  --partial: #6a4bb8; /* Partial outcome. Always paired with a label. */
+  --partial-bg: #eee8fa; /* Background of a Partial result; text on it uses ink. */
+  --missed: #b4470e; /* Wrong pick, Missed outcome, errors. Orange, not red, so it differs from correct blue for colour-blind users. */
+  --missed-bg: #fce9dd; /* Background of a wrong option, Missed result or error box; text on it uses ink. */
+  --focus: #1f55c2; /* Keyboard focus ring, 3px, offset 2px. */
+  --shadow-pop: 3px 3px 0 #17171a; /* Solid offset shadow on the primary action only. Pressed state removes it and moves the button 2px down-right. */
+}
+[data-theme="dark"] {
+  --bg: #111113;
+  --surface: #1b1b1f;
+  --surface-sunken: #26262b;
+  --ink: #f2f2ee;
+  --ink-muted: #a6a6b0;
+  --line: #33333a;
+  --outline: #d9d9d4;
+  --accent: #f5c518;
+  --on-accent: #17171a;
+  --correct: #8cb0ff;
+  --correct-bg: #1d2a45;
+  --partial: #bba6ff;
+  --partial-bg: #2a2240;
+  --missed: #ff9a5c;
+  --missed-bg: #3a2416;
+  --focus: #8cb0ff;
+  --shadow-pop: 3px 3px 0 #000000;
+}
+:root {
+  --space-1: 4px; /* Icon-to-label gaps. */
+  --space-2: 8px; /* Gaps between chips; tight stacks. */
+  --space-3: 12px; /* Gaps between buttons and list items. */
+  --space-4: 16px; /* Screen side gutter; card inner padding on phones. */
+  --space-5: 20px; /* Gaps between sections on a screen; roomy card padding. */
+  --space-6: 32px; /* Large vertical breaks (login, session done). */
+  --radius-sm: 8px; /* Small controls: steppers, segmented controls, code blocks. */
+  --radius-md: 12px; /* Buttons, inputs, answer options. */
+  --radius-lg: 16px; /* Cards and sheets. */
+  --radius-pill: 999px; /* Chips, progress bars, the round add button. */
+  --border-hair: 1px; /* Dividers and the tab bar top edge. */
+  --border-bold: 2px; /* Outlines of buttons, cards, inputs and options. */
+  --font-display: "Bricolage Grotesque", "IBM Plex Sans", system-ui, sans-serif;
+  --font-sans: "IBM Plex Sans", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+  --text-number-xl: 700 56px/56px var(--font-display); /* The one big number on Today. */
+  --text-display: 700 40px/44px var(--font-display); /* Wordmark, login, session-done headline. */
+  --text-title: 700 24px/30px var(--font-display); /* Screen titles. */
+  --text-question: 600 21px/28px var(--font-sans); /* The question prompt in a session. */
+  --text-heading: 600 17px/24px var(--font-sans); /* Card and section headings, list item titles. */
+  --text-body: 400 16px/24px var(--font-sans); /* Answers, explanations, body copy. */
+  --text-body-sm: 400 14px/20px var(--font-sans); /* Meta lines, captions, helper text. */
+  --text-label: 600 12px/16px var(--font-sans); /* Uppercase section labels. */
+  --text-code: 400 13px/20px var(--font-mono); /* Inline code and code blocks inside questions and answers. */
+}
+.number-xl {
+  font-family: var(--font-display);
+  font-size: 56px;
+  line-height: 56px;
+  font-weight: 700;
+  letter-spacing: -1px;
+}
+.display {
+  font-family: var(--font-display);
+  font-size: 40px;
+  line-height: 44px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+.title {
+  font-family: var(--font-display);
+  font-size: 24px;
+  line-height: 30px;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+.question {
+  font-family: var(--font-sans);
+  font-size: 21px;
+  line-height: 28px;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+.heading {
+  font-family: var(--font-sans);
+  font-size: 17px;
+  line-height: 24px;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+.body {
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+.body-sm {
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+.label {
+  font-family: var(--font-sans);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+}
+.code {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 20px;
+  font-weight: 400;
+  letter-spacing: 0;
+}

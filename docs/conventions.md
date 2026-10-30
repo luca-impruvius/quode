@@ -90,7 +90,10 @@ Living docs change in the same PR whenever a decision changes. After two failed 
 
 ## 10. Design (ADR-0035)
 
-- The design system's tokens are the Tailwind theme.
+- `design-system/` is the source of truth: `tokens.json`, the design rules in its `README.md`, and the logos. `frontend/scripts/generate-theme.mjs` turns `tokens.json` into the Tailwind theme before every dev, build and test run; never hand-copy a value. Only token colours exist (Tailwind's palette is off): `bg-surface`, `text-ink-muted`, `type-question` (a whole type style, family included), `p-space-4`, `rounded-pill`, `border-bold`, `shadow-pop`. Tailwind's default shadows, radii, type sizes and fonts are off too.
+- Dark mode follows the system setting; `data-theme="light"` or `"dark"` on `<html>` overrides it. Tokens switch by themselves; the `dark:` variant follows the same rule.
+- UI text lives in `frontend/src/messages.ts` (ADR-0032).
+- API types: with the backend running, `npm run generate:api` regenerates `frontend/src/api/schema.d.ts` from `/api/v3/api-docs`; commit the result with the endpoint change.
 - High-fidelity screens for a milestone are made during its task breakdown and linked from each frontend issue.
 - After M2, keep a friction log; it drives design fixes.
 
@@ -137,6 +140,7 @@ See [runbooks/production-debugging.md](runbooks/production-debugging.md).
 - State the license whenever a dependency is proposed.
 - Re-check licenses on major upgrades, because licenses change (example: Liquibase 5, ADR-0037).
 - External services use free plans only; their limits are listed in [architecture.md](architecture.md).
+- Accepted exception: build-time data packages that never ship to the browser, `caniuse-lite` (CC-BY-4.0) and `mdn-data` (CC0-1.0), pulled in by the frontend tooling (accepted in PR #21).
 - Docker Desktop is accepted for local development only (free personal-use license, not part of the app); Rancher Desktop is the open-source alternative.
 
 ## 15. Data

@@ -6,6 +6,7 @@ spotless = "8.10.3"
 # 1.37.0 breaks Spotless 8.10.3 (NoSuchMethodError on JavaFormatterOptions$Style.valueOf).
 google-java-format = "1.36.1"
 gradle-git-properties = "4.0.1"
+springdoc = "3.2.0"
 
 [libraries]
 # Versions of Spring Boot starters, Flyway, the PostgreSQL driver and Testcontainers come from the
@@ -20,6 +21,7 @@ postgresql = { module = "org.postgresql:postgresql" }
 spring-boot-starter-webmvc-test = { module = "org.springframework.boot:spring-boot-starter-webmvc-test" }
 spring-boot-starter-actuator-test = { module = "org.springframework.boot:spring-boot-starter-actuator-test" }
 spring-boot-starter-validation-test = { module = "org.springframework.boot:spring-boot-starter-validation-test" }
+springdoc-openapi-starter-webmvc-api = { module = "org.springdoc:springdoc-openapi-starter-webmvc-api", version.ref = "springdoc" }
 spring-boot-micrometer-tracing-opentelemetry = { module = "org.springframework.boot:spring-boot-micrometer-tracing-opentelemetry" }
 micrometer-tracing-bridge-otel = { module = "io.micrometer:micrometer-tracing-bridge-otel" }
 spring-boot-starter-data-jpa-test = { module = "org.springframework.boot:spring-boot-starter-data-jpa-test" }

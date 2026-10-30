@@ -42,7 +42,7 @@ Steps marked *(from M0-xx)* only apply once that task is merged. Check the [Proj
 | IDE | IntelliJ IDEA (free tier) **2026.2 or newer**, or VS Code with the Java extensions | Don't start the paid Ultimate trial. Older IntelliJ versions show `backend/build.gradle.kts` all red (Gradle 9.7 scripts use Kotlin 2.4); the build itself still works. |
 | Docker | Docker Desktop (free for personal use and small companies), Rancher Desktop, or Podman | Needed for the local database and Testcontainers. |
 | **gitleaks** | latest | *(from M0-08)* **Required.** The pre-commit hook refuses to run without it. Check with `gitleaks version`. |
-| Node.js | current LTS | *(from M0-06)* for the frontend. |
+| Node.js | current LTS (with npm) | For the frontend. |
 | GitHub CLI (`gh`) | optional | Handy for issues and PRs. |
 | Claude Code or other AI tools | optional, your own subscription | Must follow `CLAUDE.md`. Never paste secrets or personal data into any AI tool. |
 
@@ -84,7 +84,19 @@ If `docker compose` reports that port 5432 is not available, another PostgreSQL 
 
 Google sign-in locally *(from M0-04)*: you need the local OAuth client values in a git-ignored `.env`. The owner shares them through a password manager, never through chat, email or issues. Your Google account must also be on the app's allowlist and on the Google "test users" list (section 8).
 
-Frontend *(from M0-06)*: `cd frontend && npm install && npm run dev`.
+Frontend:
+
+```bash
+cd frontend
+npm install
+npm run dev            # http://localhost:5173, forwards /api to the backend on :8080
+npm test               # Vitest
+npm run lint           # ESLint + Prettier check (npm run format fixes formatting)
+npm run build          # type-check and production build
+npm run generate:api   # with the backend running: regenerate src/api/schema.d.ts
+```
+
+The Tailwind theme is generated from `design-system/tokens.json` before each of these; never edit `src/styles/theme.generated.css`.
 
 ---
 

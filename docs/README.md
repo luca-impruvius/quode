@@ -24,7 +24,7 @@ Product brief, MVP scope, roadmap and backlog, working agreement, learning plan.
 ## Design
 
 - Wireframes and high-fidelity screens: Quode Wireframes canvas (Claude).
-- Design system (tokens, components, mascot): Quode Design System (Claude). The Tailwind theme is generated from its `tokens.json`.
+- Design system (tokens, components, mascot): exported from the Quode Design System (Claude) into [`design-system/`](../design-system/README.md), the source of truth in the repo. The Tailwind theme is generated from its `tokens.json`.
 
 ## Source of truth
 
