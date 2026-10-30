@@ -43,7 +43,7 @@ docs(adr): ADR-0037 ...
 
 ## 5. Task loop with Claude Code (ADR-0023, ADR-0038)
 
-The `/next-task` skill runs steps 1–6.
+The `/next-task` skill runs steps 1–6, and step 7 once I approve the PR.
 
 1. Take the next Todo issue whose dependencies are merged and that needs nothing from me; assign it and move it to In Progress.
 2. Read its spec; plan multi-file changes in plan mode. I approve milestone plans, and task plans on `review:careful` issues.

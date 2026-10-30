@@ -16,14 +16,14 @@ ADR-0038 kept merging with me: Claude opens the PR, I review and merge. In pract
 
 ## Decision
 
-Claude merges a PR only after I approve it in the session, naming the PR or clearly covering it ("merge #21", "you can merge the PRs"). The approval covers the PRs open at that moment, not later ones.
+Claude merges a PR only after I approve it in the session, naming the PR or clearly covering it ("merge #21"). A broad approval ("you can merge the PRs") covers only PRs I have reviewed that are open at that moment, not later ones; if it doesn't name the numbers, Claude lists them back and waits for my confirmation before the first merge.
 
-- Squash merge only, with branch deletion: `gh pr merge <n> --squash --delete-branch`. Never `--admin` (it bypasses branch protection) and never `--auto`.
-- Before merging: the branch is up to date with `main` (conflicts resolved, then the full build run again), required CI checks are green once CI exists, and no Blocking or Should-fix item from the reviewer agent or from me is open.
+- Squash merge only, with branch deletion: `gh pr merge <n> --squash --delete-branch --match-head-commit <sha>`, so the merge fails if the branch moved after Claude checked it. Never `--admin` (it bypasses branch protection) and never `--auto`.
+- Before merging: the branch is up to date with `main` (conflicts resolved, then the full build run again; if the resolution changes behaviour, I approve again), required CI checks are green once CI exists, and no Blocking or Should-fix item from the reviewer agent or from me is open.
 - Several PRs merge one at a time, in dependency order, each brought up to date with the new `main` first.
 - After merging: build `main`, confirm the linked issue closed and its card is Done, and report each merge commit.
 - Claude still never pushes to `main` directly and never force-pushes.
-- The repo's Claude Code settings deny `--admin` and `--auto`, and don't pre-allow `gh pr merge`, so each merge still asks for permission in the session.
+- The repo's Claude Code settings deny `--admin` and `--auto`, and deny merges through `gh api`, and don't pre-allow `gh pr merge`, so each merge still asks for permission in the session. These patterns are a guard, not a guarantee (combined short flags such as `-dm` slip past); GitHub allowing squash merges only is the real limit on merge style.
 
 ## Consequences
 
