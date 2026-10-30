@@ -4,7 +4,7 @@ description: Take the next unblocked issue from the Quode board and carry it to 
 ---
 # Next task
 
-Board: GitHub Project 3 (`--owner luca-impruvius`), repo `luca-impruvius/quode`. You implement; Luca reviews and merges. Never merge.
+Board: GitHub Project 3 (`--owner luca-impruvius`), repo `luca-impruvius/quode`. You implement; Luca reviews. Merge only after Luca approves the PR in the session (step 7).
 
 ## 1. Pick the issue
 1. List the board: `gh project item-list 3 --owner luca-impruvius --format json`.
@@ -39,3 +39,11 @@ Board: GitHub Project 3 (`--owner luca-impruvius`), repo `luca-impruvius/quode`.
 
 ## 6. Report
 Tell Luca: the PR link, what to look at first, which candidates were skipped and exactly what each needs from him, and which issue comes next.
+
+## 7. Merge (only after Luca approves)
+Luca's approval names the PR or clearly covers it ("merge #21", "you can merge the PRs") and covers only PRs open when he gives it. Several PRs: one at a time, in dependency order.
+1. Bring the branch up to date with `main` (`git merge origin/main`), resolve conflicts, rerun the full build, commit and push.
+2. Check: required CI green once CI exists; no open Blocking or Should-fix item.
+3. `gh pr merge <n> --squash --delete-branch`. Never `--admin` or `--auto`.
+4. `git switch main && git pull --ff-only origin main`, run the full build, confirm the issue is closed as completed and the card is Done (set it if not).
+5. Report each merge commit and the build result.

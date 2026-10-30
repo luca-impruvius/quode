@@ -1,9 +1,9 @@
 # CLAUDE.md
 
-Quode: mobile-first spaced-repetition study app. Single user for now (Phase 1). Claude implements; Luca approves plans, reviews every PR and merges (ADR-0038).
+Quode: mobile-first spaced-repetition study app. Single user for now (Phase 1). Claude implements and merges what Luca approves; Luca approves plans and reviews every PR (ADR-0038, ADR-0039).
 
 ## Working model
-- You implement all code, tests, migrations and docs. Luca approves milestone plans, reviews every PR and merges. You never merge.
+- You implement all code, tests, migrations and docs. Luca approves milestone plans and reviews every PR. You merge a PR only after Luca approves it in the session (ADR-0039).
 - Stop and ask when:
   - something is ambiguous or not covered by the docs or ADRs;
   - a new decision is needed (propose an ADR);
@@ -19,7 +19,8 @@ Quode: mobile-first spaced-repetition study app. Single user for now (Phase 1). 
 3. Tests first from the acceptance criteria. Run the full build and paste the output as evidence; don't claim success without it.
 4. Commit, then run the `reviewer` agent; fix every Blocking and Should-fix item.
 5. Small PRs (< ~400 lines) using the PR template, with `Closes #<issue>`. Title in Conventional Commits: `feat(review): ...`, scopes = module names, `frontend`, `infra`, `deps`, `adr`.
-6. If a decision changes, update the living doc (`docs/architecture.md`, `docs/domain.md`, `docs/spaced-repetition.md`, `docs/conventions.md`, `docs/onboarding.md`) in the same PR, or add a new ADR in `docs/adr/`.
+6. Merge only on Luca's approval: bring the branch up to date with `main`, rebuild, `gh pr merge <n> --squash --delete-branch` (never `--admin` or `--auto`), then build `main` and check the issue is closed and Done.
+7. If a decision changes, update the living doc (`docs/architecture.md`, `docs/domain.md`, `docs/spaced-repetition.md`, `docs/conventions.md`, `docs/onboarding.md`) in the same PR, or add a new ADR in `docs/adr/`.
 
 ## Commands
 <!-- Backend confirmed by task 2; frontend commands confirmed by task 6. -->
@@ -41,7 +42,7 @@ Quode: mobile-first spaced-repetition study app. Single user for now (Phase 1). 
 - Timestamps `timestamptz` in UTC; "today" uses the user's time zone via an injected `Clock`.
 
 ## Never
-- Never merge a PR, push to `main` directly or force-push.
+- Never merge a PR Luca hasn't approved, push to `main` directly or force-push.
 - Never edit a Flyway migration that is already merged; add a new one. Destructive schema changes take two releases.
 - Never add a dependency without stating its license; flag anything that is not OSI open source (see `docs/conventions.md`).
 - Never commit secrets, `.env` files, credentials or personal data. Never print secrets in logs.

@@ -9,12 +9,12 @@ Living document. Built for a solo developer working with Claude Code on free pla
 - Labels: `review:careful` (I read the whole diff), `bug`.
 - Each issue body states **Review:** Careful or Standard, and its **Depends on:** issues.
 
-## 2. Working model (ADR-0038)
+## 2. Working model (ADR-0038, ADR-0039)
 
 | Who | Does |
 |---|---|
-| Claude | Implements all code, tests, migrations and docs; runs the build and the `reviewer` agent; opens the PR. Never merges. |
-| Me | Approve milestone plans, review every PR, merge. |
+| Claude | Implements all code, tests, migrations and docs; runs the build and the `reviewer` agent; opens the PR; squash-merges it after I approve it in the session. |
+| Me | Approve milestone plans, review every PR, approve the merge. |
 
 **Claude stops and asks when:** something is ambiguous or not covered by docs or ADRs; a new decision is needed (it proposes an ADR); a dependency isn't OSI open source; a step needs my accounts, secrets, money or the production server; CI fails and it can't find the cause.
 
@@ -51,7 +51,7 @@ The `/next-task` skill runs steps 1–6.
 4. Verify: full build, with test and build output pasted as evidence.
 5. Fresh-context review with the `reviewer` agent; fix every Blocking and Should-fix item.
 6. Open the PR with `Closes #n`; move the card to In review.
-7. My review on GitHub → squash-merge → automatic deploy → smoke check on my phone.
+7. My review → my approval in the session → Claude brings the branch up to date and squash-merges (never `--admin` or `--auto`) → automatic deploy → smoke check on my phone.
 
 Living docs change in the same PR whenever a decision changes. After two failed corrections in one session, start a fresh session with a better prompt.
 

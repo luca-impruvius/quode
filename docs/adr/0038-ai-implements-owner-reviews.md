@@ -1,6 +1,6 @@
 # ADR-0038: AI implements, owner reviews
 
-- **Status:** Accepted
+- **Status:** Partially superseded by ADR-0039 (merging)
 - **Date:** 2026-10-30
 - **Supersedes:** ADR-0022 (task modes); the explain-back and CLAUDE.md-length parts of ADR-0023
 

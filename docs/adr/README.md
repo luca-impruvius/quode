@@ -41,7 +41,8 @@ One file per decision. Accepted ADRs are never edited; a changed decision gets a
 | [0035](0035-design-system-first-hi-fi-screens-just-in-time.md) | Design system first, hi-fi screens just in time | Accepted |
 | [0036](0036-backups-on-cloudflare-r2.md) | Backups on Cloudflare R2 | Accepted |
 | [0037](0037-flyway-community-instead-of-liquibase.md) | Flyway Community instead of Liquibase | Accepted |
-| [0038](0038-ai-implements-owner-reviews.md) | AI implements, owner reviews | Accepted |
+| [0038](0038-ai-implements-owner-reviews.md) | AI implements, owner reviews | Partially superseded by ADR-0039 |
+| [0039](0039-claude-merges-approved-prs.md) | Claude merges approved PRs | Accepted |
 
 ## Template
 
