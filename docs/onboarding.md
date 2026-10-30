@@ -9,7 +9,7 @@ Steps marked *(from M0-xx)* only apply once that task is merged. Check the [Proj
 ## 1. Before anything else: read these (about 30 minutes)
 
 1. [`README.md`](../README.md): what Quode is.
-2. [`CLAUDE.md`](../CLAUDE.md): task modes, workflow, architecture rules and the "Never" list. These rules apply to people too, not only to AI tools.
+2. [`CLAUDE.md`](../CLAUDE.md): working model, workflow, architecture rules and the "Never" list. These rules apply to people too, not only to AI tools.
 3. [`docs/README.md`](README.md): index of all engineering docs.
 4. [`architecture.md`](architecture.md) and [`conventions.md`](conventions.md), especially sections 3–7 (branching, commits, task loop, PRs, quality gates) and 14 (dependencies and licenses). The privacy rules are in section 6 of this page.
 5. [`adr/README.md`](adr/README.md): skim the titles so you know which decisions already exist. Don't reopen a decision without proposing a new ADR.
@@ -86,7 +86,7 @@ Frontend *(from M0-06)*: `cd frontend && npm install && npm run dev`.
 
 ## 5. How we work
 
-- **Pick work from the board.** Every task is a GitHub issue with a `mode:*` label (solo / pair / delegate; see `CLAUDE.md`). Assign it to yourself before starting.
+- **Pick work from the board.** Every task is a GitHub issue; its body lists what it depends on, and `review:careful` marks work where the owner reads the whole diff (see `CLAUDE.md`). Assign it to yourself before starting.
 - **Branch** from an up-to-date `main`: `feat/<issue>-short-name`, `fix/…`, `chore/…`, `docs/…`.
 - **Commits and PR titles** follow Conventional Commits, for example `feat(review): …`. Scopes are module names, `frontend`, `infra`, `deps` or `adr`.
 - **Small PRs** (under about 400 lines), using the PR template, with `Closes #<issue>`.
