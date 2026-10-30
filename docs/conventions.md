@@ -115,9 +115,10 @@ A server can't report its own death, so uptime and backup monitoring run outside
 
 ## 12. Built-in observability (ADR-0027)
 
-1. Trace ID on every request: in logs, a response header and every error body. The UI shows "Something went wrong · ref 7f3a2c".
+1. Trace ID on every request (Micrometer Tracing with the OpenTelemetry bridge, no exporter): `traceId` in every log line, the `X-Trace-Id` response header and the `traceId` field of every error body. The UI shows its first characters: "Something went wrong · ref 7f3a2c"; grep the logs for them.
+   - Errors are Problem Details (RFC 9457) from one global handler: validation errors list `errors[{field, message}]`; modules throw `com.quode.shared.NotFoundException` (404) or `ForbiddenException` (403); anything unexpected is logged with its stack trace and answered with a generic 500, never internals.
 2. Structured JSON logs with trace ID, user, module and duration.
-3. `POST /api/client-errors` logs frontend errors next to server logs.
+3. `POST /api/client-errors` logs frontend errors next to server logs: open without sign-in (so login-screen errors are caught), body `{message, url, stack}` capped at 8 KB (413 above), fields truncated, logged at WARN; returns 204.
 4. `/actuator/info` on the management port shows the running git commit and build time.
 5. Actuator `loggers` changes a module's log level at runtime.
 6. Only `/api/health` is public (status only, no details), served on the main port through a health group's additional path. All Actuator endpoints, including `health`, live on management port 8081, localhost-only by default (`MANAGEMENT_SERVER_ADDRESS`), reached through an SSH tunnel. `/api/actuator/**` does not exist.
