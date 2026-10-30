@@ -146,3 +146,4 @@ See [runbooks/production-debugging.md](runbooks/production-debugging.md).
 - State the license whenever a dependency is proposed.
 - Re-check licenses on major upgrades, because licenses change (example: Liquibase 5, ADR-0037).
 - External services use free plans only; their limits are listed in [architecture.md](architecture.md).
+- Accepted exception: build-time data packages that never ship to the browser, `caniuse-lite` (CC-BY-4.0) and `mdn-data` (CC0-1.0), pulled in by the frontend tooling (accepted in PR #21).
