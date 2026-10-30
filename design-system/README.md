@@ -32,7 +32,7 @@ Short, plain and a little warm. The duck may be playful; the interface copy is n
 - **Bricolage Grotesque** (display): wordmark, screen titles, the big number on Today. Used sparingly.
 - **IBM Plex Sans** (text): everything else.
 - **IBM Plex Mono** (code): inline code and code blocks; code blocks sit on `ink` with `surface-sunken`-light text, radius `radius-sm`.
-- All three are SIL OFL 1.1 fonts, self-hosted from the Fontsource npm packages (Bricolage Grotesque 600/700, IBM Plex Sans 400/600/700, IBM Plex Mono 400): browsers never contact Google, and the app works offline.
+- All three are SIL OFL 1.1 fonts, self-hosted from the Fontsource npm packages (Bricolage Grotesque 700, IBM Plex Sans 400/600/700, IBM Plex Mono 400): browsers never contact Google, and the app works offline.
 
 ## Shape and depth
 
@@ -60,4 +60,4 @@ The Quode duck is a white, slightly puzzled duck seen from the front: thick blac
 
 ## Components
 
-Button, GradeButtons, Chip, Card, TextField, AnswerOption, ProgressBar and TabBar. Classes are prefixed `qd-` and live in `components/bundle.css`; the React components are built in the app's frontend and map one-to-one to these previews.
+Button, GradeButtons, Chip, Card, TextField, AnswerOption, ProgressBar and TabBar. Classes are prefixed `qd-` and live in `components.css`; the React components are built in the app's frontend and map one-to-one to these previews.

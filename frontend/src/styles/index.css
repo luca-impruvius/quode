@@ -3,7 +3,7 @@
 
 @layer base {
   body {
-    @apply bg-bg font-sans text-body text-ink antialiased;
+    @apply type-body bg-bg text-ink antialiased;
   }
 
   /* Design rule: a 3px focus ring with a 2px offset on every interactive element. */

@@ -38,7 +38,7 @@ export async function apiGet<T>(path: string, init?: RequestInit): Promise<T> {
 async function toApiError(response: Response): Promise<ApiError> {
   let problem: ProblemDetail = {};
   try {
-    problem = (await response.json()) as ProblemDetail;
+    problem = ((await response.json()) as ProblemDetail | null) ?? {};
   } catch {
     // Not JSON (for example a proxy error page): keep the status only.
   }

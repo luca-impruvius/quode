@@ -96,8 +96,8 @@ After two failed corrections in one session, start a fresh session with a better
 
 ## 10. Design (ADR-0035)
 
-- `design-system/` is the source of truth: `tokens.json`, the design rules in its `README.md`, and the logos. `frontend/scripts/generate-theme.mjs` turns `tokens.json` into the Tailwind theme before every dev, build and test run; never hand-copy a value. Only token colours exist (Tailwind's palette is off): `bg-surface`, `text-ink-muted`, `text-question`, `p-space-4`, `rounded-pill`, `shadow-pop`.
-- Dark mode follows the system setting; `data-theme="light"` or `"dark"` on `<html>` overrides it.
+- `design-system/` is the source of truth: `tokens.json`, the design rules in its `README.md`, and the logos. `frontend/scripts/generate-theme.mjs` turns `tokens.json` into the Tailwind theme before every dev, build and test run; never hand-copy a value. Only token colours exist (Tailwind's palette is off): `bg-surface`, `text-ink-muted`, `type-question` (a whole type style, family included), `p-space-4`, `rounded-pill`, `border-bold`, `shadow-pop`. Tailwind's default shadows, radii, type sizes and fonts are off too.
+- Dark mode follows the system setting; `data-theme="light"` or `"dark"` on `<html>` overrides it. Tokens switch by themselves; the `dark:` variant follows the same rule.
 - UI text lives in `frontend/src/messages.ts` (ADR-0032).
 - API types: with the backend running, `npm run generate:api` regenerates `frontend/src/api/schema.d.ts` from `/api/v3/api-docs`; commit the result with the endpoint change.
 - High-fidelity screens for a milestone are made during its task breakdown and linked from each frontend issue.
