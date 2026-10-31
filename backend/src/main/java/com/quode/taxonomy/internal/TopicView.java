@@ -8,4 +8,8 @@ import java.util.UUID;
  * topic and all its sub-topics.
  */
 record TopicView(
-    UUID id, @Schema(types = {"string", "null"}) UUID parentId, String name, long questionCount) {}
+    UUID id,
+    @Schema(types = {"string", "null"}) UUID parentId,
+    String name,
+    long questionCount,
+    boolean drift) {}
