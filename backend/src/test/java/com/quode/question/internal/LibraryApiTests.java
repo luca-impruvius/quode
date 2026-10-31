@@ -206,6 +206,26 @@ class LibraryApiTests {
             "?size=0", "?size=51", "?page=-1", "?difficulty=4", "?sort=random", "?status=GONE")) {
       list(bad).andExpect(status().isBadRequest());
     }
+    search("x".repeat(201)).andExpect(status().isBadRequest());
+  }
+
+  @Test
+  void aBadlyFormedParameterGetsAFixedMessageThatDoesntEchoIt() throws Exception {
+    list("?type=BOGUS")
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.detail").value("The value of 'type' isn't valid."));
+    list("?topicId=not-a-uuid")
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.detail").value("The value of 'topicId' isn't valid."));
+    list("?page=abc").andExpect(status().isBadRequest());
+  }
+
+  @Test
+  void searchTreatsABackslashLiterally() throws Exception {
+    question(me, "Where is C:\\temp?", "On Windows", "FLASHCARD", 1, web, 7);
+
+    search("\\").andExpect(jsonPath("$.totalElements").value(1));
+    search(":\\t").andExpect(jsonPath("$.totalElements").value(1));
   }
 
   @Test

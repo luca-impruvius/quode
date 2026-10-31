@@ -1,5 +1,5 @@
 import { ChevronDown, Search } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import {
   useLibrary,
@@ -33,7 +33,7 @@ function readFilters(params: URLSearchParams): LibraryFilters {
     difficulty: [1, 2, 3].includes(difficulty) ? difficulty : undefined,
     status: pick(params.get('status'), statuses, 'active'),
     sort: pick(params.get('sort'), sorts, 'created'),
-  } as LibraryFilters;
+  };
 }
 
 // The list shows text, not rendered Markdown: emphasis marks and link targets go.
@@ -49,33 +49,51 @@ type Open = 'topic' | 'type' | 'difficulty' | 'status' | null;
 
 export function LibraryPage() {
   const [params, setParams] = useSearchParams();
-  const filters = useMemo(() => readFilters(params), [params]);
+  const filters: LibraryFilters = useMemo(() => readFilters(params), [params]);
   const library = useLibrary(filters);
   const topics = useTopics();
   const paths = useMemo(() => topicPaths(topics.data ?? []), [topics.data]);
   const [text, setText] = useState(filters.q ?? '');
+  const [shownQ, setShownQ] = useState(filters.q);
   const [open, setOpen] = useState<Open>(null);
 
-  function update(key: string, value: string | undefined) {
-    const next = new URLSearchParams(params);
-    if (value === undefined || value === '') {
-      next.delete(key);
-    } else {
-      next.set(key, value);
+  // The URL's search changed without typing (Library tab, back/forward): show it in the box. Adjusting
+  // state during render is React's documented pattern for this; trimming differences are typing.
+  if (filters.q !== shownQ) {
+    setShownQ(filters.q);
+    if ((filters.q ?? '') !== text.trim()) {
+      setText(filters.q ?? '');
     }
-    setParams(next, { replace: true });
   }
 
+  // From the latest URL, never from this render's copy: a pending search mustn't undo other filters.
+  const update = useCallback(
+    (key: string, value: string | undefined) => {
+      setParams(
+        (current) => {
+          const next = new URLSearchParams(current);
+          if (value === undefined || value === '') {
+            next.delete(key);
+          } else {
+            next.set(key, value);
+          }
+          return next;
+        },
+        { replace: true },
+      );
+    },
+    [setParams],
+  );
+
   // Search as you type, once typing pauses.
+  const query = filters.q ?? '';
   useEffect(() => {
-    if (text.trim() === (filters.q ?? '')) {
+    if (text.trim() === query) {
       return;
     }
     const timer = setTimeout(() => update('q', text.trim()), 300);
     return () => clearTimeout(timer);
-    // update reads the current params; re-running on every change would reset the timer needlessly.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [text]);
+  }, [text, query, update]);
 
   const topicName = filters.topicId
     ? (topics.data?.find((t) => t.id === filters.topicId)?.name ?? null)
@@ -168,7 +186,6 @@ export function LibraryPage() {
               : l.count(total)}
         </span>
         <label className="flex items-center gap-space-1 font-semibold">
-          <span className="sr-only">{l.sort}</span>
           <select
             aria-label={l.sort}
             value={filters.sort}

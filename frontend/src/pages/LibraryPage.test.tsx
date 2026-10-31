@@ -145,6 +145,29 @@ describe('Library', () => {
     expect(screen.queryByRole('button', { name: l.loadMore })).not.toBeInTheDocument();
   });
 
+  it("doesn't let a pending search undo a sort chosen meanwhile", async () => {
+    const requests = backend(() => ({ items: [item(1)], total: 1 }));
+    renderAt('/library');
+    await screen.findByText(l.count(1));
+
+    await userEvent.type(screen.getByRole('searchbox', { name: l.search }), 'map');
+    await userEvent.selectOptions(screen.getByRole('combobox', { name: l.sort }), 'updated');
+
+    await waitFor(() => expect(requests.at(-1)?.searchParams.get('q')).toBe('map'));
+    expect(requests.at(-1)?.searchParams.get('sort')).toBe('updated');
+  });
+
+  it('empties the search box when the URL loses its search', async () => {
+    backend(() => ({ items: [item(1)], total: 1 }));
+    renderAt('/library?q=hash');
+    const box = await screen.findByRole('searchbox', { name: l.search });
+    expect(box).toHaveValue('hash');
+
+    await userEvent.click(screen.getByRole('link', { name: messages.tabs.library }));
+
+    await waitFor(() => expect(box).toHaveValue(''));
+  });
+
   it('says when nothing matches', async () => {
     backend(() => ({ items: [], total: 0 }));
     renderAt('/library?q=zzz');

@@ -28,10 +28,10 @@ export type LibrarySort = 'created' | 'updated' | 'difficulty';
 
 /** The Library filters; absent values mean "any". Kept in the URL so links can open a filtered view. */
 export interface LibraryFilters {
-  q?: string;
-  topicId?: string;
-  type?: QuestionType;
-  difficulty?: number;
+  q?: string | undefined;
+  topicId?: string | undefined;
+  type?: QuestionType | undefined;
+  difficulty?: number | undefined;
   status: LibraryStatus;
   sort: LibrarySort;
 }

@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.TypeMismatchException;
 import org.springframework.core.annotation.AnnotatedElementUtils;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -56,6 +57,17 @@ class ProblemDetailsHandler extends ResponseEntityExceptionHandler {
                         String.valueOf(error.getDefaultMessage())))
             .toList();
     problem.setProperty("errors", errors);
+    return handleExceptionInternal(ex, problem, headers, status, request);
+  }
+
+  // Spring's own detail echoes the rejected value ("Failed to convert 'type' with value 'x'"):
+  // name the parameter, never repeat what the client sent.
+  @Override
+  protected ResponseEntity<Object> handleTypeMismatch(
+      TypeMismatchException ex, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
+    String name = ex.getPropertyName() == null ? "a parameter" : "'" + ex.getPropertyName() + "'";
+    ProblemDetail problem =
+        ProblemDetail.forStatusAndDetail(status, "The value of " + name + " isn't valid.");
     return handleExceptionInternal(ex, problem, headers, status, request);
   }
 

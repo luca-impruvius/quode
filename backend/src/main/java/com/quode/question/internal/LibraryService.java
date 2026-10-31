@@ -98,10 +98,10 @@ class LibraryService {
 
     Map<UUID, TopicRef> refs =
         topics.findOwned(ownerId, rows.stream().map(Row::primaryTopicId).distinct().toList());
-    List<LibraryPage.Item> items = new ArrayList<>(rows.size());
+    List<LibraryItem> items = new ArrayList<>(rows.size());
     for (Row r : rows) {
       items.add(
-          new LibraryPage.Item(
+          new LibraryItem(
               r.id(),
               r.type(),
               r.promptMd(),
@@ -113,7 +113,7 @@ class LibraryService {
               r.updatedAt()));
     }
     long totalElements = total == null ? 0 : total;
-    boolean hasNext = (long) (query.page() + 1) * query.size() < totalElements;
+    boolean hasNext = (query.page() + 1L) * query.size() < totalElements;
     return new LibraryPage(items, query.page(), query.size(), totalElements, hasNext);
   }
 

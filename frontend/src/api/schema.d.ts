@@ -207,25 +207,25 @@ export interface components {
             object?: boolean;
             float?: boolean;
             number?: boolean;
-            bigInteger?: boolean;
-            floatingPointNumber?: boolean;
-            bigDecimal?: boolean;
-            missingNode?: boolean;
-            valueNode?: boolean;
-            container?: boolean;
-            /** @enum {string} */
-            nodeType?: "ARRAY" | "BINARY" | "BOOLEAN" | "MISSING" | "NULL" | "NUMBER" | "OBJECT" | "POJO" | "STRING";
-            integralNumber?: boolean;
-            boolean?: boolean;
-            int?: boolean;
-            binary?: boolean;
+            long?: boolean;
             short?: boolean;
+            int?: boolean;
+            double?: boolean;
+            pojo?: boolean;
             /** @deprecated */
             textual?: boolean;
-            double?: boolean;
-            long?: boolean;
+            boolean?: boolean;
+            binary?: boolean;
             string?: boolean;
-            pojo?: boolean;
+            floatingPointNumber?: boolean;
+            bigDecimal?: boolean;
+            /** @enum {string} */
+            nodeType?: "ARRAY" | "BINARY" | "BOOLEAN" | "MISSING" | "NULL" | "NUMBER" | "OBJECT" | "POJO" | "STRING";
+            bigInteger?: boolean;
+            container?: boolean;
+            missingNode?: boolean;
+            integralNumber?: boolean;
+            valueNode?: boolean;
             embeddedValue?: boolean;
         };
         TopicView: {
@@ -309,7 +309,7 @@ export interface components {
             /** Format: int64 */
             version?: number;
         };
-        Item: {
+        LibraryItem: {
             /** Format: uuid */
             id?: string;
             /** @enum {string} */
@@ -326,7 +326,7 @@ export interface components {
             updatedAt?: string;
         };
         LibraryPage: {
-            items?: components["schemas"]["Item"][];
+            items?: components["schemas"]["LibraryItem"][];
             /** Format: int32 */
             page?: number;
             /** Format: int32 */

@@ -5,6 +5,7 @@ import com.quode.taxonomy.TopicRef;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -37,15 +38,7 @@ class TopicLookupService implements TopicLookup {
   @Override
   @Transactional(readOnly = true)
   public Optional<Set<UUID>> subtreeIds(UUID ownerId, UUID topicId) {
-    if (topics.findByIdAndOwnerId(topicId, ownerId).isEmpty()) {
-      return Optional.empty();
-    }
-    Set<UUID> ids = new HashSet<>();
-    for (TopicRepository.SubtreeRow row : topics.findSubtrees(ownerId)) {
-      if (row.getTopicId().equals(topicId)) {
-        ids.add(row.getMemberId());
-      }
-    }
-    return Optional.of(ids);
+    List<UUID> ids = topics.findSubtreeIds(ownerId, topicId);
+    return ids.isEmpty() ? Optional.empty() : Optional.of(new HashSet<>(ids));
   }
 }
