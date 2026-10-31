@@ -21,12 +21,12 @@ const rightTabs: Tab[] = [
 export function AppShell() {
   return (
     <div className="mx-auto flex min-h-dvh max-w-md flex-col">
-      <div className="flex-1 px-space-4 pt-space-5 pb-28">
+      <main className="flex-1 px-space-4 pt-space-5 pb-[calc(7rem+env(safe-area-inset-bottom))]">
         <Outlet />
-      </div>
+      </main>
       <nav
         aria-label={messages.tabs.label}
-        className="fixed inset-x-0 bottom-0 mx-auto flex h-[72px] max-w-md items-start justify-around border-t border-hair border-line bg-surface pt-2.5 pb-[env(safe-area-inset-bottom)]"
+        className="fixed inset-x-0 bottom-0 mx-auto flex h-[calc(72px+env(safe-area-inset-bottom))] max-w-md items-start justify-around border-t border-hair border-line bg-surface pt-2.5 pb-[env(safe-area-inset-bottom)]"
       >
         {leftTabs.map((tab) => (
           <TabLink key={tab.to} {...tab} />

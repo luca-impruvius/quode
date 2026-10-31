@@ -7,10 +7,19 @@ import { messages } from '../messages';
 import { createQueryClient } from './queryClient';
 import { routes } from './routes';
 
+// The app's defaults, minus the one-second wait before a retry.
+function testQueryClient() {
+  const client = createQueryClient();
+  client.setDefaultOptions({
+    queries: { ...client.getDefaultOptions().queries, retryDelay: 0 },
+  });
+  return client;
+}
+
 function renderAt(path: string) {
   const router = createMemoryRouter(routes, { initialEntries: [path] });
   render(
-    <QueryClientProvider client={createQueryClient()}>
+    <QueryClientProvider client={testQueryClient()}>
       <RouterProvider router={router} />
     </QueryClientProvider>,
   );
@@ -46,7 +55,7 @@ const signedOut = () =>
 
 describe('Login', () => {
   it('sends signed-out users to the login screen', async () => {
-    signedOut();
+    const fetchMock = signedOut();
 
     const router = renderAt('/');
 
@@ -54,6 +63,8 @@ describe('Login', () => {
       await screen.findByRole('link', { name: messages.login.continueWithGoogle }),
     ).toHaveAttribute('href', '/api/oauth2/authorization/google');
     expect(router.state.location.pathname).toBe('/login');
+    // A 401 means signed out: never retried.
+    expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(screen.getByRole('img', { name: messages.login.duckAlt })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: messages.app.name })).toBeInTheDocument();
   });
@@ -72,6 +83,17 @@ describe('Login', () => {
     renderAt('/login?error=failed');
 
     expect(await screen.findByRole('alert')).toHaveTextContent(messages.login.failed);
+  });
+
+  it('sends a signed-in user who opens Login to Today', async () => {
+    signedIn();
+
+    const router = renderAt('/login');
+
+    expect(
+      await screen.findByRole('heading', { name: messages.today.greeting('Luca') }),
+    ).toBeInTheDocument();
+    expect(router.state.location.pathname).toBe('/');
   });
 });
 
@@ -101,7 +123,9 @@ describe('App shell', () => {
     expect(await screen.findByText(messages.comingSoon)).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole('link', { name: messages.tabs.today }));
-    expect(await screen.findByRole('heading', { name: messages.today.greeting('Luca') }));
+    expect(
+      await screen.findByRole('heading', { name: messages.today.greeting('Luca') }),
+    ).toBeInTheDocument();
     expect(nav).toBeInTheDocument();
   });
 
@@ -116,9 +140,9 @@ describe('App shell', () => {
     );
   });
 
-  // A 500 is retried once (about a second) before the error shows.
+  // A 500 is retried once before the error shows.
   it('shows the reference ID when the server fails', async () => {
-    meAnswers(
+    const fetchMock = meAnswers(
       Response.json(
         {
           status: 500,
@@ -131,9 +155,8 @@ describe('App shell', () => {
 
     renderAt('/');
 
-    expect(await screen.findByRole('alert', {}, { timeout: 3000 })).toHaveTextContent(
-      messages.errors.reference('7f3a2c'),
-    );
+    expect(await screen.findByRole('alert')).toHaveTextContent(messages.errors.reference('7f3a2c'));
+    expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
   it('shows a not-found page for unknown paths', async () => {

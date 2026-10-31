@@ -1,5 +1,6 @@
-import { useSearchParams } from 'react-router';
+import { Navigate, useSearchParams } from 'react-router';
 import duckUrl from '../../../design-system/logos/Duck.svg';
+import { useMe } from '../app/useMe';
 import { messages } from '../messages';
 
 // The backend sends a failed Google sign-in back here with ?error=no-access or ?error=failed.
@@ -11,6 +12,12 @@ const errorText: Record<string, string> = {
 export function LoginPage() {
   const [params] = useSearchParams();
   const error = errorText[params.get('error') ?? ''];
+  const me = useMe();
+
+  // Already signed in (for example back from Google, or the back button): go to Today.
+  if (me.isSuccess) {
+    return <Navigate to="/" replace />;
+  }
 
   return (
     <main className="mx-auto flex min-h-dvh max-w-md flex-col px-space-4 pt-space-6 pb-space-6">

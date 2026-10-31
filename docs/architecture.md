@@ -13,7 +13,7 @@ Living document. Constraint: total running cost ≤ €6/month; free plans every
 | Database | PostgreSQL 18 (official `postgres:18` image, the same locally, in tests and in production) in Docker on the VPS; Flyway migrations | 0019, 0037 |
 | Auth | Google sign-in (Spring Security OAuth2), email allowlist; sessions in Postgres (Spring Session JDBC) | 0015, 0017 |
 | API | REST under `/api/v1`, OpenAPI via springdoc, Problem Details (RFC 9457), page-based pagination, Java records as DTOs | 0030, 0033 |
-| Frontend | React + TypeScript (strict) + Vite, TanStack Query, React Router, Tailwind CSS v4 (theme generated from `design-system/tokens.json`), React Hook Form + Zod, self-hosted fonts (Fontsource), API types generated from the backend's OpenAPI spec (springdoc, off in production), vite-plugin-pwa, react-markdown; English UI, translation-ready | 0031, 0032 |
+| Frontend | React + TypeScript (strict) + Vite, TanStack Query, React Router, Tailwind CSS v4 (theme generated from `design-system/tokens.json`), React Hook Form + Zod, self-hosted fonts (Fontsource), Lucide icons (lucide-react), API types generated from the backend's OpenAPI spec (springdoc, off in production), vite-plugin-pwa, react-markdown; English UI, translation-ready | 0031, 0032 |
 | Hosting | One OVHcloud VPS-1 (2 vCores, 4 GB RAM) running Docker Compose | 0019 |
 | Reverse proxy | Caddy (automatic HTTPS), single origin | 0020 |
 | Domain & DNS | Cloudflare Registrar and DNS | 0020 |

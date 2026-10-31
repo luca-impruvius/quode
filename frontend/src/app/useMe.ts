@@ -10,6 +10,8 @@ export function useMe() {
     queryKey: ['me'],
     queryFn: () => apiGet<Me>('/me'),
     retry: (failures, error) => !isSignedOut(error) && failures < 1,
+    // Login reads the same query after the guard sent it there: reuse the 401, don't ask again.
+    retryOnMount: false,
   });
 }
 
