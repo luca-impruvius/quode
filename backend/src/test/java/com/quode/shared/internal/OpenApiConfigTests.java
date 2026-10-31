@@ -51,8 +51,7 @@ class OpenApiConfigTests {
                     .addApiResponse("200", new ApiResponse().content(json(responseSchema))));
     return new OpenAPI()
         .paths(new Paths().addPathItem("/things", new PathItem().post(post)))
-        .components(
-            new Components().addSchemas("Input", object()).addSchemas("View", object()));
+        .components(new Components().addSchemas("Input", object()).addSchemas("View", object()));
   }
 
   private static Content json(String schema) {
@@ -63,6 +62,8 @@ class OpenApiConfigTests {
   }
 
   private static Schema<?> object() {
-    return new ObjectSchema().addProperty("b", new StringSchema()).addProperty("a", new StringSchema());
+    return new ObjectSchema()
+        .addProperty("b", new StringSchema())
+        .addProperty("a", new StringSchema());
   }
 }

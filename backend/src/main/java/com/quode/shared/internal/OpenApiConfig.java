@@ -18,8 +18,8 @@ import org.springframework.context.annotation.Configuration;
  * Makes the OpenAPI spec exact enough to generate the frontend's types from it (M1-08): every
  * property of a success-response schema is required, because our response records always serialize
  * every field (nulls included). Fields that can be null say so on the record component with
- * {@code @Schema(types = {"string", "null"})}. Request schemas keep their real optional fields, so a
- * schema used both as a request body and in a success response fails the spec instead.
+ * {@code @Schema(types = {"string", "null"})}. Request schemas keep their real optional fields, so
+ * a schema used both as a request body and in a success response fails the spec instead.
  */
 @Configuration(proxyBeanMethods = false)
 class OpenApiConfig {
