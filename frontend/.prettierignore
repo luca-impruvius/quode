@@ -3,3 +3,4 @@ node_modules
 package-lock.json
 src/api/schema.d.ts
 src/styles/theme.generated.css
+src/api/openapi.json

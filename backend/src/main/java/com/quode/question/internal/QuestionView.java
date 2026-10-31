@@ -1,5 +1,6 @@
 package com.quode.question.internal;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
@@ -9,16 +10,16 @@ record QuestionView(
     UUID id,
     QuestionType type,
     String promptMd,
-    String answerMd,
-    String explanationMd,
+    @Schema(types = {"string", "null"}) String answerMd,
+    @Schema(types = {"string", "null"}) String explanationMd,
     int difficulty,
     QuestionStatus status,
-    String sourceUrl,
+    @Schema(types = {"string", "null"}) String sourceUrl,
     List<TopicItem> topics,
     List<OptionItem> options,
-    Instant flaggedAt,
-    String flagNote,
-    Instant archivedAt,
+    @Schema(types = {"string", "null"}) Instant flaggedAt,
+    @Schema(types = {"string", "null"}) String flagNote,
+    @Schema(types = {"string", "null"}) Instant archivedAt,
     long version,
     Instant createdAt,
     Instant updatedAt) {

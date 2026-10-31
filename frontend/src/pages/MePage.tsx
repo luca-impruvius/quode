@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { ChevronRight } from 'lucide-react';
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router';
-import { apiSend } from '../api/client';
+import { signOut as postSignOut } from '../api/client';
 import { useMe } from '../app/useMe';
 import { applyTheme, readTheme, saveTheme, type Theme } from '../app/theme';
 import { ErrorNotice } from '../components/ErrorNotice';
@@ -23,7 +23,7 @@ export function MePage() {
   const [theme, setTheme] = useState<Theme>(readTheme);
 
   const signOut = useMutation({
-    mutationFn: () => apiSend('POST', '/logout'),
+    mutationFn: postSignOut,
     onSuccess: () => {
       // Forget everything cached for this user before showing Login.
       queryClient.clear();

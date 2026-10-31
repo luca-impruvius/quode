@@ -56,3 +56,15 @@ gitProperties { dotGitDirectory = layout.projectDirectory.dir("../.git") }
 spotless { java { googleJavaFormat(libs.versions.google.java.format.get()) } }
 
 tasks.withType<Test> { useJUnitPlatform() }
+
+// Rewrites frontend/src/api/openapi.json from the running app's spec (OpenApiContractTests), for
+// when the API changes. Then run `npm run generate:api` in frontend/ and commit both files.
+tasks.register<Test>("updateOpenApi") {
+  description = "Writes the served OpenAPI spec to frontend/src/api/openapi.json."
+  group = "documentation"
+  testClassesDirs = sourceSets.test.get().output.classesDirs
+  classpath = sourceSets.test.get().runtimeClasspath
+  filter { includeTestsMatching("com.quode.OpenApiContractTests.theCommittedSpecMatchesTheServedOne") }
+  systemProperty("openapi.update", "true")
+  outputs.upToDateWhen { false }
+}

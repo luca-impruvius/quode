@@ -1,5 +1,6 @@
 package com.quode.question.internal;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.List;
 import java.util.UUID;
 
@@ -10,10 +11,10 @@ import java.util.UUID;
 record QuestionInput(
     QuestionType type,
     String promptMd,
-    String answerMd,
-    String explanationMd,
+    @Schema(types = {"string", "null"}) String answerMd,
+    @Schema(types = {"string", "null"}) String explanationMd,
     Integer difficulty,
-    String sourceUrl,
+    @Schema(types = {"string", "null"}) String sourceUrl,
     List<UUID> topicIds,
     UUID primaryTopicId,
     List<OptionInput> options,
