@@ -85,9 +85,7 @@ describe('App shell', () => {
       expect(screen.getByText(messages.comingSoon)).toBeInTheDocument();
     }
 
-    await userEvent.click(screen.getByRole('link', { name: messages.tabs.add }));
-    expect(await screen.findByText(messages.comingSoon)).toBeInTheDocument();
-
+    // The add button opens the editor (EditorPage.test.tsx).
     await userEvent.click(screen.getByRole('link', { name: messages.tabs.today }));
     expect(
       await screen.findByRole('heading', { name: messages.today.greeting('Luca') }),
