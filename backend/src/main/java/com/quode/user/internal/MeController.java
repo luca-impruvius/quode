@@ -18,7 +18,8 @@ class MeController {
     this.users = users;
   }
 
-  // Read from the database, not the session, so the values are always current.
+  // Read from the database, not the session, so the values are always current. (Other modules use
+  // the CurrentUser API instead; this controller lives next to the repository.)
   @GetMapping("/me")
   MeResponse me(@AuthenticationPrincipal OidcUser principal) {
     AppUser user =
