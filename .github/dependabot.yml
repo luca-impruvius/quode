@@ -17,6 +17,11 @@ updates:
     directory: /frontend
     schedule:
       interval: weekly
+    ignore:
+      # typescript-eslint and openapi-typescript support TypeScript below 6.1 only (frontend
+      # package.json pins ~5.9). Remove once both support the newer major.
+      - dependency-name: typescript
+        update-types: [version-update:semver-major]
     commit-message:
       prefix: chore
       include: scope
