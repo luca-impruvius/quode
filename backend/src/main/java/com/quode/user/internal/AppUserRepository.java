@@ -17,4 +17,7 @@ public interface AppUserRepository extends JpaRepository<AppUser, UUID> {
   // findByEmailIgnoreCase would compare upper() values and skip the index.
   @Query("select u from AppUser u where lower(u.email) = lower(:email)")
   Optional<AppUser> findByLowerEmail(String email);
+
+  // Google's stable account ID; how sign-in finds the user (google_sub is unique).
+  Optional<AppUser> findByGoogleSub(String googleSub);
 }

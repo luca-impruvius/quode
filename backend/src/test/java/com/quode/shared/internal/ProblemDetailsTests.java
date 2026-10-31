@@ -39,6 +39,7 @@ import org.springframework.web.bind.annotation.RestController;
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 @Import({
   TestcontainersConfiguration.class,
+  OpenTestEndpoints.class,
   ProblemDetailsTests.FailingController.class,
   ProblemDetailsTests.FailingFilter.class
 })

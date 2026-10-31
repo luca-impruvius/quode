@@ -148,6 +148,6 @@ See [runbooks/production-debugging.md](runbooks/production-debugging.md).
 - **Migrations:** Flyway, plain SQL in `backend/src/main/resources/db/migration`, named `V<n>__<snake_case_description>.sql` (`V1__create_app_user.sql`). Never edit a merged migration (ADR-0037).
 - **Primary keys:** UUIDv7 (time-ordered). Entities use Hibernate `@UuidGenerator(style = VERSION_7)`; the column also has `DEFAULT uuidv7()` (PostgreSQL 18) for plain SQL inserts.
 - **Emails:** stored trimmed and lowercased (`Locale.ROOT`), and lookups normalize the argument the same way; uniqueness ignores case through a unique index on `lower(email)`; lookups use `lower(email) = lower(:email)` so they hit that index (never a derived `...IgnoreCase` query, which uses `upper()`).
-- **Schema checks:** Hibernate runs with `ddl-auto=validate` and `open-in-view=false`; Flyway owns the schema.
+- **Schema checks:** Hibernate runs with `ddl-auto=validate` and `open-in-view=false`; Flyway owns the schema, including Spring Session's `spring_session` tables (`initialize-schema: never`).
 - **Timestamps:** `created_at` and `updated_at` come from the database clock (`now()`, Hibernate `@CurrentTimestamp(source = DB)`), for entity and plain SQL writes alike.
 - **Tests:** every `@SpringBootTest` imports the shared `TestcontainersConfiguration` (`postgres:18`, `@ServiceConnection`).

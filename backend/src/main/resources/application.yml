@@ -16,11 +16,37 @@ spring:
       ddl-auto: validate
     # No lazy loading during view rendering: transactions end in the service layer.
     open-in-view: false
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            # The "Quode local" or "Quode production" OAuth client (docs/architecture.md §4).
+            client-id: ${GOOGLE_CLIENT_ID}
+            client-secret: ${GOOGLE_CLIENT_SECRET}
+            scope: openid, email, profile
+  session:
+    # Sessions live in Postgres (ADR-0017) and end after 30 days without a request.
+    timeout: 30d
+    jdbc:
+      # Flyway owns the tables (V2__create_spring_session.sql).
+      initialize-schema: never
+
+quode:
+  security:
+    # Google accounts allowed to sign in (comma-separated, any case). Empty means nobody.
+    allowed-emails: ${QUODE_ALLOWED_EMAILS:}
 
 server:
   servlet:
     # Caddy forwards /api/* unchanged, so every backend URL starts with /api.
     context-path: /api
+    session:
+      cookie:
+        http-only: true
+        # Browsers accept Secure cookies on http://localhost too.
+        secure: true
+        same-site: lax
 
 management:
   server:
@@ -46,3 +72,11 @@ management:
           show-components: never
           # Also serve this group on the main server (under the context path): /api/health.
           additional-path: server:/health
+---
+# Local secrets from the git-ignored .env (see .env.example), whether started from backend/ or the
+# repository root. Never in prod: there, real environment variables only.
+spring:
+  config:
+    activate:
+      on-profile: "!prod"
+    import: optional:file:../.env[.properties],optional:file:.env[.properties]

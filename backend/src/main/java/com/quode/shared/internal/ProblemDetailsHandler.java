@@ -80,7 +80,7 @@ class ProblemDetailsHandler extends ResponseEntityExceptionHandler {
   ResponseEntity<Object> handleUnexpected(Exception ex, WebRequest request) throws Exception {
     // Exceptions that declare their own status keep it: Spring's ResponseStatusExceptionResolver
     // answers them, and the error controller renders the Problem Details. Spring Security's
-    // exceptions (M0-04) are answered by its own filters before they reach MVC.
+    // exceptions are answered by its filters (SecurityConfig) before they reach MVC.
     if (AnnotatedElementUtils.hasAnnotation(ex.getClass(), ResponseStatus.class)) {
       throw ex;
     }

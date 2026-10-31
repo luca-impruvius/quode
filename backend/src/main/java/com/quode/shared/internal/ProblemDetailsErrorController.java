@@ -1,7 +1,10 @@
 package com.quode.shared.internal;
 
+import com.quode.shared.ErrorDetails;
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.http.HttpServletRequest;
+import java.net.URI;
+import java.net.URISyntaxException;
 import org.springframework.boot.webmvc.error.ErrorController;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
@@ -11,7 +14,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 /**
  * Replaces Boot's default error page for errors raised outside Spring MVC (filters, sendError), so
- * those responses are Problem Details with the trace ID too. Never shows the exception or message.
+ * those responses are Problem Details with the trace ID too. Never shows the exception or message;
+ * the only detail is one our code set through {@link ErrorDetails}.
  */
 @RestController
 class ProblemDetailsErrorController implements ErrorController {
@@ -28,6 +32,18 @@ class ProblemDetailsErrorController implements ErrorController {
     }
 
     ProblemDetail problem = ProblemDetail.forStatus(status);
+    // The path the client asked for, not /api/error.
+    if (request.getAttribute(RequestDispatcher.ERROR_REQUEST_URI) instanceof String uri) {
+      try {
+        problem.setInstance(new URI(uri));
+      } catch (URISyntaxException e) {
+        // Leave it out rather than fail inside the error page.
+      }
+    }
+    // A fixed message chosen by our own code (security handlers), never an exception message.
+    if (request.getAttribute(ErrorDetails.ATTRIBUTE) instanceof String detail) {
+      problem.setDetail(detail);
+    }
     ResponseEntity.BodyBuilder response = ResponseEntity.status(status);
     if (request.getAttribute(TraceIdFilter.ATTRIBUTE) instanceof String traceId) {
       problem.setProperty("traceId", traceId);
