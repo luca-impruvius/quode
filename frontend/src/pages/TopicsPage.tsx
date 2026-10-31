@@ -1,9 +1,9 @@
 import { ChevronDown, ChevronLeft, ChevronRight, Ellipsis, Plus } from 'lucide-react';
-import { useId, useMemo, useState, type FormEvent } from 'react';
+import { useId, useMemo, useRef, useState, type FormEvent } from 'react';
 import { Link } from 'react-router';
-import { ApiError } from '../api/client';
 import { topicApi, useTopicMutation, useTopics, type Topic } from '../api/topics';
 import { ErrorNotice } from '../components/ErrorNotice';
+import { errorMessage } from '../lib/errorMessage';
 import { Sheet } from '../components/Sheet';
 import { messages } from '../messages';
 
@@ -43,6 +43,10 @@ function toRows(topics: Topic[]): Row[] {
   return rows;
 }
 
+// Indent per level (wireframe: one step per level), from Tailwind's layout spacing; deeper levels
+// stay at the last step.
+const indent = ['pl-0', 'pl-6', 'pl-12', 'pl-18', 'pl-24', 'pl-30'];
+
 // A topic and everything under it: never a valid new parent for that topic.
 function subtreeIds(rows: Row[], rootId: string): Set<string> {
   const ids = new Set([rootId]);
@@ -61,15 +65,31 @@ export function TopicsPage() {
   const [open, setOpen] = useState<Open | null>(null);
   const addStarter = useTopicMutation(topicApi.addStarter);
 
-  const visible = rows.filter((row) => {
-    for (let id = row.parentId; id !== null;) {
-      if (!expanded.has(id)) {
-        return false;
+  const heading = useRef<HTMLHeadingElement>(null);
+
+  // One pass (parents come first): a row shows when it's a root, or its parent shows and is expanded.
+  const visible = useMemo(() => {
+    const shown = new Set<string>();
+    return rows.filter((row) => {
+      const show = row.parentId === null || (shown.has(row.parentId) && expanded.has(row.parentId));
+      if (show) {
+        shown.add(row.id);
       }
-      id = rows.find((r) => r.id === id)?.parentId ?? null;
-    }
-    return true;
-  });
+      return show;
+    });
+  }, [rows, expanded]);
+
+  // After a create or move, open the way to the topic so it's visible.
+  function expandTo(parentId: string | null) {
+    setExpanded((current) => {
+      const next = new Set(current);
+      for (let id = parentId; id !== null;) {
+        next.add(id);
+        id = rows.find((row) => row.id === id)?.parentId ?? null;
+      }
+      return next;
+    });
+  }
 
   function toggle(id: string) {
     setExpanded((current) => {
@@ -95,7 +115,9 @@ export function TopicsPage() {
           <ChevronLeft aria-hidden="true" size={20} strokeWidth={2} />
           {t.backToLibrary}
         </Link>
-        <h1 className="type-heading">{t.title}</h1>
+        <h1 ref={heading} tabIndex={-1} className="type-heading">
+          {t.title}
+        </h1>
         <button
           type="button"
           onClick={() => setOpen({ kind: 'new' })}
@@ -149,7 +171,8 @@ export function TopicsPage() {
           initialName=""
           parents={rows}
           onClose={close}
-          send={(name, parentId) => topicApi.create({ name, parentId: parentId ?? null })}
+          onSaved={expandTo}
+          send={(name, parentId) => topicApi.create({ name, parentId })}
         />
       )}
       {open?.kind === 'rename' && (
@@ -157,6 +180,7 @@ export function TopicsPage() {
           title={t.renameTitle}
           initialName={open.topic.name}
           onClose={close}
+          onSaved={() => {}}
           send={(name) => topicApi.rename({ id: open.topic.id, name })}
         />
       )}
@@ -178,8 +202,12 @@ export function TopicsPage() {
           </div>
         </Sheet>
       )}
-      {open?.kind === 'move' && <MoveSheet topic={open.topic} rows={rows} onClose={close} />}
-      {open?.kind === 'delete' && <DeleteSheet topic={open.topic} onClose={close} />}
+      {open?.kind === 'move' && (
+        <MoveSheet topic={open.topic} rows={rows} onClose={close} onSaved={expandTo} />
+      )}
+      {open?.kind === 'delete' && (
+        <DeleteSheet topic={open.topic} onClose={close} returnFocus={() => heading.current} />
+      )}
     </div>
   );
 }
@@ -199,9 +227,7 @@ function TopicRow({
   return (
     <li
       aria-labelledby={nameId}
-      // One indent step per level, as in the wireframe.
-      style={{ paddingLeft: row.depth * 24 }}
-      className="flex min-h-12 items-center gap-space-2 border-b border-line"
+      className={`flex min-h-12 items-center gap-space-2 border-b border-line ${indent[Math.min(row.depth, indent.length - 1)]}`}
     >
       {row.hasChildren ? (
         <button
@@ -223,8 +249,9 @@ function TopicRow({
       <span id={nameId} className={`flex-1 ${row.depth === 0 ? 'font-bold' : ''}`}>
         {row.name}
       </span>
-      <span className="type-body-sm text-ink-muted" title={t.questions(row.questionCount)}>
-        {row.questionCount}
+      <span className="type-body-sm text-ink-muted">
+        <span aria-hidden="true">{row.questionCount}</span>
+        <span className="sr-only">{t.questions(row.questionCount)}</span>
       </span>
       <button
         type="button"
@@ -291,8 +318,13 @@ function SheetActions({
 
 const field = 'h-12 w-full rounded-md border-2 border-outline bg-surface px-space-3';
 
-function errorText(error: unknown): string | undefined {
-  return error instanceof ApiError ? error.message : undefined;
+// A rule error from the server, shown under its field (aria-invalid + aria-describedby).
+function FieldError({ id, error }: { id: string; error: unknown }) {
+  return (
+    <span id={id} className="type-body-sm text-missed">
+      {errorMessage(error)}
+    </span>
+  );
 }
 
 function NameSheet({
@@ -300,6 +332,7 @@ function NameSheet({
   initialName,
   parents,
   onClose,
+  onSaved,
   send,
 }: {
   title: string;
@@ -307,17 +340,24 @@ function NameSheet({
   /** Present for a new topic: the "Inside" picker. */
   parents?: Row[];
   onClose: () => void;
-  send: (name: string, parentId: string | undefined) => Promise<unknown>;
+  /** Called with the parent of the saved topic. */
+  onSaved: (parentId: string | null) => void;
+  send: (name: string, parentId: string | null) => Promise<unknown>;
 }) {
   const [name, setName] = useState(initialName);
   const [parentId, setParentId] = useState('');
-  const save = useTopicMutation(() => send(name, parentId === '' ? undefined : parentId));
+  const parent = parentId === '' ? null : parentId;
+  const save = useTopicMutation(() => send(name, parent));
   const errorId = useId();
-  const error = save.isError ? (errorText(save.error) ?? messages.errors.generic) : undefined;
 
   function submit(event: FormEvent) {
     event.preventDefault();
-    save.mutate(undefined, { onSuccess: onClose });
+    save.mutate(undefined, {
+      onSuccess: () => {
+        onSaved(parent);
+        onClose();
+      },
+    });
   }
 
   return (
@@ -329,15 +369,11 @@ function NameSheet({
             value={name}
             maxLength={60}
             onChange={(event) => setName(event.target.value)}
-            aria-invalid={error !== undefined}
-            aria-describedby={error === undefined ? undefined : errorId}
+            aria-invalid={save.isError}
+            aria-describedby={save.isError ? errorId : undefined}
             className={field}
           />
-          {error !== undefined && (
-            <span id={errorId} className="type-body-sm text-missed">
-              {error}
-            </span>
-          )}
+          {save.isError && <FieldError id={errorId} error={save.error} />}
         </label>
         {parents && (
           <label className="flex flex-col gap-space-1">
@@ -362,16 +398,31 @@ function NameSheet({
   );
 }
 
-function MoveSheet({ topic, rows, onClose }: { topic: Row; rows: Row[]; onClose: () => void }) {
+function MoveSheet({
+  topic,
+  rows,
+  onClose,
+  onSaved,
+}: {
+  topic: Row;
+  rows: Row[];
+  onClose: () => void;
+  onSaved: (parentId: string | null) => void;
+}) {
   const excluded = subtreeIds(rows, topic.id);
   const [parentId, setParentId] = useState(topic.parentId ?? '');
-  const save = useTopicMutation(() =>
-    topicApi.move({ id: topic.id, parentId: parentId === '' ? null : parentId }),
-  );
+  const parent = parentId === '' ? null : parentId;
+  const save = useTopicMutation(() => topicApi.move({ id: topic.id, parentId: parent }));
+  const errorId = useId();
 
   function submit(event: FormEvent) {
     event.preventDefault();
-    save.mutate(undefined, { onSuccess: onClose });
+    save.mutate(undefined, {
+      onSuccess: () => {
+        onSaved(parent);
+        onClose();
+      },
+    });
   }
 
   return (
@@ -382,6 +433,8 @@ function MoveSheet({ topic, rows, onClose }: { topic: Row; rows: Row[]; onClose:
           <select
             value={parentId}
             onChange={(event) => setParentId(event.target.value)}
+            aria-invalid={save.isError}
+            aria-describedby={save.isError ? errorId : undefined}
             className={field}
           >
             <option value="">{t.topLevel}</option>
@@ -393,15 +446,24 @@ function MoveSheet({ topic, rows, onClose }: { topic: Row; rows: Row[]; onClose:
                 </option>
               ))}
           </select>
+          {save.isError && <FieldError id={errorId} error={save.error} />}
         </label>
-        {save.isError && <ErrorNotice error={save.error} />}
         <SheetActions busy={save.isPending} label={t.save} onCancel={onClose} />
       </form>
     </Sheet>
   );
 }
 
-function DeleteSheet({ topic, onClose }: { topic: Row; onClose: () => void }) {
+function DeleteSheet({
+  topic,
+  onClose,
+  returnFocus,
+}: {
+  topic: Row;
+  onClose: () => void;
+  /** Where focus goes after a delete: the row's actions button is gone then. */
+  returnFocus: () => HTMLElement | null;
+}) {
   const remove = useTopicMutation(() => topicApi.remove({ id: topic.id }));
 
   function submit(event: FormEvent) {
@@ -410,7 +472,7 @@ function DeleteSheet({ topic, onClose }: { topic: Row; onClose: () => void }) {
   }
 
   return (
-    <Sheet title={t.deleteTitle(topic.name)} onClose={onClose}>
+    <Sheet title={t.deleteTitle(topic.name)} onClose={onClose} returnFocus={returnFocus}>
       <form onSubmit={submit} className="flex flex-col gap-space-4">
         <p className="text-ink-muted">{t.deleteHint}</p>
         {remove.isError && <ErrorNotice error={remove.error} />}

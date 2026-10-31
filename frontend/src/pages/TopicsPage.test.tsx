@@ -1,4 +1,4 @@
-import { screen, within } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { messages } from '../messages';
@@ -101,8 +101,9 @@ describe('Topics', () => {
       parentId: 'lang',
     });
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: t.expand('Languages') }));
+    // The parent opens by itself, so the new topic is visible.
     expect(await screen.findByText('Kotlin')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: t.collapse('Languages') })).toBeInTheDocument();
   });
 
   it('shows a rule error next to the name and keeps the form open', async () => {
@@ -214,6 +215,100 @@ describe('Topics', () => {
     expect(await within(dialog).findByRole('alert')).toHaveTextContent(
       'Move or delete its sub-topics first.',
     );
+  });
+
+  it('shows a move rule error at the picker and keeps the sheet open', async () => {
+    backend(tree, {
+      'PUT /api/v1/topics/web/parent': () =>
+        problem(409, 'A topic with this name already exists here.'),
+    });
+    renderAt('/topics');
+
+    await userEvent.click(await screen.findByRole('button', { name: t.actionsFor('Web') }));
+    await userEvent.click(screen.getByRole('button', { name: t.move }));
+    const dialog = screen.getByRole('dialog', { name: t.moveTitle('Web') });
+    const select = within(dialog).getByLabelText(t.moveUnder);
+    await userEvent.selectOptions(select, 'Languages');
+    await userEvent.click(within(dialog).getByRole('button', { name: t.save }));
+
+    expect(
+      await within(dialog).findByText('A topic with this name already exists here.'),
+    ).toBeVisible();
+    expect(select).toHaveAttribute('aria-invalid', 'true');
+    expect(select).toHaveAccessibleDescription('A topic with this name already exists here.');
+  });
+
+  it('shows the reference, not a server sentence, when saving fails on the server', async () => {
+    backend(tree, {
+      'POST /api/v1/topics': () =>
+        Response.json(
+          { status: 500, detail: 'Something went wrong.', traceId: 'abcdef0123456789' },
+          { status: 500 },
+        ),
+    });
+    renderAt('/topics');
+
+    await userEvent.click(await screen.findByRole('button', { name: t.new }));
+    await userEvent.type(screen.getByLabelText(t.name), 'Kotlin');
+    await userEvent.click(screen.getByRole('button', { name: t.save }));
+
+    expect(await screen.findByText(messages.errors.reference('abcdef'))).toBeVisible();
+  });
+
+  it('announces counts as questions', async () => {
+    backend(tree);
+    renderAt('/topics');
+
+    expect(await screen.findByRole('listitem', { name: 'Languages' })).toHaveTextContent(
+      t.questions(3),
+    );
+  });
+
+  it('closes a sheet with Escape or a tap on the backdrop, and returns focus', async () => {
+    backend(tree);
+    renderAt('/topics');
+    const newButton = await screen.findByRole('button', { name: t.new });
+
+    await userEvent.click(newButton);
+    await userEvent.keyboard('{Escape}');
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(newButton).toHaveFocus();
+
+    await userEvent.click(newButton);
+    const backdrop = screen.getByRole('dialog').parentElement as HTMLElement;
+    await userEvent.click(backdrop);
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('keeps Tab inside the sheet', async () => {
+    backend(tree);
+    renderAt('/topics');
+    await userEvent.click(await screen.findByRole('button', { name: t.new }));
+    const dialog = screen.getByRole('dialog');
+
+    expect(within(dialog).getByLabelText(t.name)).toHaveFocus();
+    await userEvent.tab({ shift: true });
+    expect(within(dialog).getByRole('button', { name: t.save })).toHaveFocus();
+    await userEvent.tab();
+    expect(within(dialog).getByLabelText(t.name)).toHaveFocus();
+  });
+
+  it('puts focus on the heading after a delete', async () => {
+    const { state } = backend(tree, {
+      'DELETE /api/v1/topics/web': () => {
+        state.topics = tree.filter((topic) => topic.id !== 'web');
+        return new Response(null, { status: 204 });
+      },
+    });
+    renderAt('/topics');
+
+    await userEvent.click(await screen.findByRole('button', { name: t.actionsFor('Web') }));
+    await userEvent.click(screen.getByRole('button', { name: t.delete }));
+    await userEvent.click(
+      within(screen.getByRole('dialog')).getByRole('button', { name: t.delete }),
+    );
+
+    await waitFor(() => expect(screen.getByRole('heading', { name: t.title })).toHaveFocus());
   });
 
   it('closes a sheet with Cancel', async () => {
