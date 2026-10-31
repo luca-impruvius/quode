@@ -226,6 +226,6 @@ class TopicService {
   }
 
   private static TopicView view(Topic t, long count) {
-    return new TopicView(t.getId(), t.getParentId(), t.getName(), count, false);
+    return new TopicView(t.getId(), t.getParentId(), t.getName(), count);
   }
 }
