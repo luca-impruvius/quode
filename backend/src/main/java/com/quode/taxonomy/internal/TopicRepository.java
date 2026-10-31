@@ -31,6 +31,35 @@ interface TopicRepository extends JpaRepository<Topic, UUID> {
       """)
   boolean existsSibling(UUID ownerId, UUID parentId, String name, UUID excludeId);
 
+  /** A topic with its path from the top level ("Languages › Java"). */
+  interface PathRow {
+    UUID getId();
+
+    String getName();
+
+    String getPath();
+  }
+
+  /**
+   * The owner's topics among {@code ids}, with their paths; others' and unknown ids are skipped.
+   */
+  @Query(
+      nativeQuery = true,
+      value =
+          """
+          with recursive up (start_id, id, parent_id, path) as (
+            select id, id, parent_id, name::text from topic
+             where owner_id = :ownerId and id = any (:ids)
+            union all
+            select up.start_id, t.id, t.parent_id, t.name || ' › ' || up.path
+              from up join topic t on t.id = up.parent_id
+          ) cycle id set looped using visited
+          select s.id as id, s.name as name, up.path as path
+            from up join topic s on s.id = up.start_id
+           where up.parent_id is null
+          """)
+  List<PathRow> findPaths(UUID ownerId, UUID[] ids);
+
   /** One row per (topic, descendant-or-self) pair of this owner's tree. */
   interface SubtreeRow {
     UUID getTopicId();

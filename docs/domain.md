@@ -33,9 +33,9 @@ Rejected: strict hierarchy only (one-home paralysis), free tags only (duplicates
 |---|---|---|
 | `app_user` | Owner of everything; created on the first allowed Google login (no seed row) | id (UUIDv7), email (lowercased, unique ignoring case), display_name, google_sub, time_zone (default Europe/Bucharest), created_at, updated_at |
 | `topic` | Node in the topic tree | id, owner_id, parent_id, name (trimmed, 1–60 characters, unique among siblings ignoring case) |
-| `question` | A unit of knowledge | id, owner_id, type, prompt_md, answer_md, explanation_md, difficulty, status, source_url, flagged_at, learn_next, created_at, updated_at, archived_at |
+| `question` | A unit of knowledge | id, owner_id, type, prompt_md, answer_md, explanation_md, difficulty, status, source_url, primary_topic_id, flagged_at, flag_note, archived_at, version, created_at, updated_at; `learn_next` comes with the review milestone ([spec](specs/M1-questions.md)) |
 | `answer_option` | Choices for choice questions | id, question_id, text_md, is_correct, position |
-| `question_topic` | Many-to-many link | question_id, topic_id, is_primary |
+| `question_topic` | Many-to-many link | question_id, topic_id, owner_id (the primary topic is `question.primary_topic_id`, which must be one of these) |
 | `quiz` | Fixed list or saved filter | id, owner_id, name, description, kind (FIXED / DYNAMIC), filter_json, created_at |
 | `quiz_question` | Questions in a fixed quiz | quiz_id, question_id, position |
 | `study_session` | One run of a review or quiz | id, owner_id, kind (REVIEW / QUIZ / ADHOC), quiz_id, question_order, current_index, started_at, finished_at |
