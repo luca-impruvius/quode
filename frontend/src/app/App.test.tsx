@@ -1,30 +1,8 @@
-import { QueryClientProvider } from '@tanstack/react-query';
-import { render, screen } from '@testing-library/react';
+import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { createMemoryRouter, RouterProvider } from 'react-router';
 import { describe, expect, it, vi } from 'vitest';
 import { messages } from '../messages';
-import { createQueryClient } from './queryClient';
-import { routes } from './routes';
-
-// The app's defaults, minus the one-second wait before a retry.
-function testQueryClient() {
-  const client = createQueryClient();
-  client.setDefaultOptions({
-    queries: { ...client.getDefaultOptions().queries, retryDelay: 0 },
-  });
-  return client;
-}
-
-function renderAt(path: string) {
-  const router = createMemoryRouter(routes, { initialEntries: [path] });
-  render(
-    <QueryClientProvider client={testQueryClient()}>
-      <RouterProvider router={router} />
-    </QueryClientProvider>,
-  );
-  return router;
-}
+import { renderAt } from '../test/renderApp';
 
 // Answers GET /api/me; anything else fails the test loudly.
 function meAnswers(response: Response) {
@@ -112,8 +90,19 @@ describe('App shell', () => {
     signedIn();
     renderAt('/');
     const nav = await screen.findByRole('navigation', { name: messages.tabs.label });
+    expect(
+      within(nav)
+        .getAllByRole('link')
+        .map((link) => link.textContent || link.getAttribute('aria-label')),
+    ).toEqual([
+      messages.tabs.today,
+      messages.tabs.library,
+      messages.tabs.add,
+      messages.tabs.quizzes,
+      messages.tabs.me,
+    ]);
 
-    for (const tab of [messages.tabs.library, messages.tabs.stats, messages.tabs.settings]) {
+    for (const tab of [messages.tabs.library, messages.tabs.quizzes]) {
       await userEvent.click(screen.getByRole('link', { name: tab }));
       expect(await screen.findByRole('heading', { name: tab })).toBeInTheDocument();
       expect(screen.getByText(messages.comingSoon)).toBeInTheDocument();
