@@ -1,6 +1,10 @@
 spring:
   application:
     name: quode
+  config:
+    # Local secrets from the git-ignored .env (see .env.example), whether started from backend/ or
+    # the repository root. Production gets real environment variables instead.
+    import: optional:file:../.env[.properties],optional:file:.env[.properties]
   threads:
     virtual:
       # Tomcat handles each request on a virtual thread (ADR-0034).
@@ -16,11 +20,37 @@ spring:
       ddl-auto: validate
     # No lazy loading during view rendering: transactions end in the service layer.
     open-in-view: false
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            # The "Quode local" or "Quode production" OAuth client (docs/architecture.md §4).
+            client-id: ${GOOGLE_CLIENT_ID}
+            client-secret: ${GOOGLE_CLIENT_SECRET}
+            scope: openid, email, profile
+  session:
+    # Sessions live in Postgres (ADR-0017) and end after 30 days without a request.
+    timeout: 30d
+    jdbc:
+      # Flyway owns the tables (V2__create_spring_session.sql).
+      initialize-schema: never
+
+quode:
+  security:
+    # Google accounts allowed to sign in (comma-separated, any case). Empty means nobody.
+    allowed-emails: ${QUODE_ALLOWED_EMAILS:}
 
 server:
   servlet:
     # Caddy forwards /api/* unchanged, so every backend URL starts with /api.
     context-path: /api
+    session:
+      cookie:
+        http-only: true
+        # Browsers accept Secure cookies on http://localhost too.
+        secure: true
+        same-site: lax
 
 management:
   server:

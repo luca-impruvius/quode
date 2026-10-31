@@ -82,7 +82,7 @@ The local database uses dev-only credentials (`quode` / `quode`, database `quode
 
 If `docker compose` reports that port 5432 is not available, another PostgreSQL (for example a native Windows install) is already using it: stop that service, or set it to manual start.
 
-Google sign-in locally *(from M0-04)*: you need the local OAuth client values in a git-ignored `.env`. The owner shares them through a password manager, never through chat, email or issues. Your Google account must also be on the app's allowlist and on the Google "test users" list (section 8).
+Google sign-in locally: copy `.env.example` to `.env` in the repository root (git-ignored) and fill in the local OAuth client values; the owner shares them through a password manager, never through chat, email or issues. Put your Google email in `QUODE_ALLOWED_EMAILS`; it must also be on the Google "test users" list (section 8). The backend reads `.env` on start. Sign in at `http://localhost:5173/api/oauth2/authorization/google`; afterwards `/api/me` shows your account.
 
 Frontend:
 
@@ -149,7 +149,7 @@ The Tailwind theme is generated from `design-system/tokens.json` before each of 
 
 - [ ] Invite as collaborator with the **Write** role (not Admin).
 - [ ] Add them to the Project board.
-- [ ] *(from M0-04)* Add their Google email to the app allowlist and to the Google Auth Platform "test users".
+- [ ] Add their Google email to `QUODE_ALLOWED_EMAILS` (on the server and in their `.env`) and to the Google Auth Platform "test users".
 - [ ] Share the local OAuth client values through the password manager.
 - [ ] Notion access only if they need product docs, read-only by default.
 - [ ] No production server or Cloudflare access unless there's a specific reason.

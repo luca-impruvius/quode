@@ -51,7 +51,8 @@ class OpenApiDocsTests {
 
     @Test
     void hidesTheSpec() {
-      client(port).get().uri("/api/v3/api-docs").exchange().expectStatus().isNotFound();
+      // Not permitted in prod, so security answers before the (disabled) endpoint would 404.
+      client(port).get().uri("/api/v3/api-docs").exchange().expectStatus().isUnauthorized();
     }
   }
 }

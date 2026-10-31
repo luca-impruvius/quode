@@ -1,5 +1,45 @@
-import { describe, expect, it, vi } from 'vitest';
-import { ApiError, apiGet } from './client';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { ApiError, apiGet, apiSend } from './client';
+
+describe('apiSend', () => {
+  afterEach(() => {
+    document.cookie = 'XSRF-TOKEN=; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+  });
+
+  it('sends the CSRF token from the cookie in the X-XSRF-TOKEN header', async () => {
+    document.cookie = 'XSRF-TOKEN=abc%2B123';
+    const fetchSpy = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValue(new Response(null, { status: 204 }));
+
+    await expect(apiSend('POST', '/logout')).resolves.toBeUndefined();
+
+    const [url, init] = fetchSpy.mock.calls[0] ?? [];
+    expect(url).toBe('/api/logout');
+    expect(init?.method).toBe('POST');
+    expect((init?.headers as Record<string, string>)['X-XSRF-TOKEN']).toBe('abc+123');
+  });
+
+  it('sends a JSON body and returns the JSON answer', async () => {
+    const fetchSpy = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValue(Response.json({ id: 1 }, { status: 201 }));
+
+    await expect(apiSend('POST', '/v1/things', { name: 'x' })).resolves.toEqual({ id: 1 });
+
+    const init = fetchSpy.mock.calls[0]?.[1];
+    expect(init?.body).toBe('{"name":"x"}');
+    expect((init?.headers as Record<string, string>)['Content-Type']).toBe('application/json');
+  });
+
+  it('turns an error answer into an ApiError', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      Response.json({ status: 403, detail: 'Forbidden' }, { status: 403 }),
+    );
+
+    await expect(apiSend('DELETE', '/v1/things/1')).rejects.toMatchObject({ status: 403 });
+  });
+});
 
 describe('apiGet', () => {
   it('returns the JSON body of a successful answer', async () => {

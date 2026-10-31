@@ -52,7 +52,8 @@ class HealthEndpointTests {
 
   @Test
   void actuatorDoesNotExistOnTheMainPort() {
-    server.get().uri("/api/actuator/health").exchange().expectStatus().isNotFound();
+    // Signed out it is 401 like every unknown path; Actuator only answers on the management port.
+    server.get().uri("/api/actuator/health").exchange().expectStatus().isUnauthorized();
   }
 
   @Test

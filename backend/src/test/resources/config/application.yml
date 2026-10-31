@@ -1,0 +1,13 @@
+# Test-only values layered over application.yml: CI has no .env and no real OAuth client.
+spring:
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: test-client-id
+            client-secret: test-client-secret
+
+quode:
+  security:
+    allowed-emails: allowed@example.com, Second@Example.com

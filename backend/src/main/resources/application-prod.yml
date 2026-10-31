@@ -13,3 +13,13 @@ spring:
     url: ${DB_URL}
     username: ${DB_USER}
     password: ${DB_PASSWORD}
+
+quode:
+  security:
+    # No default: production must name its allowed accounts explicitly.
+    allowed-emails: ${QUODE_ALLOWED_EMAILS}
+
+server:
+  # Behind Caddy: trust X-Forwarded-Proto/Host, so the OAuth callback URL is https://<domain>.
+  # Not testable until the VPS exists (M0-10).
+  forward-headers-strategy: native
