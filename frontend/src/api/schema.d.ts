@@ -100,6 +100,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/questions/{id}/unflag": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["unflag"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/questions/{id}/unarchive": {
         parameters: {
             query?: never;
@@ -110,6 +126,22 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["unarchive"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/questions/{id}/flag": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["flag"];
         delete?: never;
         options?: never;
         head?: never;
@@ -207,25 +239,25 @@ export interface components {
             object?: boolean;
             float?: boolean;
             number?: boolean;
-            long?: boolean;
             short?: boolean;
             int?: boolean;
-            double?: boolean;
+            long?: boolean;
+            string?: boolean;
             pojo?: boolean;
+            binary?: boolean;
             /** @deprecated */
             textual?: boolean;
             boolean?: boolean;
-            binary?: boolean;
-            string?: boolean;
-            floatingPointNumber?: boolean;
+            double?: boolean;
+            container?: boolean;
             bigDecimal?: boolean;
+            bigInteger?: boolean;
+            floatingPointNumber?: boolean;
+            valueNode?: boolean;
+            missingNode?: boolean;
             /** @enum {string} */
             nodeType?: "ARRAY" | "BINARY" | "BOOLEAN" | "MISSING" | "NULL" | "NUMBER" | "OBJECT" | "POJO" | "STRING";
-            bigInteger?: boolean;
-            container?: boolean;
-            missingNode?: boolean;
             integralNumber?: boolean;
-            valueNode?: boolean;
             embeddedValue?: boolean;
         };
         TopicView: {
@@ -309,6 +341,11 @@ export interface components {
             /** Format: int64 */
             version?: number;
         };
+        FlagInput: {
+            /** Format: int64 */
+            version?: number;
+            note?: string;
+        };
         LibraryItem: {
             /** Format: uuid */
             id?: string;
@@ -320,6 +357,7 @@ export interface components {
             primaryTopic?: components["schemas"]["TopicRef"];
             archived?: boolean;
             flagged?: boolean;
+            flagNote?: string;
             /** Format: date-time */
             createdAt?: string;
             /** Format: date-time */
@@ -585,6 +623,32 @@ export interface operations {
             };
         };
     };
+    unflag: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VersionInput"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["QuestionView"];
+                };
+            };
+        };
+    };
     unarchive: {
         parameters: {
             query?: never;
@@ -597,6 +661,32 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["VersionInput"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["QuestionView"];
+                };
+            };
+        };
+    };
+    flag: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FlagInput"];
             };
         };
         responses: {

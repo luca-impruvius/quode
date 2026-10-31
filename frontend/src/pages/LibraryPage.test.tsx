@@ -176,7 +176,7 @@ describe('Library', () => {
     }));
     renderAt('/library?status=flagged');
 
-    expect(await screen.findByText('“Check the source”')).toBeInTheDocument();
+    expect(await screen.findByText(l.flagNote('Check the source'))).toBeInTheDocument();
     expect(requests[0]?.searchParams.get('status')).toBe('flagged');
   });
 

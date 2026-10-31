@@ -22,7 +22,7 @@ Domain rules: [domain.md](../domain.md) §4 (rules 1–4).
 - **Status:** new questions are `ACTIVE`. `DRAFT` exists in the model only.
 - **Flag for fixing (M1-07):** flag a question with an optional note (trimmed, up to 200 characters); flagging again replaces the note; unflag clears both. **Saving an edit clears the flag** (the edit is the fix). Flag and unflag send the version like any other write.
 - **Archive instead of delete:** archive sets `archivedAt`; unarchive clears it. Archived questions don't count in topic counts, but still block deleting their topics.
-- **Optimistic locking:** every question has a `version`. Edit, archive and unarchive send the version the client read; an older one → 409 "This question changed elsewhere. Reload to see the latest version." Edits of one question are also serialized with a row lock, so two saves of the same version give exactly one 200 and one 409.
+- **Optimistic locking:** every question has a `version`. Edit, archive, unarchive, flag and unflag send the version the client read; an older one → 409 "This question changed elsewhere. Reload to see the latest version." Edits of one question are also serialized with a row lock, so two saves of the same version give exactly one 200 and one 409.
 - **A topic deleted while a question is being saved:** the database keys decide; the question save answers 404 (topic not found), the topic delete 409 (in use).
 - **Owner only:** another user's question, or a topic id that's unknown or someone else's, is answered exactly like a missing one (404).
 - **Markdown:** text fields are stored as typed (Markdown); rendering is the client's job (M1-05, never raw HTML).

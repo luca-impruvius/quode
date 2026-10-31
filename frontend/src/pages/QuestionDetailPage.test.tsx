@@ -1,4 +1,4 @@
-import { screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { messages } from '../messages';
@@ -199,13 +199,68 @@ describe('Question detail', () => {
     expect(JSON.parse(String(call?.[1]?.body))).toEqual({ version: 3, note: 'Typo in the answer' });
   });
 
-  it('limits the note to 200 characters', async () => {
+  it('limits the note to 200 characters, counting an emoji once', async () => {
     mockApi({ '/api/me': me(), '/api/v1/questions/q1': Response.json(questionView()) });
+    renderAt('/questions/q1');
+    await userEvent.click(await screen.findByRole('button', { name: d.flag }));
+    const note = screen.getByLabelText(d.flagNote);
+
+    fireEvent.change(note, { target: { value: '🦆'.repeat(150) } });
+    expect(screen.getByText(d.flagNoteHint(50))).toBeInTheDocument();
+
+    fireEvent.change(note, { target: { value: 'x'.repeat(250) } });
+    expect(note).toHaveValue('x'.repeat(200));
+    expect(screen.getByText(d.flagNoteHint(0))).toBeInTheDocument();
+  });
+
+  it('keeps focus on the banner after flagging and on the button after unflagging', async () => {
+    let flagged = false;
+    const view = () =>
+      questionView(
+        flagged ? { flaggedAt: '2026-10-31T12:00:00Z', flagNote: null, version: 4 } : {},
+      );
+    mockApi({
+      '/api/me': me(),
+      '/api/v1/questions/q1': () => Response.json(view()),
+      'POST /api/v1/questions/q1/flag': () => {
+        flagged = true;
+        return Response.json(view());
+      },
+      'POST /api/v1/questions/q1/unflag': () => {
+        flagged = false;
+        return Response.json(view());
+      },
+    });
     renderAt('/questions/q1');
 
     await userEvent.click(await screen.findByRole('button', { name: d.flag }));
+    await userEvent.click(screen.getByRole('button', { name: d.flagSave }));
+    await waitFor(() => expect(screen.getByText(d.flagged).closest('p')).toHaveFocus());
 
-    expect(screen.getByLabelText(d.flagNote)).toHaveAttribute('maxLength', '200');
+    await userEvent.click(screen.getByRole('button', { name: d.unflag }));
+    await waitFor(() => expect(screen.getByRole('button', { name: d.flag })).toHaveFocus());
+  });
+
+  it('loads the latest version after a stale flag', async () => {
+    let gets = 0;
+    mockApi({
+      '/api/me': me(),
+      '/api/v1/questions/q1': () => {
+        gets += 1;
+        return Response.json(questionView({ version: gets === 1 ? 3 : 4 }));
+      },
+      'POST /api/v1/questions/q1/flag': problem(
+        409,
+        'This question changed elsewhere. Reload to see the latest version.',
+      ),
+    });
+    renderAt('/questions/q1');
+
+    await userEvent.click(await screen.findByRole('button', { name: d.flag }));
+    await userEvent.click(screen.getByRole('button', { name: d.flagSave }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('This question changed elsewhere.');
+    await waitFor(() => expect(gets).toBe(2));
   });
 
   it('unflags with the version it read', async () => {

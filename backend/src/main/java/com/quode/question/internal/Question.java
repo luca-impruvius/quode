@@ -141,7 +141,7 @@ class Question {
 
   /** Replaces everything the client edits; input already passed QuestionRules. */
   void apply(QuestionInput input) {
-    // Saving an edit is the fix: the flag goes (decision 10).
+    // Saving an edit is the fix: the flag goes (docs/specs/M1-questions.md).
     unflag();
     type = input.type();
     promptMd = input.promptMd();

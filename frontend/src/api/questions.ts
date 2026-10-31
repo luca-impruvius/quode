@@ -64,7 +64,9 @@ export function useQuestionMutation<Args>(send: (args: Args) => Promise<Question
     mutationFn: send,
     onSuccess: (saved) => {
       queryClient.setQueryData(questionKey(saved.id), saved);
+      // Counts, badges and filtered lists may all have changed.
       void queryClient.invalidateQueries({ queryKey: ['topics'] });
+      void queryClient.invalidateQueries({ queryKey: ['library'] });
     },
   });
 }

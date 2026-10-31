@@ -1,5 +1,5 @@
 import { Check, ChevronLeft, Flag } from 'lucide-react';
-import { useId, useState, type FormEvent } from 'react';
+import { useEffect, useId, useRef, useState, type FormEvent } from 'react';
 import { Link, useParams } from 'react-router';
 import {
   questionApi,
@@ -69,6 +69,18 @@ function Details({ question: q }: { question: QuestionView }) {
   const unflag = useQuestionMutation(questionApi.unflag);
   const [flagging, setFlagging] = useState(false);
   const flagged = q.flaggedAt !== null;
+  const bannerHeading = useRef<HTMLParagraphElement>(null);
+  const flagButton = useRef<HTMLButtonElement>(null);
+  const bannerId = useId();
+
+  // Flagging swaps the button for the banner and back: keep focus on whichever now stands there.
+  const wasFlagged = useRef(flagged);
+  useEffect(() => {
+    if (flagged !== wasFlagged.current) {
+      (flagged ? bannerHeading.current : flagButton.current)?.focus();
+      wasFlagged.current = flagged;
+    }
+  }, [flagged]);
 
   return (
     <>
@@ -78,12 +90,20 @@ function Details({ question: q }: { question: QuestionView }) {
         </p>
       )}
       {flagged && (
-        <section className="flex flex-col gap-space-2 rounded-md bg-missed-bg p-space-4">
-          <p className="flex items-center gap-space-2 font-semibold">
+        <section
+          aria-labelledby={bannerId}
+          className="flex flex-col gap-space-2 rounded-md bg-missed-bg p-space-4"
+        >
+          <p
+            id={bannerId}
+            ref={bannerHeading}
+            tabIndex={-1}
+            className="flex items-center gap-space-2 font-semibold"
+          >
             <Flag aria-hidden="true" size={16} strokeWidth={2} />
             {d.flagged}
           </p>
-          {q.flagNote && <p className="type-body-sm">{q.flagNote}</p>}
+          {q.flagNote && <p className="type-body-sm whitespace-pre-line">{q.flagNote}</p>}
           {unflag.isError && <ErrorNotice error={unflag.error} />}
           <button
             type="button"
@@ -175,6 +195,7 @@ function Details({ question: q }: { question: QuestionView }) {
 
       {!flagged && (
         <button
+          ref={flagButton}
           type="button"
           onClick={() => setFlagging(true)}
           className="flex h-12 items-center justify-center gap-space-2 rounded-md border-bold border-outline font-semibold"
@@ -209,6 +230,7 @@ function FlagSheet({ question: q, onClose }: { question: QuestionView; onClose: 
   const [note, setNote] = useState('');
   const flag = useQuestionMutation(questionApi.flag);
   const refreshOnConflict = useRefreshOnConflict();
+  // Characters as the server counts them (code points), so an emoji counts once.
   const left = MAX_NOTE - [...note].length;
   const hintId = useId();
 
@@ -228,8 +250,7 @@ function FlagSheet({ question: q, onClose }: { question: QuestionView; onClose: 
           <textarea
             value={note}
             rows={3}
-            maxLength={MAX_NOTE}
-            onChange={(event) => setNote(event.target.value)}
+            onChange={(event) => setNote([...event.target.value].slice(0, MAX_NOTE).join(''))}
             aria-describedby={hintId}
             className="rounded-md border-2 border-outline bg-surface p-space-3"
           />

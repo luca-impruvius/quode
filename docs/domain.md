@@ -75,7 +75,7 @@ erDiagram
 8. A study session snapshots its question order; editing a quiz doesn't change a session in progress.
 9. A topic can't be its own ancestor.
 10. Deleting a topic is blocked while questions or child topics reference it.
-11. "Flag for fixing" sets `flagged_at`; flagged questions appear under the Library's Flagged filter.
+11. "Flag for fixing" sets `flagged_at` with an optional note (up to 200 characters); flagged questions appear under the Library's Flagged filter. Saving an edit clears the flag; archive and unarchive keep it.
 
 ## 5. Conventions
 

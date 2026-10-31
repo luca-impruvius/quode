@@ -297,7 +297,9 @@ function Row({ question: q }: { question: LibraryItem }) {
           )}
         </span>
         {q.flagged && q.flagNote && (
-          <span className="type-body-sm text-ink italic">“{q.flagNote}”</span>
+          <span className="type-body-sm whitespace-pre-line text-ink italic">
+            {l.flagNote(q.flagNote)}
+          </span>
         )}
       </Link>
     </li>

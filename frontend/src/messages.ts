@@ -60,6 +60,7 @@ export const messages = {
     noQuestions: 'No questions yet. Add your first with the + button.',
     archived: 'Archived',
     flagged: 'Flagged',
+    flagNote: (note: string) => `“${note}”`,
   },
   topics: {
     title: 'Topics',

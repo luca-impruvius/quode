@@ -151,6 +151,32 @@ class FlagApiTests {
   }
 
   @Test
+  void aStaleUnflagIs409() throws Exception {
+    action("sub-me", "flag", "{\"version\":0}").andExpect(status().isOk());
+
+    action("sub-me", "unflag", "{\"version\":0}").andExpect(status().isConflict());
+  }
+
+  @Test
+  void archiveAndUnarchiveKeepTheFlag() throws Exception {
+    action("sub-me", "flag", "{\"version\":0,\"note\":\"Keep me\"}").andExpect(status().isOk());
+
+    action("sub-me", "archive", "{\"version\":1}")
+        .andExpect(jsonPath("$.flagNote").value("Keep me"));
+    action("sub-me", "unarchive", "{\"version\":2}")
+        .andExpect(jsonPath("$.flaggedAt").isNotEmpty())
+        .andExpect(jsonPath("$.flagNote").value("Keep me"));
+  }
+
+  @Test
+  void anotherUsersFlaggedFilterNeverShowsMyQuestion() throws Exception {
+    action("sub-me", "flag", "{\"version\":0}").andExpect(status().isOk());
+
+    mvc.perform(get("/api/v1/questions?status=flagged").contextPath("/api").with(as("sub-other")))
+        .andExpect(jsonPath("$.totalElements").value(0));
+  }
+
+  @Test
   void anotherUserCantFlagMyQuestion() throws Exception {
     action("sub-other", "flag", "{\"version\":0}").andExpect(status().isNotFound());
     action("sub-other", "unflag", "{\"version\":0}").andExpect(status().isNotFound());
