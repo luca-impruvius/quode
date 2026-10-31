@@ -12,6 +12,16 @@ export interface Topic {
 
 const topicsKey = ['topics'] as const;
 
+/** "Languages › Java" for every topic; the API sends parents before children. */
+export function topicPaths(topics: Topic[]): Map<string, string> {
+  const paths = new Map<string, string>();
+  for (const topic of topics) {
+    const parent = topic.parentId === null ? undefined : paths.get(topic.parentId);
+    paths.set(topic.id, parent === undefined ? topic.name : `${parent} › ${topic.name}`);
+  }
+  return paths;
+}
+
 /** The tree in display order: parents before children, siblings A–Z. */
 export function useTopics() {
   return useQuery({ queryKey: topicsKey, queryFn: () => apiGet<Topic[]>('/v1/topics') });

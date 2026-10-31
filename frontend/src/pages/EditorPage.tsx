@@ -10,7 +10,7 @@ import {
   type QuestionType,
   type QuestionView,
 } from '../api/questions';
-import { useTopics, type Topic } from '../api/topics';
+import { topicPaths, useTopics, type Topic } from '../api/topics';
 import { ErrorNotice } from '../components/ErrorNotice';
 import { MarkdownField } from '../components/MarkdownField';
 import { Sheet } from '../components/Sheet';
@@ -54,16 +54,6 @@ function formValues(q: QuestionView): QuestionFormValues {
     primaryTopicId: q.topics.find((t) => t.primary)?.id ?? '',
     options: q.options.map((o) => ({ textMd: o.textMd, correct: o.correct })),
   };
-}
-
-// "Languages › Java" for every topic; the list comes parents first.
-function topicPaths(topics: Topic[]): Map<string, string> {
-  const paths = new Map<string, string>();
-  for (const topic of topics) {
-    const parent = topic.parentId === null ? undefined : paths.get(topic.parentId);
-    paths.set(topic.id, parent === undefined ? topic.name : `${parent} › ${topic.name}`);
-  }
-  return paths;
 }
 
 /** /add for a new question, /questions/:id/edit for an existing one. */

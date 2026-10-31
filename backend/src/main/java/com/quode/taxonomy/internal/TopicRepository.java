@@ -60,6 +60,20 @@ interface TopicRepository extends JpaRepository<Topic, UUID> {
           """)
   List<PathRow> findPaths(UUID ownerId, UUID[] ids);
 
+  /** The topic and all its descendants; empty when the topic isn't this owner's. */
+  @Query(
+      nativeQuery = true,
+      value =
+          """
+          with recursive sub (id) as (
+            select id from topic where id = :topicId and owner_id = :ownerId
+            union all
+            select c.id from topic c join sub on c.parent_id = sub.id
+          )
+          select id from sub
+          """)
+  List<UUID> findSubtreeIds(UUID ownerId, UUID topicId);
+
   /** One row per (topic, descendant-or-self) pair of this owner's tree. */
   interface SubtreeRow {
     UUID getTopicId();

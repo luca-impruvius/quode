@@ -91,7 +91,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        get: operations["list_1"];
         put?: never;
         post: operations["create_1"];
         delete?: never;
@@ -207,25 +207,25 @@ export interface components {
             object?: boolean;
             float?: boolean;
             number?: boolean;
-            binary?: boolean;
-            short?: boolean;
             long?: boolean;
+            short?: boolean;
+            int?: boolean;
+            double?: boolean;
+            pojo?: boolean;
             /** @deprecated */
             textual?: boolean;
-            pojo?: boolean;
-            double?: boolean;
-            string?: boolean;
-            int?: boolean;
             boolean?: boolean;
+            binary?: boolean;
+            string?: boolean;
+            floatingPointNumber?: boolean;
             bigDecimal?: boolean;
-            integralNumber?: boolean;
             /** @enum {string} */
             nodeType?: "ARRAY" | "BINARY" | "BOOLEAN" | "MISSING" | "NULL" | "NUMBER" | "OBJECT" | "POJO" | "STRING";
+            bigInteger?: boolean;
             container?: boolean;
             missingNode?: boolean;
-            floatingPointNumber?: boolean;
+            integralNumber?: boolean;
             valueNode?: boolean;
-            bigInteger?: boolean;
             embeddedValue?: boolean;
         };
         TopicView: {
@@ -308,6 +308,38 @@ export interface components {
         VersionInput: {
             /** Format: int64 */
             version?: number;
+        };
+        LibraryItem: {
+            /** Format: uuid */
+            id?: string;
+            /** @enum {string} */
+            type?: "FLASHCARD" | "SINGLE_CHOICE" | "MULTIPLE_CHOICE" | "OPEN_TEXT";
+            promptMd?: string;
+            /** Format: int32 */
+            difficulty?: number;
+            primaryTopic?: components["schemas"]["TopicRef"];
+            archived?: boolean;
+            flagged?: boolean;
+            /** Format: date-time */
+            createdAt?: string;
+            /** Format: date-time */
+            updatedAt?: string;
+        };
+        LibraryPage: {
+            items?: components["schemas"]["LibraryItem"][];
+            /** Format: int32 */
+            page?: number;
+            /** Format: int32 */
+            size?: number;
+            /** Format: int64 */
+            totalElements?: number;
+            hasNext?: boolean;
+        };
+        TopicRef: {
+            /** Format: uuid */
+            id?: string;
+            name?: string;
+            path?: string;
         };
         MeResponse: {
             name?: string;
@@ -496,6 +528,35 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["TopicView"][];
+                };
+            };
+        };
+    };
+    list_1: {
+        parameters: {
+            query?: {
+                topicId?: string;
+                type?: "FLASHCARD" | "SINGLE_CHOICE" | "MULTIPLE_CHOICE" | "OPEN_TEXT";
+                difficulty?: number;
+                status?: string;
+                q?: string;
+                sort?: string;
+                page?: number;
+                size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["LibraryPage"];
                 };
             };
         };
