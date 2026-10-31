@@ -13,6 +13,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
+import tools.jackson.databind.JsonNode;
 
 /** The current user's topic tree. Rules: docs/specs/M1-topics.md. */
 @RestController
@@ -22,9 +24,6 @@ class TopicController {
   record CreateTopic(String name, UUID parentId) {}
 
   record RenameTopic(String name) {}
-
-  /** {@code parentId} null moves the topic to the top level. */
-  record MoveTopic(UUID parentId) {}
 
   private final TopicService topics;
   private final CurrentUser currentUser;
@@ -51,8 +50,20 @@ class TopicController {
   }
 
   @PutMapping("/{id}/parent")
-  TopicView move(@PathVariable UUID id, @RequestBody MoveTopic request) {
-    return topics.move(currentUser.id(), id, request.parentId());
+  // Body {"parentId": "<uuid>"} or {"parentId": null} for the top level. Read as JSON so a missing
+  // key (an empty body, a typo) is an error instead of a silent move to the top level.
+  TopicView move(@PathVariable UUID id, @RequestBody JsonNode body) {
+    JsonNode parent = body.get("parentId");
+    if (parent == null || !(parent.isNull() || parent.isString())) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, TopicService.MISSING_PARENT);
+    }
+    UUID parentId;
+    try {
+      parentId = parent.isNull() ? null : UUID.fromString(parent.asString());
+    } catch (IllegalArgumentException e) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, TopicService.MISSING_PARENT);
+    }
+    return topics.move(currentUser.id(), id, parentId);
   }
 
   @DeleteMapping("/{id}")

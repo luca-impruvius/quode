@@ -12,6 +12,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import org.hibernate.exception.ConstraintViolationException;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
@@ -31,6 +32,7 @@ class TopicService {
   static final String IN_USE = "Questions use this topic.";
   static final String NOT_EMPTY = "Starter topics are only for an empty topic list.";
   static final String BAD_NAME = "A topic name needs 1 to 60 characters.";
+  static final String MISSING_PARENT = "Give parentId: a topic id, or null for the top level.";
 
   private static final int MAX_NAME = 60;
 
@@ -154,8 +156,21 @@ class TopicService {
     try {
       return topics.saveAndFlush(topic);
     } catch (DataIntegrityViolationException e) {
-      throw new ConflictException(DUPLICATE_NAME);
+      if (violates(e, "topic_sibling_name_key")) {
+        throw new ConflictException(DUPLICATE_NAME);
+      }
+      // Any other constraint means a bug, not a user error: let it surface as a 500.
+      throw e;
     }
+  }
+
+  private static boolean violates(Throwable e, String constraint) {
+    for (Throwable t = e; t != null; t = t.getCause()) {
+      if (t instanceof ConstraintViolationException c && constraint.equals(c.getConstraintName())) {
+        return true;
+      }
+    }
+    return false;
   }
 
   private static String cleanName(String name) {

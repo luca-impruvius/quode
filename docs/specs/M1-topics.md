@@ -30,15 +30,15 @@ All under `/api/v1/topics`, signed in, CSRF token on writes. Errors are Problem 
 
 | Method | Path | Body | Success | Errors |
 |---|---|---|---|---|
-| GET | `/v1/topics` | — | 200 `[{id, parentId?, name, questionCount}]` (`parentId` left out for top-level topics) | 401 |
+| GET | `/v1/topics` | — | 200 `[{id, parentId, name, questionCount}]` (`parentId` is `null` for top-level topics) | 401 |
 | POST | `/v1/topics` | `{name, parentId?}` | 201 topic | 400 name, 404 parent, 409 duplicate |
 | PUT | `/v1/topics/{id}/name` | `{name}` | 200 topic | 400, 404, 409 duplicate |
-| PUT | `/v1/topics/{id}/parent` | `{parentId}` (`null` = top level) | 200 topic | 404 topic or parent, 409 cycle or duplicate |
+| PUT | `/v1/topics/{id}/parent` | `{parentId}` (`null` = top level; the key is required) | 200 topic | 400 key missing, 404 topic or parent, 409 cycle or duplicate |
 | DELETE | `/v1/topics/{id}` | — | 204 | 404, 409 sub-topics or in use |
 | POST | `/v1/topics/starter` | — | 201 the whole tree | 409 not empty |
 
 ## Data
-`V3__create_topic.sql`: `topic (id, owner_id → app_user, parent_id → topic, name varchar(60) trimmed, created_at, updated_at)`; unique index `(owner_id, parent_id, lower(name)) NULLS NOT DISTINCT`; index on `parent_id`. No `slug` column (nothing uses one).
+`V3__create_topic.sql`: `topic (id, owner_id → app_user, parent_id, name varchar(60) trimmed, created_at, updated_at)`. The parent key is `(parent_id, owner_id) → topic (id, owner_id)`, so the database itself refuses a parent owned by another user; `parent_id <> id` is checked too. Unique index `(owner_id, parent_id, lower(name)) NULLS NOT DISTINCT`; index on `parent_id`. No `slug` column (nothing uses one).
 
 ## Acceptance criteria
 - [ ] Tree list with counts that include descendants; create, rename, move

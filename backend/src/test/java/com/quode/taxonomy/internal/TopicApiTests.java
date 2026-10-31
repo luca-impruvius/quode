@@ -1,6 +1,9 @@
 package com.quode.taxonomy.internal;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.hamcrest.Matchers.hasKey;
+import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.oidcLogin;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -19,6 +22,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.MockMvc;
@@ -135,7 +140,8 @@ class TopicApiTests {
   @Test
   void rejectsBlankAndTooLongNames() throws Exception {
     mvc.perform(api(post("/api/v1/topics")).with(me()).with(csrf()).content("{\"name\":\"   \"}"))
-        .andExpect(status().isBadRequest());
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.detail").value(TopicService.BAD_NAME));
     mvc.perform(
             api(post("/api/v1/topics"))
                 .with(me())
@@ -163,7 +169,24 @@ class TopicApiTests {
                 .with(csrf())
                 .content("{\"parentId\":null}"))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.parentId").doesNotExist());
+        // Top-level topics carry an explicit null: one stable shape for the frontend.
+        .andExpect(jsonPath("$").value(hasKey("parentId")))
+        .andExpect(jsonPath("$.parentId").value(nullValue()));
+  }
+
+  @Test
+  void aMoveNeedsTheParentIdKey() throws Exception {
+    String jvm = create(me(), "JVM", null);
+
+    for (String body :
+        new String[] {
+          "{}", "{\"parentID\":null}", "{\"parentId\":\"not-a-uuid\"}", "{\"parentId\":5}"
+        }) {
+      mvc.perform(
+              api(put("/api/v1/topics/" + jvm + "/parent")).with(me()).with(csrf()).content(body))
+          .andExpect(status().isBadRequest())
+          .andExpect(jsonPath("$.detail").value(TopicService.MISSING_PARENT));
+    }
   }
 
   @Test
@@ -310,12 +333,35 @@ class TopicApiTests {
     jdbc.update(
         "insert into topic (owner_id, name) select id, 'Java' from app_user where google_sub = 'sub-me'");
 
-    org.assertj.core.api.Assertions.assertThatThrownBy(
+    assertThatThrownBy(
             () ->
                 jdbc.update(
                     "insert into topic (owner_id, name)"
                         + " select id, 'java' from app_user where google_sub = 'sub-me'"))
-        .isInstanceOf(org.springframework.dao.DuplicateKeyException.class);
+        .isInstanceOf(DuplicateKeyException.class);
+  }
+
+  @Test
+  void theDatabaseRejectsAParentOwnedByAnotherUser() {
+    jdbc.update(
+        "insert into topic (owner_id, name) select id, 'Theirs' from app_user where google_sub = 'sub-other'");
+
+    assertThatThrownBy(
+            () ->
+                jdbc.update(
+                    "insert into topic (owner_id, parent_id, name)"
+                        + " select me.id, t.id, 'Mine' from app_user me, topic t"
+                        + " where me.google_sub = 'sub-me' and t.name = 'Theirs'"))
+        .isInstanceOf(DataIntegrityViolationException.class)
+        .hasMessageContaining("topic_parent_same_owner_fkey");
+  }
+
+  @Test
+  void signedInWithoutAnAppUserRowIs401() throws Exception {
+    mvc.perform(
+            api(get("/api/v1/topics"))
+                .with(oidcLogin().idToken(token -> token.subject("sub-nobody"))))
+        .andExpect(status().isUnauthorized());
   }
 
   // Every topic's full path, built in SQL so the check doesn't reuse the code under test.

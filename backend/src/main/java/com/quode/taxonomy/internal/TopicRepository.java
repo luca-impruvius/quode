@@ -62,7 +62,7 @@ interface TopicRepository extends JpaRepository<Topic, UUID> {
             select id, parent_id from topic where id = :startId
             union all
             select t.id, t.parent_id from topic t join up on t.id = up.parent_id
-          )
+          ) cycle id set looped using path
           select exists (select 1 from up where id = :topicId)
           """)
   boolean isSelfOrAncestor(UUID topicId, UUID startId);
