@@ -77,7 +77,7 @@ class AllowlistOidcUserServiceTests {
     assertThatThrownBy(() -> service.loadUser(request()))
         .isInstanceOf(OAuth2AuthenticationException.class)
         .extracting(e -> ((OAuth2AuthenticationException) e).getError().getErrorCode())
-        .isEqualTo("access_denied");
+        .isEqualTo(AllowlistOidcUserService.NOT_ALLOWED);
     assertThat(repository.count()).isZero();
   }
 

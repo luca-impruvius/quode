@@ -15,6 +15,7 @@ import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserService;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.logout.HttpStatusReturningLogoutSuccessHandler;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.springframework.security.web.savedrequest.NullRequestCache;
 import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
 
 /**
@@ -37,12 +38,19 @@ class SecurityConfig {
     return http.build();
   }
 
+  // Loads the Google profile (ID token plus userinfo); a bean so tests can avoid the network call.
+  @Bean
+  OidcUserService googleUserService() {
+    return new OidcUserService();
+  }
+
   @Bean
   @Order(2)
   SecurityFilterChain appSecurity(
       HttpSecurity http,
       SecurityProperties properties,
       AppUserRepository users,
+      OidcUserService google,
       @Value("${springdoc.api-docs.enabled:true}") boolean apiDocs)
       throws Exception {
     PathPatternRequestMatcher clientErrors =
@@ -68,11 +76,13 @@ class SecurityConfig {
                     .userInfoEndpoint(
                         info ->
                             info.oidcUserService(
-                                new AllowlistOidcUserService(
-                                    new OidcUserService(), properties, users)))
+                                new AllowlistOidcUserService(google, properties, users)))
                     // To the app root, not /api/ (the context path).
                     .successHandler((request, response, auth) -> response.sendRedirect("/"))
                     .failureHandler(new SignInFailureHandler()))
+        // No saved request: the success handler always goes to /, and saving one would create a
+        // 30-day session for every signed-out request.
+        .requestCache(cache -> cache.requestCache(new NullRequestCache()))
         .exceptionHandling(
             exceptions ->
                 exceptions.authenticationEntryPoint(
@@ -86,6 +96,8 @@ class SecurityConfig {
               csrf.spa();
               CookieCsrfTokenRepository tokens = CookieCsrfTokenRepository.withHttpOnlyFalse();
               tokens.setCookieCustomizer(cookie -> cookie.secure(true).sameSite("Lax"));
+              // Path / (not the /api context path), so the SPA's pages can read it.
+              tokens.setCookiePath("/");
               csrf.csrfTokenRepository(tokens);
               // Anonymous, session-less error reports from the browser.
               csrf.ignoringRequestMatchers(clientErrors);

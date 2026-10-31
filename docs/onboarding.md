@@ -82,7 +82,7 @@ The local database uses dev-only credentials (`quode` / `quode`, database `quode
 
 If `docker compose` reports that port 5432 is not available, another PostgreSQL (for example a native Windows install) is already using it: stop that service, or set it to manual start.
 
-Google sign-in locally: copy `.env.example` to `.env` in the repository root (git-ignored) and fill in the local OAuth client values; the owner shares them through a password manager, never through chat, email or issues. Put your Google email in `QUODE_ALLOWED_EMAILS`; it must also be on the Google "test users" list (section 8). The backend reads `.env` on start. Sign in at `http://localhost:5173/api/oauth2/authorization/google`; afterwards `/api/me` shows your account.
+Google sign-in locally: copy `.env.example` to `.env` in the repository root (git-ignored) and fill in the local OAuth client values; the owner shares them through a password manager, never through chat, email or issues. Put your Google email in `QUODE_ALLOWED_EMAILS`; it must also be on the Google "test users" list (section 8). The backend reads `.env` on start. Sign in at `http://localhost:5173/api/oauth2/authorization/google`; afterwards `/api/me` shows your account. Use Chrome, Edge or Firefox locally: the session cookie is `Secure`, which Safari before 18 refuses over plain `http://localhost`.
 
 Frontend:
 

@@ -2,6 +2,7 @@ package com.quode.user.internal;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserRequest;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserService;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
@@ -17,6 +18,9 @@ import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 class AllowlistOidcUserService implements OAuth2UserService<OidcUserRequest, OidcUser> {
 
   private static final Logger log = LoggerFactory.getLogger(AllowlistOidcUserService.class);
+
+  /** Our own error code, so Google's "access_denied" (the user cancelled) isn't mistaken for it. */
+  static final String NOT_ALLOWED = "quode_not_allowed";
 
   private static final int MAX_DISPLAY_NAME = 100;
 
@@ -39,12 +43,25 @@ class AllowlistOidcUserService implements OAuth2UserService<OidcUserRequest, Oid
     if (!Boolean.TRUE.equals(user.getEmailVerified()) || !properties.allows(user.getEmail())) {
       // No email in the log: it's personal data of someone who isn't a user.
       log.warn("Sign-in refused: Google account not on the allowlist or email not verified");
-      throw new OAuth2AuthenticationException(new OAuth2Error(OAuth2ErrorCodes.ACCESS_DENIED));
+      throw new OAuth2AuthenticationException(new OAuth2Error(NOT_ALLOWED));
     }
     if (users.findByGoogleSub(user.getSubject()).isEmpty()) {
-      users.save(new AppUser(user.getEmail(), user.getSubject(), displayName(user)));
+      createUser(user);
     }
     return user;
+  }
+
+  // A parallel first login may have created the row; a different Google account with the same email
+  // (deleted and recreated) can't be matched safely, so that sign-in fails with the generic 401.
+  private void createUser(OidcUser user) {
+    try {
+      users.saveAndFlush(new AppUser(user.getEmail(), user.getSubject(), displayName(user)));
+    } catch (DataIntegrityViolationException e) {
+      if (users.findByGoogleSub(user.getSubject()).isEmpty()) {
+        log.warn("Sign-in refused: the email belongs to an app_user with another Google account");
+        throw new OAuth2AuthenticationException(new OAuth2Error(OAuth2ErrorCodes.SERVER_ERROR));
+      }
+    }
   }
 
   private static String displayName(OidcUser user) {

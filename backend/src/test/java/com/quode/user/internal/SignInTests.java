@@ -94,7 +94,10 @@ class SignInTests {
 
     new SignInFailureHandler()
         .onAuthenticationFailure(
-            request, response, new OAuth2AuthenticationException(new OAuth2Error("access_denied")));
+            request,
+            response,
+            new OAuth2AuthenticationException(
+                new OAuth2Error(AllowlistOidcUserService.NOT_ALLOWED)));
 
     assertThat(response.getStatus()).isEqualTo(403);
     assertThat(request.getAttribute(ErrorDetails.ATTRIBUTE))
@@ -102,15 +105,13 @@ class SignInTests {
   }
 
   @Test
-  void anyOtherSignInFailureIs401() throws Exception {
+  void cancellingAtGoogleIs401NotTheBlockedMessage() throws Exception {
     MockHttpServletRequest request = new MockHttpServletRequest();
     MockHttpServletResponse response = new MockHttpServletResponse();
 
     new SignInFailureHandler()
         .onAuthenticationFailure(
-            request,
-            response,
-            new OAuth2AuthenticationException(new OAuth2Error("invalid_token_response")));
+            request, response, new OAuth2AuthenticationException(new OAuth2Error("access_denied")));
 
     assertThat(response.getStatus()).isEqualTo(401);
     assertThat(request.getAttribute(ErrorDetails.ATTRIBUTE)).isEqualTo(SignInFailureHandler.FAILED);

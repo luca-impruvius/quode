@@ -4,6 +4,7 @@ import com.quode.shared.ErrorDetails;
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.http.HttpServletRequest;
 import java.net.URI;
+import java.net.URISyntaxException;
 import org.springframework.boot.webmvc.error.ErrorController;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
@@ -33,7 +34,11 @@ class ProblemDetailsErrorController implements ErrorController {
     ProblemDetail problem = ProblemDetail.forStatus(status);
     // The path the client asked for, not /api/error.
     if (request.getAttribute(RequestDispatcher.ERROR_REQUEST_URI) instanceof String uri) {
-      problem.setInstance(URI.create(uri));
+      try {
+        problem.setInstance(new URI(uri));
+      } catch (URISyntaxException e) {
+        // Leave it out rather than fail inside the error page.
+      }
     }
     // A fixed message chosen by our own code (security handlers), never an exception message.
     if (request.getAttribute(ErrorDetails.ATTRIBUTE) instanceof String detail) {

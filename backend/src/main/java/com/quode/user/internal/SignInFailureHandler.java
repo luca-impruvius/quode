@@ -6,12 +6,12 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
-import org.springframework.security.oauth2.core.OAuth2ErrorCodes;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
 
 /**
  * Answers a failed Google sign-in with Problem Details instead of Spring's /login?error redirect:
- * 403 for an account that isn't allowed, 401 for anything else (expired or tampered callback).
+ * 403 for an account that isn't allowed, 401 for anything else (cancelled at Google, expired or
+ * tampered callback).
  */
 class SignInFailureHandler implements AuthenticationFailureHandler {
 
@@ -24,7 +24,7 @@ class SignInFailureHandler implements AuthenticationFailureHandler {
       throws IOException {
     boolean notAllowed =
         exception instanceof OAuth2AuthenticationException oauth
-            && OAuth2ErrorCodes.ACCESS_DENIED.equals(oauth.getError().getErrorCode());
+            && AllowlistOidcUserService.NOT_ALLOWED.equals(oauth.getError().getErrorCode());
     request.setAttribute(ErrorDetails.ATTRIBUTE, notAllowed ? NOT_ALLOWED : FAILED);
     response.sendError(
         notAllowed ? HttpServletResponse.SC_FORBIDDEN : HttpServletResponse.SC_UNAUTHORIZED);

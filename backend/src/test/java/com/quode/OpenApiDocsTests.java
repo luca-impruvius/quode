@@ -42,7 +42,12 @@ class OpenApiDocsTests {
   @Nested
   @SpringBootTest(
       webEnvironment = WebEnvironment.RANDOM_PORT,
-      properties = {"DB_URL=unused", "DB_USER=unused", "DB_PASSWORD=unused"})
+      properties = {
+        "DB_URL=unused",
+        "DB_USER=unused",
+        "DB_PASSWORD=unused",
+        "QUODE_ALLOWED_EMAILS=unused@example.com"
+      })
   @Import(TestcontainersConfiguration.class)
   @ActiveProfiles("prod")
   class InProduction {

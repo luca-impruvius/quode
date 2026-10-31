@@ -1,10 +1,6 @@
 spring:
   application:
     name: quode
-  config:
-    # Local secrets from the git-ignored .env (see .env.example), whether started from backend/ or
-    # the repository root. Production gets real environment variables instead.
-    import: optional:file:../.env[.properties],optional:file:.env[.properties]
   threads:
     virtual:
       # Tomcat handles each request on a virtual thread (ADR-0034).
@@ -76,3 +72,11 @@ management:
           show-components: never
           # Also serve this group on the main server (under the context path): /api/health.
           additional-path: server:/health
+---
+# Local secrets from the git-ignored .env (see .env.example), whether started from backend/ or the
+# repository root. Never in prod: there, real environment variables only.
+spring:
+  config:
+    activate:
+      on-profile: "!prod"
+    import: optional:file:../.env[.properties],optional:file:.env[.properties]

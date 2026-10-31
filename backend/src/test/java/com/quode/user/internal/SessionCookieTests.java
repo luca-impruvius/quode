@@ -100,7 +100,26 @@ class SessionCookieTests {
 
     String token =
         cookies.stream().filter(c -> c.startsWith("XSRF-TOKEN=")).findFirst().orElseThrow();
-    assertThat(token).doesNotContain("HttpOnly").contains("Secure").contains("SameSite=Lax");
+    assertThat(token)
+        .doesNotContain("HttpOnly")
+        .contains("Path=/;")
+        .contains("Secure")
+        .contains("SameSite=Lax");
+  }
+
+  @Test
+  void signedOutRequestsCreateNoSession() {
+    List<String> cookies =
+        client
+            .get()
+            .uri("/api/me")
+            .header(HttpHeaders.ACCEPT, "text/html")
+            .exchange()
+            .returnResult(Void.class)
+            .getResponseHeaders()
+            .getOrEmpty(HttpHeaders.SET_COOKIE);
+
+    assertThat(cookies).noneMatch(c -> c.startsWith("SESSION="));
   }
 
   @Test
