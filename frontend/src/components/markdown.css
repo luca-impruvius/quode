@@ -1,0 +1,63 @@
+/* Rendered Markdown (questions, answers, explanations). Token values only, via the theme's --qd-*. */
+.qd-markdown {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75em;
+  overflow-wrap: anywhere;
+}
+
+.qd-markdown a {
+  text-decoration: underline;
+}
+
+.qd-markdown ul {
+  list-style: disc;
+  padding-left: 1.25em;
+}
+
+.qd-markdown ol {
+  list-style: decimal;
+  padding-left: 1.25em;
+}
+
+.qd-markdown :not(pre) > code {
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+  background: var(--qd-surface-sunken);
+  border-radius: 4px;
+  padding: 0 0.25em;
+}
+
+/* Design rule: code blocks sit on ink with light text, radius-sm. */
+.qd-markdown pre {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 20px;
+  background: var(--qd-ink);
+  color: var(--qd-surface-sunken);
+  border-radius: 8px;
+  padding: 12px;
+  overflow-x: auto;
+}
+
+/* Highlighting stays in the code block's two colours; structure shows through weight and style. */
+.qd-markdown .hljs-keyword,
+.qd-markdown .hljs-built_in,
+.qd-markdown .hljs-type {
+  font-weight: 700;
+}
+
+.qd-markdown .hljs-comment {
+  font-style: italic;
+  opacity: 0.75;
+}
+
+.qd-markdown table {
+  border-collapse: collapse;
+}
+
+.qd-markdown th,
+.qd-markdown td {
+  border: 1px solid var(--qd-line);
+  padding: 4px 8px;
+}

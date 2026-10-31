@@ -36,6 +36,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/questions/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get"];
+        put: operations["update"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/topics": {
         parameters: {
             query?: never;
@@ -62,6 +78,54 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["addStarterTopics"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/questions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["create_1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/questions/{id}/unarchive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["unarchive"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/questions/{id}/archive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["archive"];
         delete?: never;
         options?: never;
         head?: never;
@@ -143,25 +207,25 @@ export interface components {
             object?: boolean;
             float?: boolean;
             number?: boolean;
-            pojo?: boolean;
-            double?: boolean;
+            binary?: boolean;
             short?: boolean;
             long?: boolean;
             /** @deprecated */
             textual?: boolean;
+            pojo?: boolean;
+            double?: boolean;
             string?: boolean;
-            boolean?: boolean;
             int?: boolean;
-            binary?: boolean;
-            missingNode?: boolean;
-            floatingPointNumber?: boolean;
-            container?: boolean;
+            boolean?: boolean;
             bigDecimal?: boolean;
-            bigInteger?: boolean;
             integralNumber?: boolean;
-            valueNode?: boolean;
             /** @enum {string} */
             nodeType?: "ARRAY" | "BINARY" | "BOOLEAN" | "MISSING" | "NULL" | "NUMBER" | "OBJECT" | "POJO" | "STRING";
+            container?: boolean;
+            missingNode?: boolean;
+            floatingPointNumber?: boolean;
+            valueNode?: boolean;
+            bigInteger?: boolean;
             embeddedValue?: boolean;
         };
         TopicView: {
@@ -176,10 +240,74 @@ export interface components {
         RenameTopic: {
             name?: string;
         };
+        OptionInput: {
+            textMd?: string;
+            correct?: boolean;
+        };
+        QuestionInput: {
+            /** @enum {string} */
+            type?: "FLASHCARD" | "SINGLE_CHOICE" | "MULTIPLE_CHOICE" | "OPEN_TEXT";
+            promptMd?: string;
+            answerMd?: string;
+            explanationMd?: string;
+            /** Format: int32 */
+            difficulty?: number;
+            sourceUrl?: string;
+            topicIds?: string[];
+            /** Format: uuid */
+            primaryTopicId?: string;
+            options?: components["schemas"]["OptionInput"][];
+            /** Format: int64 */
+            version?: number;
+        };
+        OptionItem: {
+            /** Format: uuid */
+            id?: string;
+            textMd?: string;
+            correct?: boolean;
+        };
+        QuestionView: {
+            /** Format: uuid */
+            id?: string;
+            /** @enum {string} */
+            type?: "FLASHCARD" | "SINGLE_CHOICE" | "MULTIPLE_CHOICE" | "OPEN_TEXT";
+            promptMd?: string;
+            answerMd?: string;
+            explanationMd?: string;
+            /** Format: int32 */
+            difficulty?: number;
+            /** @enum {string} */
+            status?: "DRAFT" | "ACTIVE";
+            sourceUrl?: string;
+            topics?: components["schemas"]["TopicItem"][];
+            options?: components["schemas"]["OptionItem"][];
+            /** Format: date-time */
+            flaggedAt?: string;
+            flagNote?: string;
+            /** Format: date-time */
+            archivedAt?: string;
+            /** Format: int64 */
+            version?: number;
+            /** Format: date-time */
+            createdAt?: string;
+            /** Format: date-time */
+            updatedAt?: string;
+        };
+        TopicItem: {
+            /** Format: uuid */
+            id?: string;
+            name?: string;
+            path?: string;
+            primary?: boolean;
+        };
         CreateTopic: {
             name?: string;
             /** Format: uuid */
             parentId?: string;
+        };
+        VersionInput: {
+            /** Format: int64 */
+            version?: number;
         };
         MeResponse: {
             name?: string;
@@ -260,6 +388,54 @@ export interface operations {
             };
         };
     };
+    get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["QuestionView"];
+                };
+            };
+        };
+    };
+    update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["QuestionInput"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["QuestionView"];
+                };
+            };
+        };
+    };
     list: {
         parameters: {
             query?: never;
@@ -320,6 +496,82 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["TopicView"][];
+                };
+            };
+        };
+    };
+    create_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["QuestionInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["QuestionView"];
+                };
+            };
+        };
+    };
+    unarchive: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VersionInput"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["QuestionView"];
+                };
+            };
+        };
+    };
+    archive: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VersionInput"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["QuestionView"];
                 };
             };
         };
