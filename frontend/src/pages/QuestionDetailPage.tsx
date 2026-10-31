@@ -1,6 +1,12 @@
 import { Check, ChevronLeft } from 'lucide-react';
 import { Link, useParams } from 'react-router';
-import { questionApi, useQuestion, useQuestionMutation, type QuestionView } from '../api/questions';
+import {
+  questionApi,
+  useQuestion,
+  useQuestionMutation,
+  useRefreshOnConflict,
+  type QuestionView,
+} from '../api/questions';
 import { ErrorNotice } from '../components/ErrorNotice';
 import { Markdown } from '../components/Markdown';
 import { messages } from '../messages';
@@ -57,6 +63,7 @@ function Details({ question: q }: { question: QuestionView }) {
   const unarchive = useQuestionMutation(questionApi.unarchive);
   const archived = q.archivedAt !== null;
   const change = archived ? unarchive : archive;
+  const refreshOnConflict = useRefreshOnConflict();
 
   return (
     <>
@@ -142,7 +149,13 @@ function Details({ question: q }: { question: QuestionView }) {
       <button
         type="button"
         disabled={change.isPending}
-        onClick={() => change.mutate({ id: q.id, version: q.version })}
+        onClick={() =>
+          change.mutate(
+            { id: q.id, version: q.version },
+            // Stale: load the latest version, so pressing again works.
+            { onError: (error) => refreshOnConflict(q.id, error) },
+          )
+        }
         className="h-12 rounded-md border-bold border-outline font-semibold disabled:opacity-45"
       >
         {archived ? d.unarchive : d.archive}

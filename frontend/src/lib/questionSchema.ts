@@ -61,12 +61,21 @@ export const questionSchema = z
         'The source link must start with http:// or https:// (up to 2,000 characters).',
       );
     }
-    if (q.topicIds.length < 1 || q.topicIds.length > MAX_TOPICS) {
+    if (q.difficulty !== 1 && q.difficulty !== 2 && q.difficulty !== 3) {
+      fail(['difficulty'], 'Difficulty is 1, 2 or 3.');
+    }
+    if (
+      q.topicIds.length < 1 ||
+      q.topicIds.length > MAX_TOPICS ||
+      new Set(q.topicIds).size !== q.topicIds.length
+    ) {
       fail(['topicIds'], 'Choose 1 to 5 different topics.');
     } else if (!q.topicIds.includes(q.primaryTopicId)) {
       fail(['topicIds'], "Choose one of the question's topics as the primary topic.");
     }
-    if (isChoice(q.type)) {
+    if (isChoice(q.type) && (q.options.length < MIN_OPTIONS || q.options.length > MAX_OPTIONS)) {
+      fail(['options'], 'A choice question needs 2 to 6 options.');
+    } else if (isChoice(q.type)) {
       q.options.forEach((option, i) => {
         if (blank(option.textMd) || length(option.textMd) > 2000) {
           fail(['options', i, 'textMd'], 'Every option needs 1 to 2,000 characters.');

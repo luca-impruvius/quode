@@ -1,5 +1,5 @@
 import { Plus, Star, X } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useId, useMemo, useState } from 'react';
 import { useFieldArray, type UseFormReturn } from 'react-hook-form';
 import { Link, useNavigate, useParams } from 'react-router';
 import { ApiError } from '../api/client';
@@ -69,7 +69,10 @@ function topicPaths(topics: Topic[]): Map<string, string> {
 /** /add for a new question, /questions/:id/edit for an existing one. */
 export function EditorPage() {
   const { id } = useParams();
-  const question = useQuestion(id);
+  // The form keeps what was loaded at mount: no background refetch may replace typed text.
+  const question = useQuestion(id, { live: false });
+  // Bumped only by "Reload latest", which is the one way to swap in the server's version.
+  const [reloads, setReloads] = useState(0);
 
   if (id !== undefined && question.isPending) {
     return (
@@ -85,12 +88,11 @@ export function EditorPage() {
       </main>
     );
   }
-  // A new version (after "Reload latest") remounts the form with the server's values.
   return (
     <EditorForm
-      key={question.data?.version ?? 'new'}
+      key={reloads}
       existing={question.data}
-      onReload={() => void question.refetch()}
+      onReload={() => void question.refetch().then(() => setReloads((n) => n + 1))}
     />
   );
 }
@@ -118,6 +120,25 @@ function EditorForm({
 
   const type = watch('type');
   const choice = isChoice(type);
+
+  // Explanation and source link live under "More options": open it when one of them is wrong,
+  // or Save would seem to do nothing.
+  const hiddenError =
+    formState.errors.explanationMd !== undefined || formState.errors.sourceUrl !== undefined;
+  useEffect(() => {
+    if (hiddenError) {
+      setMoreOpen(true);
+    }
+  }, [hiddenError, formState.submitCount]);
+
+  const sourceErrorId = useId();
+
+  // After "Save & add another", straight back to typing the next question.
+  useEffect(() => {
+    if (saved) {
+      form.setFocus('promptMd');
+    }
+  }, [saved, form]);
 
   // A choice question starts with two empty options.
   useEffect(() => {
@@ -164,7 +185,6 @@ function EditorForm({
           });
           create.reset();
           setSaved(true);
-          form.setFocus('promptMd');
         },
       });
     });
@@ -256,15 +276,16 @@ function EditorForm({
                   inputMode="url"
                   placeholder="https://"
                   aria-invalid={formState.errors.sourceUrl !== undefined}
+                  aria-describedby={formState.errors.sourceUrl ? sourceErrorId : undefined}
                   className="h-12 rounded-md border-2 border-line bg-surface px-space-3"
                   {...register('sourceUrl')}
                 />
-                {formState.errors.sourceUrl && (
-                  <span className="type-body-sm text-missed">
-                    {formState.errors.sourceUrl.message}
-                  </span>
-                )}
               </label>
+              {formState.errors.sourceUrl && (
+                <span id={sourceErrorId} className="-mt-space-3 type-body-sm text-missed">
+                  {formState.errors.sourceUrl.message}
+                </span>
+              )}
             </>
           )}
 
@@ -335,6 +356,7 @@ function Segmented<T extends string | number>({
   value: T;
   onChange: (value: T) => void;
 }) {
+  const name = useId();
   return (
     <fieldset className="flex flex-col gap-space-2">
       <legend className="mb-space-2 font-bold">{legend}</legend>
@@ -350,7 +372,7 @@ function Segmented<T extends string | number>({
             <input
               type="radio"
               className="sr-only"
-              name={legend}
+              name={name}
               checked={value === option.value}
               onChange={() => onChange(option.value)}
             />
@@ -372,6 +394,7 @@ function OptionsEditor({
   const single = watch('type') === 'SINGLE_CHOICE';
   const values = watch('options');
   const listError = formState.errors.options?.root?.message ?? formState.errors.options?.message;
+  const id = useId();
 
   function markCorrect(index: number, correct: boolean) {
     if (single) {
@@ -382,24 +405,31 @@ function OptionsEditor({
   }
 
   return (
-    <fieldset className="flex flex-col gap-space-2">
+    <fieldset
+      aria-describedby={listError ? `${id}-list` : undefined}
+      className="flex flex-col gap-space-2"
+    >
       <legend className="mb-space-2 font-bold">{e.options}</legend>
       {options.fields.map((field, i) => {
         const textError = formState.errors.options?.[i]?.textMd?.message;
         return (
           <div key={field.id} className="flex flex-col gap-space-1">
             <div className="flex items-center gap-space-2">
-              <input
-                type={single ? 'radio' : 'checkbox'}
-                name="correct-option"
-                aria-label={e.correctOption(i + 1)}
-                checked={values[i]?.correct ?? false}
-                onChange={(event) => markCorrect(i, event.target.checked)}
-                className="size-6 shrink-0 accent-ink"
-              />
+              {/* A 44px target around the small native control. */}
+              <label className="flex size-11 shrink-0 cursor-pointer items-center justify-center">
+                <input
+                  type={single ? 'radio' : 'checkbox'}
+                  name={`${id}-correct`}
+                  aria-label={e.correctOption(i + 1)}
+                  checked={values[i]?.correct ?? false}
+                  onChange={(event) => markCorrect(i, event.target.checked)}
+                  className="size-6 accent-ink"
+                />
+              </label>
               <input
                 aria-label={e.option(i + 1)}
                 aria-invalid={textError !== undefined}
+                aria-describedby={textError ? `${id}-${i}` : undefined}
                 className="h-12 min-w-0 flex-1 rounded-md border-2 border-outline bg-surface px-space-3"
                 {...register(`options.${i}.textMd`)}
               />
@@ -413,11 +443,19 @@ function OptionsEditor({
                 <X aria-hidden="true" size={20} strokeWidth={2} />
               </button>
             </div>
-            {textError && <span className="type-body-sm text-missed">{textError}</span>}
+            {textError && (
+              <span id={`${id}-${i}`} className="type-body-sm text-missed">
+                {textError}
+              </span>
+            )}
           </div>
         );
       })}
-      {listError && <span className="type-body-sm text-missed">{listError}</span>}
+      {listError && (
+        <span id={`${id}-list`} className="type-body-sm text-missed">
+          {listError}
+        </span>
+      )}
       <button
         type="button"
         disabled={options.fields.length >= MAX_OPTIONS}
@@ -445,6 +483,7 @@ function TopicChips({
   const { watch, setValue } = form;
   const ids = watch('topicIds');
   const primary = watch('primaryTopicId');
+  const labelId = useId();
 
   function remove(id: string) {
     const rest = ids.filter((t) => t !== id);
@@ -455,8 +494,15 @@ function TopicChips({
   }
 
   return (
-    <div className="flex flex-col gap-space-2">
-      <span className="font-bold">{e.topics}</span>
+    <div
+      role="group"
+      aria-labelledby={labelId}
+      aria-describedby={error ? `${labelId}-error` : undefined}
+      className="flex flex-col gap-space-2"
+    >
+      <span id={labelId} className="font-bold">
+        {e.topics}
+      </span>
       <ul className="flex flex-wrap gap-space-2">
         {ids.map((id) => {
           const path = paths.get(id) ?? '';
@@ -503,7 +549,11 @@ function TopicChips({
           </button>
         </li>
       </ul>
-      {error && <span className="type-body-sm text-missed">{error}</span>}
+      {error && (
+        <span id={`${labelId}-error`} className="type-body-sm text-missed">
+          {error}
+        </span>
+      )}
     </div>
   );
 }

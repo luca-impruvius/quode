@@ -1,5 +1,6 @@
 import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { focusManager } from '@tanstack/react-query';
 import { describe, expect, it } from 'vitest';
 import { messages } from '../messages';
 import { problem, questionView, topics } from '../test/questionFixtures';
@@ -256,6 +257,129 @@ describe('Editor', () => {
     await userEvent.click(screen.getByRole('button', { name: e.save }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Topic not found.');
+  });
+
+  it('never swaps the form for a newer server version on its own', async () => {
+    let latest = questionView();
+    const fetchMock = mockApi({
+      '/api/me': me(),
+      '/api/v1/topics': Response.json(topics),
+      '/api/v1/questions/q1': () => Response.json(latest),
+    });
+    renderAt('/questions/q1/edit');
+    const prompt = await screen.findByLabelText(e.question);
+    await userEvent.clear(prompt);
+    await userEvent.type(prompt, 'Typing away');
+
+    latest = questionView({ promptMd: 'Changed elsewhere', version: 4 });
+    focusManager.setFocused(false);
+    focusManager.setFocused(true);
+    window.dispatchEvent(new Event('online'));
+
+    expect(prompt).toHaveValue('Typing away');
+    const gets = fetchMock.mock.calls.filter(([url]) => String(url) === '/api/v1/questions/q1');
+    expect(gets).toHaveLength(1);
+  });
+
+  it('opens More options when a field in it is wrong', async () => {
+    backend();
+    renderAt('/add');
+
+    await userEvent.type(await screen.findByLabelText(e.question), 'Q');
+    await userEvent.type(screen.getByLabelText(e.answer), 'A');
+    await chooseTopics('Languages › Java');
+    await openMoreOptions();
+    await userEvent.type(screen.getByLabelText(e.source), 'not a link');
+    await openMoreOptions();
+    await userEvent.click(screen.getByRole('button', { name: e.save }));
+
+    expect(await screen.findByLabelText(e.source)).toHaveAccessibleDescription(
+      'The source link must start with http:// or https:// (up to 2,000 characters).',
+    );
+    expect(screen.getByRole('button', { name: e.moreOptions })).toHaveAttribute(
+      'aria-expanded',
+      'true',
+    );
+  });
+
+  it('asks for exactly one correct option after switching to single choice', async () => {
+    backend();
+    renderAt('/add');
+    await userEvent.type(await screen.findByLabelText(e.question), 'Q');
+    await chooseTopics('Languages › Java');
+    await openMoreOptions();
+    await userEvent.click(
+      screen.getByRole('radio', { name: messages.questionTypes.MULTIPLE_CHOICE }),
+    );
+    await userEvent.type(screen.getByLabelText(e.option(1)), 'A');
+    await userEvent.type(screen.getByLabelText(e.option(2)), 'B');
+    await userEvent.click(screen.getByRole('checkbox', { name: e.correctOption(1) }));
+    await userEvent.click(screen.getByRole('checkbox', { name: e.correctOption(2) }));
+
+    await userEvent.click(
+      screen.getByRole('radio', { name: messages.questionTypes.SINGLE_CHOICE }),
+    );
+    await userEvent.click(screen.getByRole('button', { name: e.save }));
+
+    expect(await screen.findByText('Mark exactly one option as correct.')).toBeVisible();
+  });
+
+  it('sends no options after switching back to a flashcard', async () => {
+    const fetchMock = backend({
+      'POST /api/v1/questions': () => Response.json(questionView(), { status: 201 }),
+    });
+    renderAt('/add');
+    await userEvent.type(await screen.findByLabelText(e.question), 'Q');
+    await chooseTopics('Languages › Java');
+    await openMoreOptions();
+    await userEvent.click(
+      screen.getByRole('radio', { name: messages.questionTypes.SINGLE_CHOICE }),
+    );
+    await userEvent.type(screen.getByLabelText(e.option(1)), 'A');
+    await userEvent.click(screen.getByRole('radio', { name: messages.questionTypes.FLASHCARD }));
+    await userEvent.type(screen.getByLabelText(e.answer), 'Answer');
+    await userEvent.click(screen.getByRole('button', { name: e.save }));
+
+    await screen.findByText('HashMap', { selector: 'strong' });
+    expect(bodyOf(fetchMock, 'POST', '/api/v1/questions')).toMatchObject({
+      type: 'FLASHCARD',
+      options: [],
+    });
+  });
+
+  it('moves primary to the next topic when the primary is removed', async () => {
+    const fetchMock = backend({
+      'POST /api/v1/questions': () => Response.json(questionView(), { status: 201 }),
+    });
+    renderAt('/add');
+    await userEvent.type(await screen.findByLabelText(e.question), 'Q');
+    await userEvent.type(screen.getByLabelText(e.answer), 'A');
+    await chooseTopics('Languages › Java', 'Languages › Java › Collections');
+
+    await userEvent.click(screen.getByRole('button', { name: e.removeTopic('Java') }));
+    expect(screen.getByText(`Languages › Java › Collections · ${e.primary}`)).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: e.save }));
+
+    await screen.findByText('HashMap', { selector: 'strong' });
+    expect(bodyOf(fetchMock, 'POST', '/api/v1/questions')).toMatchObject({
+      topicIds: ['coll'],
+      primaryTopicId: 'coll',
+    });
+  });
+
+  it('puts focus on the question after Save & add another', async () => {
+    backend({
+      'POST /api/v1/questions': () => Response.json(questionView(), { status: 201 }),
+    });
+    renderAt('/add');
+    await userEvent.type(await screen.findByLabelText(e.question), 'First');
+    await userEvent.type(screen.getByLabelText(e.answer), 'One');
+    await chooseTopics('Languages › Java');
+
+    await userEvent.click(screen.getByRole('button', { name: e.saveAndAdd }));
+
+    await screen.findByRole('status');
+    expect(screen.getByLabelText(e.question)).toHaveFocus();
   });
 
   it('opens from the tab bar', async () => {

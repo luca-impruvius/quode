@@ -21,6 +21,13 @@ export default function MarkdownView({ text }: { text: string }) {
               {children}
             </a>
           ),
+          // No remote images (a tracking pixel would phone home): show them as links instead.
+          img: ({ src, alt }) =>
+            typeof src === 'string' && src !== '' ? (
+              <a href={src} target="_blank" rel="noopener noreferrer">
+                {alt || src}
+              </a>
+            ) : null,
         }}
       >
         {text}

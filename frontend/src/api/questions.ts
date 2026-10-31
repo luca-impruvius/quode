@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { apiGet, apiSend } from './client';
+import { ApiError, apiGet, apiSend } from './client';
 
 // Hand-typed from docs/specs/M1-questions.md until M1-08 types the API from the spec.
 export type QuestionType = 'FLASHCARD' | 'SINGLE_CHOICE' | 'MULTIPLE_CHOICE' | 'OPEN_TEXT';
@@ -40,13 +40,20 @@ export interface QuestionView {
 
 export const questionKey = (id: string) => ['questions', id] as const;
 
-export function useQuestion(id: string | undefined) {
+/**
+ * One question. `live: false` (the editor) loads it once and never refetches in the background, so
+ * a form built from it keeps the user's typing; only an explicit refetch updates it.
+ */
+export function useQuestion(id: string | undefined, { live = true }: { live?: boolean } = {}) {
   return useQuery({
     queryKey: questionKey(id ?? ''),
     queryFn: () => apiGet<QuestionView>(`/v1/questions/${id}`),
     enabled: id !== undefined,
     // A missing question won't appear on a retry.
     retry: false,
+    ...(live
+      ? {}
+      : { staleTime: Infinity, refetchOnWindowFocus: false, refetchOnReconnect: false }),
   });
 }
 
@@ -60,6 +67,16 @@ export function useQuestionMutation<Args>(send: (args: Args) => Promise<Question
       void queryClient.invalidateQueries({ queryKey: ['topics'] });
     },
   });
+}
+
+/** After a stale write (409), fetch the question again so the next try uses the new version. */
+export function useRefreshOnConflict() {
+  const queryClient = useQueryClient();
+  return (id: string, error: unknown) => {
+    if (error instanceof ApiError && error.status === 409) {
+      void queryClient.invalidateQueries({ queryKey: questionKey(id) });
+    }
+  };
 }
 
 export const questionApi = {

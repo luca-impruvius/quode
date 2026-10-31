@@ -1,4 +1,4 @@
-import { screen, within } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { messages } from '../messages';
@@ -78,6 +78,44 @@ describe('Question detail', () => {
     expect(container.querySelector('script')).toBeNull();
   });
 
+  it('never links to javascript: and shows images as links', async () => {
+    mockApi({
+      '/api/me': me(),
+      '/api/v1/questions/q1': Response.json(
+        questionView({
+          answerMd: '[click](javascript:alert(1)) and ![pixel](https://tracker.example/p.gif)',
+        }),
+      ),
+    });
+
+    renderAt('/questions/q1');
+
+    const click = await screen.findByText('click');
+    expect(click.closest('a')?.getAttribute('href') ?? '').not.toMatch(/^javascript:/i);
+    expect(document.querySelector('img[src*="tracker"]')).toBeNull();
+    expect(screen.getByRole('link', { name: 'pixel' })).toHaveAttribute(
+      'href',
+      'https://tracker.example/p.gif',
+    );
+  });
+
+  it('unarchives with the version it read', async () => {
+    const fetchMock = mockApi({
+      '/api/me': me(),
+      '/api/v1/questions/q1': Response.json(
+        questionView({ archivedAt: '2026-10-31T11:00:00Z', version: 7 }),
+      ),
+      'POST /api/v1/questions/q1/unarchive': () => Response.json(questionView({ version: 8 })),
+    });
+    renderAt('/questions/q1');
+
+    await userEvent.click(await screen.findByRole('button', { name: d.unarchive }));
+
+    expect(await screen.findByRole('button', { name: d.archive })).toBeInTheDocument();
+    const call = fetchMock.mock.calls.find(([url]) => String(url).endsWith('/unarchive'));
+    expect(JSON.parse(String(call?.[1]?.body))).toEqual({ version: 7 });
+  });
+
   it('archives with the version it read, then offers Unarchive', async () => {
     let archived = false;
     const fetchMock = mockApi({
@@ -102,10 +140,14 @@ describe('Question detail', () => {
     expect(JSON.parse(String(call?.[1]?.body))).toEqual({ version: 3 });
   });
 
-  it('explains a stale archive', async () => {
+  it('explains a stale archive and loads the latest version for the next try', async () => {
+    let gets = 0;
     mockApi({
       '/api/me': me(),
-      '/api/v1/questions/q1': Response.json(questionView()),
+      '/api/v1/questions/q1': () => {
+        gets += 1;
+        return Response.json(questionView({ version: gets === 1 ? 3 : 4 }));
+      },
       'POST /api/v1/questions/q1/archive': problem(
         409,
         'This question changed elsewhere. Reload to see the latest version.',
@@ -116,6 +158,7 @@ describe('Question detail', () => {
     await userEvent.click(await screen.findByRole('button', { name: d.archive }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent('This question changed elsewhere.');
+    await waitFor(() => expect(gets).toBe(2));
   });
 
   it("says when the question doesn't exist", async () => {
