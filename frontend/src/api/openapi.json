@@ -970,6 +970,9 @@
       "TopicView" : {
         "type" : "object",
         "properties" : {
+          "drift" : {
+            "type" : "boolean"
+          },
           "id" : {
             "type" : "string",
             "format" : "uuid"
@@ -986,7 +989,7 @@
             "format" : "int64"
           }
         },
-        "required" : [ "id", "name", "parentId", "questionCount" ]
+        "required" : [ "drift", "id", "name", "parentId", "questionCount" ]
       },
       "VersionInput" : {
         "type" : "object",
