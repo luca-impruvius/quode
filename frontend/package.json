@@ -14,6 +14,7 @@
     "build": "tsc -b && vite build",
     "pretest": "npm run theme",
     "test": "vitest run",
+    "typecheck": "tsc -b",
     "lint": "eslint . --max-warnings 0 && prettier --check .",
     "format": "prettier --write .",
     "generate:api": "openapi-typescript http://localhost:8080/api/v3/api-docs -o src/api/schema.d.ts"

@@ -1,0 +1,32 @@
+# Checks the PR title against Conventional Commits (ADR-0025): squash merges make it the commit message.
+# Separate from ci.yml so editing a title doesn't re-run or cancel the build. The job name is a required check.
+name: PR title
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+
+permissions: {}
+
+concurrency:
+  group: pr-title-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  pr-title:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      # The title arrives through env, never interpolated into the script.
+      # GitHub's revert button makes 'Revert "feat: ..."', which is accepted too.
+      - name: Check the title follows Conventional Commits
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          pattern='^((feat|fix|chore|docs|ci|build|refactor|perf|test|style|revert)(\([a-z0-9-]+\))?!?: [^ ].*|Revert ".+")$'
+          if printf '%s' "$TITLE" | grep -Eq "$pattern"; then
+            echo "PR title OK: $TITLE"
+          else
+            echo "::error::PR title must follow Conventional Commits, for example 'feat(review): add due queue'. Got: $TITLE"
+            exit 1
+          fi

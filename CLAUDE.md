@@ -23,9 +23,9 @@ Quode: mobile-first spaced-repetition study app. Single user for now (Phase 1). 
 7. If a decision changes, update the living doc (`docs/architecture.md`, `docs/domain.md`, `docs/spaced-repetition.md`, `docs/conventions.md`, `docs/onboarding.md`) in the same PR, or add a new ADR in `docs/adr/`.
 
 ## Commands
-<!-- Backend confirmed by task 2; frontend commands confirmed by task 6. -->
+<!-- Backend confirmed by task 2; frontend by task 6; CI (.github/workflows/ci.yml) runs the same commands. -->
 - Backend: `cd backend && ./gradlew build` (tests + Spotless), `./gradlew spotlessApply` (fix formatting), `./gradlew bootRun` (API on :8080 under `/api`, Actuator on :8081)
-- Frontend: `cd frontend && npm run dev | test | lint | build`
+- Frontend: `cd frontend && npm run dev | test | lint | typecheck | build`
 - Local DB: `docker compose -f compose.dev.yml up -d`
 
 ## Architecture rules

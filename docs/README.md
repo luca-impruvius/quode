@@ -13,7 +13,7 @@ Every fact has one home. Engineering lives here, versioned with the code. Produc
 | [conventions.md](conventions.md) | How do we branch, commit, review, test, monitor? | Living |
 | [adr/](adr/) | Why was each decision made? | History (never edited after acceptance) |
 | [specs/](specs/) | What exactly does a feature do? | History once shipped |
-| [runbooks/](runbooks/) | How do I operate and debug production? | Living |
+| [runbooks/](runbooks/) | How do I operate and debug production, and handle a leaked secret? | Living |
 
 **Living** docs describe the current state and change in the same PR as the code. **History** docs are frozen; a changed decision gets a new ADR that supersedes the old one.
 
