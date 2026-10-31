@@ -17,6 +17,7 @@ function item(n: number, overrides: Partial<LibraryItem> = {}): LibraryItem {
     primaryTopic: { id: 'coll', name: 'Collections', path: 'Languages › Java › Collections' },
     archived: false,
     flagged: false,
+    flagNote: null,
     createdAt: '2026-10-31T10:00:00Z',
     updatedAt: '2026-10-31T10:00:00Z',
     ...overrides,
@@ -166,6 +167,17 @@ describe('Library', () => {
     await userEvent.click(screen.getByRole('link', { name: messages.tabs.library }));
 
     await waitFor(() => expect(box).toHaveValue(''));
+  });
+
+  it('lists flagged questions with their note', async () => {
+    const requests = backend(() => ({
+      items: [item(1, { flagged: true, flagNote: 'Check the source' })],
+      total: 1,
+    }));
+    renderAt('/library?status=flagged');
+
+    expect(await screen.findByText('“Check the source”')).toBeInTheDocument();
+    expect(requests[0]?.searchParams.get('status')).toBe('flagged');
   });
 
   it('says when nothing matches', async () => {

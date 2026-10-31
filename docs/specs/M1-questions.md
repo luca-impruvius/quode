@@ -10,7 +10,7 @@ I can capture a question of any of the four types, tag it with topics, edit it l
 
 ## Scope
 - In: create, read, edit (full replace), archive and unarchive; all four types; topics with one primary; answer options.
-- Out (M1): review controls (no "Add to daily review", no `learn_next`, no `review_state`, no next-due), DRAFT in the UI, hard delete, the Library list (M1-06), flagging endpoints (M1-07).
+- Out (M1): review controls (no "Add to daily review", no `learn_next`, no `review_state`, no next-due), DRAFT in the UI, hard delete. The Library list is in [M1-library](M1-library.md).
 
 ## Behaviour
 Domain rules: [domain.md](../domain.md) §4 (rules 1–4).
@@ -20,6 +20,7 @@ Domain rules: [domain.md](../domain.md) §4 (rules 1–4).
 - **Correct options:** `SINGLE_CHOICE` exactly one; `MULTIPLE_CHOICE` at least one.
 - **Topics:** 1–5 different topics of the same user, exactly one of them primary (`primaryTopicId`).
 - **Status:** new questions are `ACTIVE`. `DRAFT` exists in the model only.
+- **Flag for fixing (M1-07):** flag a question with an optional note (trimmed, up to 200 characters); flagging again replaces the note; unflag clears both. **Saving an edit clears the flag** (the edit is the fix). Flag and unflag send the version like any other write.
 - **Archive instead of delete:** archive sets `archivedAt`; unarchive clears it. Archived questions don't count in topic counts, but still block deleting their topics.
 - **Optimistic locking:** every question has a `version`. Edit, archive and unarchive send the version the client read; an older one → 409 "This question changed elsewhere. Reload to see the latest version." Edits of one question are also serialized with a row lock, so two saves of the same version give exactly one 200 and one 409.
 - **A topic deleted while a question is being saved:** the database keys decide; the question save answers 404 (topic not found), the topic delete 409 (in use).
@@ -41,6 +42,8 @@ All under `/api/v1/questions`, signed in, CSRF token on writes. Errors are Probl
 | PUT | `/v1/questions/{id}` | `QuestionInput` with `version` | 200 view (version + 1) | 400 rule or no version, 404, 409 stale |
 | POST | `/v1/questions/{id}/archive` | `{version}` | 200 view | 400, 404, 409 stale |
 | POST | `/v1/questions/{id}/unarchive` | `{version}` | 200 view | 400, 404, 409 stale |
+| POST | `/v1/questions/{id}/flag` | `{version, note?}` | 200 view (`flaggedAt`, `flagNote` set) | 400 note over 200 characters or no version, 404, 409 stale |
+| POST | `/v1/questions/{id}/unflag` | `{version}` | 200 view (flag cleared) | 400, 404, 409 stale |
 
 ## Data
 `V4__create_question.sql`:

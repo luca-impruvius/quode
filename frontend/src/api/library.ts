@@ -11,6 +11,7 @@ export interface LibraryItem {
   primaryTopic: { id: string; name: string; path: string } | null;
   archived: boolean;
   flagged: boolean;
+  flagNote: string | null;
   createdAt: string;
   updatedAt: string;
 }

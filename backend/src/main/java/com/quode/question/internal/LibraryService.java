@@ -39,6 +39,7 @@ class LibraryService {
       UUID primaryTopicId,
       boolean archived,
       boolean flagged,
+      String flagNote,
       Instant createdAt,
       Instant updatedAt) {}
 
@@ -85,7 +86,7 @@ class LibraryService {
         jdbc.query(
             """
             select q.id, q.type, q.prompt_md, q.difficulty, q.primary_topic_id,
-                   q.archived_at is not null as archived, q.flagged_at is not null as flagged,
+                   q.archived_at is not null as archived, q.flagged_at is not null as flagged, q.flag_note,
                    q.created_at, q.updated_at
               from question q
              where %s
@@ -109,6 +110,7 @@ class LibraryService {
               refs.get(r.primaryTopicId()),
               r.archived(),
               r.flagged(),
+              r.flagNote(),
               r.createdAt(),
               r.updatedAt()));
     }
@@ -131,6 +133,7 @@ class LibraryService {
         rs.getObject("primary_topic_id", UUID.class),
         rs.getBoolean("archived"),
         rs.getBoolean("flagged"),
+        rs.getString("flag_note"),
         rs.getTimestamp("created_at").toInstant(),
         rs.getTimestamp("updated_at").toInstant());
   }

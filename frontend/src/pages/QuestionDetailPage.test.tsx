@@ -161,6 +161,71 @@ describe('Question detail', () => {
     await waitFor(() => expect(gets).toBe(2));
   });
 
+  it('flags the question with a note, then shows it', async () => {
+    let flagged = false;
+    const fetchMock = mockApi({
+      '/api/me': me(),
+      '/api/v1/questions/q1': () =>
+        Response.json(
+          questionView(
+            flagged
+              ? { flaggedAt: '2026-10-31T12:00:00Z', flagNote: 'Typo in the answer', version: 4 }
+              : {},
+          ),
+        ),
+      'POST /api/v1/questions/q1/flag': () => {
+        flagged = true;
+        return Response.json(
+          questionView({
+            flaggedAt: '2026-10-31T12:00:00Z',
+            flagNote: 'Typo in the answer',
+            version: 4,
+          }),
+        );
+      },
+    });
+    renderAt('/questions/q1');
+
+    await userEvent.click(await screen.findByRole('button', { name: d.flag }));
+    const sheet = screen.getByRole('dialog', { name: d.flagTitle });
+    await userEvent.type(within(sheet).getByLabelText(d.flagNote), 'Typo in the answer');
+    expect(within(sheet).getByText(d.flagNoteHint(200 - 18))).toBeInTheDocument();
+    await userEvent.click(within(sheet).getByRole('button', { name: d.flagSave }));
+
+    expect(await screen.findByText(d.flagged)).toBeInTheDocument();
+    expect(screen.getByText('Typo in the answer')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: d.flag })).not.toBeInTheDocument();
+    const call = fetchMock.mock.calls.find(([url]) => String(url).endsWith('/flag'));
+    expect(JSON.parse(String(call?.[1]?.body))).toEqual({ version: 3, note: 'Typo in the answer' });
+  });
+
+  it('limits the note to 200 characters', async () => {
+    mockApi({ '/api/me': me(), '/api/v1/questions/q1': Response.json(questionView()) });
+    renderAt('/questions/q1');
+
+    await userEvent.click(await screen.findByRole('button', { name: d.flag }));
+
+    expect(screen.getByLabelText(d.flagNote)).toHaveAttribute('maxLength', '200');
+  });
+
+  it('unflags with the version it read', async () => {
+    const fetchMock = mockApi({
+      '/api/me': me(),
+      '/api/v1/questions/q1': Response.json(
+        questionView({ flaggedAt: '2026-10-31T12:00:00Z', flagNote: 'Fix me', version: 5 }),
+      ),
+      'POST /api/v1/questions/q1/unflag': () => Response.json(questionView({ version: 6 })),
+    });
+    renderAt('/questions/q1');
+
+    await userEvent.click(await screen.findByRole('button', { name: d.unflag }));
+
+    expect(await screen.findByRole('button', { name: d.flag })).toBeInTheDocument();
+    expect(screen.queryByText(d.flagged)).not.toBeInTheDocument();
+    const call = fetchMock.mock.calls.find(([url]) => String(url).endsWith('/unflag'));
+    expect(JSON.parse(String(call?.[1]?.body))).toEqual({ version: 5 });
+  });
+
   it("says when the question doesn't exist", async () => {
     mockApi({
       '/api/me': me(),

@@ -1,4 +1,5 @@
-import { Check, ChevronLeft } from 'lucide-react';
+import { Check, ChevronLeft, Flag } from 'lucide-react';
+import { useId, useState, type FormEvent } from 'react';
 import { Link, useParams } from 'react-router';
 import {
   questionApi,
@@ -9,6 +10,7 @@ import {
 } from '../api/questions';
 import { ErrorNotice } from '../components/ErrorNotice';
 import { Markdown } from '../components/Markdown';
+import { Sheet } from '../components/Sheet';
 import { messages } from '../messages';
 
 const d = messages.question;
@@ -64,6 +66,9 @@ function Details({ question: q }: { question: QuestionView }) {
   const archived = q.archivedAt !== null;
   const change = archived ? unarchive : archive;
   const refreshOnConflict = useRefreshOnConflict();
+  const unflag = useQuestionMutation(questionApi.unflag);
+  const [flagging, setFlagging] = useState(false);
+  const flagged = q.flaggedAt !== null;
 
   return (
     <>
@@ -71,6 +76,29 @@ function Details({ question: q }: { question: QuestionView }) {
         <p className="rounded-md bg-surface-sunken px-space-4 py-space-3 type-body-sm">
           {d.archivedBanner}
         </p>
+      )}
+      {flagged && (
+        <section className="flex flex-col gap-space-2 rounded-md bg-missed-bg p-space-4">
+          <p className="flex items-center gap-space-2 font-semibold">
+            <Flag aria-hidden="true" size={16} strokeWidth={2} />
+            {d.flagged}
+          </p>
+          {q.flagNote && <p className="type-body-sm">{q.flagNote}</p>}
+          {unflag.isError && <ErrorNotice error={unflag.error} />}
+          <button
+            type="button"
+            disabled={unflag.isPending}
+            onClick={() =>
+              unflag.mutate(
+                { id: q.id, version: q.version },
+                { onError: (error) => refreshOnConflict(q.id, error) },
+              )
+            }
+            className="h-11 self-start rounded-md border-bold border-outline bg-surface px-space-4 font-semibold disabled:opacity-45"
+          >
+            {d.unflag}
+          </button>
+        </section>
       )}
       <ul className="flex flex-wrap gap-space-2" aria-label={messages.editor.topics}>
         {q.topics.map((topic) => (
@@ -145,6 +173,17 @@ function Details({ question: q }: { question: QuestionView }) {
         </p>
       )}
 
+      {!flagged && (
+        <button
+          type="button"
+          onClick={() => setFlagging(true)}
+          className="flex h-12 items-center justify-center gap-space-2 rounded-md border-bold border-outline font-semibold"
+        >
+          <Flag aria-hidden="true" size={18} strokeWidth={2} />
+          {d.flag}
+        </button>
+      )}
+      {flagging && <FlagSheet question={q} onClose={() => setFlagging(false)} />}
       {change.isError && <ErrorNotice error={change.error} />}
       <button
         type="button"
@@ -161,6 +200,62 @@ function Details({ question: q }: { question: QuestionView }) {
         {archived ? d.unarchive : d.archive}
       </button>
     </>
+  );
+}
+
+const MAX_NOTE = 200;
+
+function FlagSheet({ question: q, onClose }: { question: QuestionView; onClose: () => void }) {
+  const [note, setNote] = useState('');
+  const flag = useQuestionMutation(questionApi.flag);
+  const refreshOnConflict = useRefreshOnConflict();
+  const left = MAX_NOTE - [...note].length;
+  const hintId = useId();
+
+  function submit(event: FormEvent) {
+    event.preventDefault();
+    flag.mutate(
+      { id: q.id, version: q.version, note },
+      { onSuccess: onClose, onError: (error) => refreshOnConflict(q.id, error) },
+    );
+  }
+
+  return (
+    <Sheet title={d.flagTitle} onClose={onClose}>
+      <form onSubmit={submit} className="flex flex-col gap-space-4">
+        <label className="flex flex-col gap-space-1">
+          <span className="font-semibold">{d.flagNote}</span>
+          <textarea
+            value={note}
+            rows={3}
+            maxLength={MAX_NOTE}
+            onChange={(event) => setNote(event.target.value)}
+            aria-describedby={hintId}
+            className="rounded-md border-2 border-outline bg-surface p-space-3"
+          />
+        </label>
+        <span id={hintId} className="type-body-sm text-ink-muted">
+          {d.flagNoteHint(left)}
+        </span>
+        {flag.isError && <ErrorNotice error={flag.error} />}
+        <div className="grid grid-cols-2 gap-space-3">
+          <button
+            type="button"
+            onClick={onClose}
+            className="h-12 rounded-md border-bold border-outline font-semibold"
+          >
+            {d.cancel}
+          </button>
+          <button
+            type="submit"
+            disabled={flag.isPending}
+            className="h-12 rounded-md border-bold border-outline bg-accent font-bold text-on-accent shadow-pop disabled:opacity-45 disabled:shadow-none"
+          >
+            {d.flagSave}
+          </button>
+        </div>
+      </form>
+    </Sheet>
   );
 }
 

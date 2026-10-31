@@ -25,6 +25,9 @@ class QuestionService {
   static final String TOPIC_NOT_FOUND = "Topic not found.";
   static final String STALE = "This question changed elsewhere. Reload to see the latest version.";
   static final String VERSION_REQUIRED = "Send the version of the question you edited.";
+  static final String NOTE_TOO_LONG = "The note can have up to 200 characters.";
+
+  private static final int MAX_NOTE = 200;
 
   private final QuestionRepository questions;
   private final TopicLookup topics;
@@ -66,6 +69,24 @@ class QuestionService {
   QuestionView unarchive(UUID ownerId, UUID id, Long version) {
     Question question = findAtVersion(ownerId, id, version);
     question.unarchive();
+    return view(save(question));
+  }
+
+  @Transactional
+  QuestionView flag(UUID ownerId, UUID id, Long version, String note) {
+    String clean = note == null || note.isBlank() ? null : note.strip();
+    if (clean != null && clean.codePointCount(0, clean.length()) > MAX_NOTE) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, NOTE_TOO_LONG);
+    }
+    Question question = findAtVersion(ownerId, id, version);
+    question.flag(clean, Instant.now());
+    return view(save(question));
+  }
+
+  @Transactional
+  QuestionView unflag(UUID ownerId, UUID id, Long version) {
+    Question question = findAtVersion(ownerId, id, version);
+    question.unflag();
     return view(save(question));
   }
 

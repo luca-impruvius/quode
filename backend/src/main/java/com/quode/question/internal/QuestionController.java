@@ -22,6 +22,9 @@ class QuestionController {
   /** The version the client read, for archive and unarchive. */
   record VersionInput(Long version) {}
 
+  /** Flag for fixing: the version the client read and an optional note (up to 200 characters). */
+  record FlagInput(Long version, String note) {}
+
   static final String BAD_LIST =
       "Check the Library filters: page ≥ 0, size 1–50, difficulty 1–3, a known sort and status, search up to 200 characters.";
 
@@ -100,5 +103,15 @@ class QuestionController {
   @PostMapping("/{id}/unarchive")
   QuestionView unarchive(@PathVariable UUID id, @RequestBody VersionInput input) {
     return questions.unarchive(currentUser.id(), id, input.version());
+  }
+
+  @PostMapping("/{id}/flag")
+  QuestionView flag(@PathVariable UUID id, @RequestBody FlagInput input) {
+    return questions.flag(currentUser.id(), id, input.version(), input.note());
+  }
+
+  @PostMapping("/{id}/unflag")
+  QuestionView unflag(@PathVariable UUID id, @RequestBody VersionInput input) {
+    return questions.unflag(currentUser.id(), id, input.version());
   }
 }
