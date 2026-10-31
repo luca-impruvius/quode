@@ -1,5 +1,6 @@
 package com.quode.shared.internal;
 
+import com.quode.shared.ConflictException;
 import com.quode.shared.ForbiddenException;
 import com.quode.shared.NotFoundException;
 import io.micrometer.tracing.Tracer;
@@ -74,6 +75,11 @@ class ProblemDetailsHandler extends ResponseEntityExceptionHandler {
   @ExceptionHandler
   ResponseEntity<Object> handleForbidden(ForbiddenException ex, WebRequest request) {
     return problem(ex, HttpStatus.FORBIDDEN, ex.getMessage(), request);
+  }
+
+  @ExceptionHandler
+  ResponseEntity<Object> handleConflict(ConflictException ex, WebRequest request) {
+    return problem(ex, HttpStatus.CONFLICT, ex.getMessage(), request);
   }
 
   @ExceptionHandler

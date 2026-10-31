@@ -151,4 +151,6 @@ See [runbooks/production-debugging.md](runbooks/production-debugging.md).
 - **Emails:** stored trimmed and lowercased (`Locale.ROOT`), and lookups normalize the argument the same way; uniqueness ignores case through a unique index on `lower(email)`; lookups use `lower(email) = lower(:email)` so they hit that index (never a derived `...IgnoreCase` query, which uses `upper()`).
 - **Schema checks:** Hibernate runs with `ddl-auto=validate` and `open-in-view=false`; Flyway owns the schema, including Spring Session's `spring_session` tables (`initialize-schema: never`).
 - **Timestamps:** `created_at` and `updated_at` come from the database clock (`now()`, Hibernate `@CurrentTimestamp(source = DB)`), for entity and plain SQL writes alike.
+- **Ownership:** every owned query takes the owner id from `com.quode.user.CurrentUser` and filters by it (`findByIdAndOwnerId`, never `findById`). Another user's row is answered exactly like a missing one: 404. Tests prove it with a second user.
+- **Business-rule conflicts:** throw `com.quode.shared.ConflictException` with a fixed user-facing sentence → 409 Problem Details. Check rules before changing an entity (a query would auto-flush the change); keep a database constraint as the last word.
 - **Tests:** every `@SpringBootTest` imports the shared `TestcontainersConfiguration` (`postgres:18`, `@ServiceConnection`).

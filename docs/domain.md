@@ -10,12 +10,13 @@ Living document. Exact columns live in the Flyway migrations; this file holds co
 
 - One controlled vocabulary of topics arranged as a tree (each topic has at most one parent), stored as an adjacency list (`parent_id`).
 - A question links to one or more topics; exactly one is primary (for display).
-- Querying a topic includes its descendants (PostgreSQL recursive CTE).
+- Querying a topic includes its descendants (PostgreSQL recursive CTE). Topic counts are distinct non-archived questions in the topic and all its descendants.
+- Every user builds their own tree; "Add starter topics" copies the seed tree below for them on request ([spec](specs/M1-topics.md)).
 - Difficulty is a column (1–3), not a tag. No separate tags table.
 
 Rejected: strict hierarchy only (one-home paralysis), free tags only (duplicates, no "all of Java"), fixed axes such as seniority and role (too much work per question; backlog).
 
-### Seed topic tree
+### Seed topic tree ("Add starter topics": 8 roots, 37 topics; kept in sync with `StarterTopics.java`)
 
 - Languages › Java › Collections, Concurrency, JVM & Memory, Streams & Lambdas
 - Frameworks › Spring › Spring Boot, Spring Security, Spring Data JPA
@@ -31,7 +32,7 @@ Rejected: strict hierarchy only (one-home paralysis), free tags only (duplicates
 | Entity | Purpose | Key fields |
 |---|---|---|
 | `app_user` | Owner of everything; created on the first allowed Google login (no seed row) | id (UUIDv7), email (lowercased, unique ignoring case), display_name, google_sub, time_zone (default Europe/Bucharest), created_at, updated_at |
-| `topic` | Node in the topic tree | id, owner_id, parent_id, name, slug |
+| `topic` | Node in the topic tree | id, owner_id, parent_id, name (trimmed, 1–60 characters, unique among siblings ignoring case) |
 | `question` | A unit of knowledge | id, owner_id, type, prompt_md, answer_md, explanation_md, difficulty, status, source_url, flagged_at, learn_next, created_at, updated_at, archived_at |
 | `answer_option` | Choices for choice questions | id, question_id, text_md, is_correct, position |
 | `question_topic` | Many-to-many link | question_id, topic_id, is_primary |
