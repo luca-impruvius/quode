@@ -10,7 +10,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.quode.TestcontainersConfiguration;
-import com.quode.shared.ErrorDetails;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -88,7 +87,7 @@ class SignInTests {
   }
 
   @Test
-  void aBlockedAccountGets403WithAClearMessage() throws Exception {
+  void aBlockedAccountGoesBackToLoginWithNoAccess() throws Exception {
     MockHttpServletRequest request = new MockHttpServletRequest();
     MockHttpServletResponse response = new MockHttpServletResponse();
 
@@ -99,13 +98,11 @@ class SignInTests {
             new OAuth2AuthenticationException(
                 new OAuth2Error(AllowlistOidcUserService.NOT_ALLOWED)));
 
-    assertThat(response.getStatus()).isEqualTo(403);
-    assertThat(request.getAttribute(ErrorDetails.ATTRIBUTE))
-        .isEqualTo(SignInFailureHandler.NOT_ALLOWED);
+    assertThat(response.getRedirectedUrl()).isEqualTo("/login?error=no-access");
   }
 
   @Test
-  void cancellingAtGoogleIs401NotTheBlockedMessage() throws Exception {
+  void cancellingAtGoogleGoesBackToLoginWithFailed() throws Exception {
     MockHttpServletRequest request = new MockHttpServletRequest();
     MockHttpServletResponse response = new MockHttpServletResponse();
 
@@ -113,7 +110,6 @@ class SignInTests {
         .onAuthenticationFailure(
             request, response, new OAuth2AuthenticationException(new OAuth2Error("access_denied")));
 
-    assertThat(response.getStatus()).isEqualTo(401);
-    assertThat(request.getAttribute(ErrorDetails.ATTRIBUTE)).isEqualTo(SignInFailureHandler.FAILED);
+    assertThat(response.getRedirectedUrl()).isEqualTo("/login?error=failed");
   }
 }
