@@ -1,8 +1,8 @@
 [versions]
-spring-boot = "4.1.1"
+spring-boot = "4.1.2"
 spring-dependency-management = "1.1.7"
-spring-modulith = "2.1.1"
-spotless = "8.10.3"
+spring-modulith = "2.1.2"
+spotless = "8.10.4"
 # 1.37.0 breaks Spotless 8.10.3 (NoSuchMethodError on JavaFormatterOptions$Style.valueOf).
 google-java-format = "1.36.1"
 gradle-git-properties = "4.0.1"
