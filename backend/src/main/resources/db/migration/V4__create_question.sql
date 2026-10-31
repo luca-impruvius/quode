@@ -51,10 +51,13 @@ create table answer_option (
     question_id uuid          not null references question (id) on delete cascade,
     text_md     varchar(2000) not null check (length(btrim(text_md)) > 0),
     is_correct  boolean       not null,
-    position    smallint      not null,
-    -- Deferred: replacing the options on an edit inserts the new rows before deleting the old ones.
+    position    smallint      not null check (position >= 0),
+    -- Deferred, so an edit may touch several rows (Hibernate inserts before it deletes) without
+    -- tripping over the order.
     constraint answer_option_position_key unique (question_id, position) deferrable initially deferred
 );
 
 create index question_owner_idx on question (owner_id);
 create index question_topic_topic_idx on question_topic (topic_id);
+-- Deleting a topic checks the primary-topic key: without this index that's a scan of question.
+create index question_primary_topic_idx on question (primary_topic_id);

@@ -43,6 +43,11 @@ class AnswerOption {
     this.position = position;
   }
 
+  void change(String textMd, boolean correct) {
+    this.textMd = textMd;
+    this.correct = correct;
+  }
+
   UUID getId() {
     return id;
   }

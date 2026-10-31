@@ -322,6 +322,86 @@ class QuestionApiTests {
                     theirTopic,
                     id))
         .hasMessageContaining("question_topic_topic_same_owner_fkey");
-    assertThat(id).isNotBlank();
+  }
+
+  private static final String CHOICE =
+      """
+      {"type":"SINGLE_CHOICE","promptMd":"Pick","difficulty":2,"topicIds":[%s],
+       "primaryTopicId":"%s","version":%s,"options":[%s]}
+      """;
+
+  private static String quoted(UUID... ids) {
+    StringBuilder out = new StringBuilder();
+    for (UUID id : ids) {
+      out.append(out.isEmpty() ? "" : ",").append('"').append(id).append('"');
+    }
+    return out.toString();
+  }
+
+  private String choice(UUID primary, String topics, Object version, String options) {
+    return CHOICE.formatted(topics, primary, version, options);
+  }
+
+  private ResultActions edit(String id, String body) throws Exception {
+    return mvc.perform(api(put("/api/v1/questions/" + id)).with(me()).with(csrf()).content(body));
+  }
+
+  @Test
+  void anEditOfOnlyTheOptionsBumpsTheVersion() throws Exception {
+    String ab = "{\"textMd\":\"A\",\"correct\":true},{\"textMd\":\"B\",\"correct\":false}";
+    String ba = "{\"textMd\":\"A\",\"correct\":false},{\"textMd\":\"B\",\"correct\":true}";
+    String id = createdId(choice(java, quoted(java), null, ab));
+
+    edit(id, choice(java, quoted(java), 0, ba))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.version").value(1));
+    // A second client still holding version 0 can't overwrite that edit.
+    edit(id, choice(java, quoted(java), 0, ab)).andExpect(status().isConflict());
+  }
+
+  @Test
+  void anEditOfOnlyTheTopicsBumpsTheVersion() throws Exception {
+    String ab = "{\"textMd\":\"A\",\"correct\":true},{\"textMd\":\"B\",\"correct\":false}";
+    String id = createdId(choice(java, quoted(java), null, ab));
+
+    edit(id, choice(java, quoted(java, collections), 0, ab))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.version").value(1));
+    edit(id, choice(java, quoted(java), 0, ab)).andExpect(status().isConflict());
+  }
+
+  @Test
+  void optionIdsStayTheSameWhenTheyKeepTheirPlace() throws Exception {
+    String ab = "{\"textMd\":\"A\",\"correct\":true},{\"textMd\":\"B\",\"correct\":false}";
+    String abc = ab + ",{\"textMd\":\"C\",\"correct\":false}";
+    String id = createdId(choice(java, quoted(java), null, ab));
+    String before =
+        mvc.perform(api(get("/api/v1/questions/" + id)).with(me()))
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
+
+    String after =
+        edit(id, choice(java, quoted(java), 0, abc))
+            .andExpect(status().isOk())
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
+
+    assertThat((String) JsonPath.read(after, "$.options[0].id"))
+        .isEqualTo(JsonPath.read(before, "$.options[0].id"));
+    assertThat((String) JsonPath.read(after, "$.options[1].id"))
+        .isEqualTo(JsonPath.read(before, "$.options[1].id"));
+    assertThat((String) JsonPath.read(after, "$.options[2].textMd")).isEqualTo("C");
+  }
+
+  @Test
+  void aJavascriptSourceLinkIs400() throws Exception {
+    create(
+            me(),
+            flashcard(java)
+                .replace("\"options\":[]", "\"options\":[],\"sourceUrl\":\"javascript:alert(1)\""))
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.detail").value(QuestionRules.SOURCE));
   }
 }

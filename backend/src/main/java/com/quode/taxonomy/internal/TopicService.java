@@ -110,7 +110,17 @@ class TopicService {
     if (usage.stream().anyMatch(u -> u.isUsed(id))) {
       throw new ConflictException(IN_USE);
     }
-    topics.delete(topic);
+    try {
+      topics.delete(topic);
+      topics.flush();
+    } catch (DataIntegrityViolationException e) {
+      // A question saved between the usage check and this delete: the database refuses, same 409.
+      if (violates(e, "question_topic_topic_same_owner_fkey")
+          || violates(e, "question_primary_topic_same_owner_fkey")) {
+        throw new ConflictException(IN_USE);
+      }
+      throw e;
+    }
   }
 
   @Transactional

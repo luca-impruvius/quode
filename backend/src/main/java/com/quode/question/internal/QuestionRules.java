@@ -46,23 +46,23 @@ final class QuestionRules {
     if (q.type() == null) {
       return Optional.of(TYPE);
     }
-    if (isBlank(q.promptMd()) || q.promptMd().length() > MAX_PROMPT) {
+    if (isBlank(q.promptMd()) || tooLong(q.promptMd(), MAX_PROMPT)) {
       return Optional.of(PROMPT);
     }
     if (!q.type().isChoice() && isBlank(q.answerMd())) {
       return Optional.of(ANSWER_REQUIRED);
     }
-    if (q.answerMd() != null && q.answerMd().length() > MAX_TEXT) {
+    if (tooLong(q.answerMd(), MAX_TEXT)) {
       return Optional.of(ANSWER_LENGTH);
     }
-    if (q.explanationMd() != null && q.explanationMd().length() > MAX_TEXT) {
+    if (tooLong(q.explanationMd(), MAX_TEXT)) {
       return Optional.of(EXPLANATION);
     }
     if (q.difficulty() == null || q.difficulty() < 1 || q.difficulty() > 3) {
       return Optional.of(DIFFICULTY);
     }
     if (!isBlank(q.sourceUrl())
-        && (q.sourceUrl().length() > MAX_SOURCE || !HTTP_URL.matcher(q.sourceUrl()).matches())) {
+        && (tooLong(q.sourceUrl(), MAX_SOURCE) || !HTTP_URL.matcher(q.sourceUrl()).matches())) {
       return Optional.of(SOURCE);
     }
     List<UUID> topics = q.topicIdsOrEmpty();
@@ -88,7 +88,7 @@ final class QuestionRules {
       return Optional.of(OPTION_COUNT);
     }
     for (OptionInput option : options) {
-      if (isBlank(option.textMd()) || option.textMd().length() > MAX_OPTION) {
+      if (isBlank(option.textMd()) || tooLong(option.textMd(), MAX_OPTION)) {
         return Optional.of(OPTION_TEXT);
       }
     }
@@ -100,6 +100,11 @@ final class QuestionRules {
       return Optional.of(MULTIPLE_CORRECT);
     }
     return Optional.empty();
+  }
+
+  // Characters as PostgreSQL's varchar counts them (code points), so an emoji counts once.
+  private static boolean tooLong(String text, int max) {
+    return text != null && text.codePointCount(0, text.length()) > max;
   }
 
   static boolean isBlank(String text) {

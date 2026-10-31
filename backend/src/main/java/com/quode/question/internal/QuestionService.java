@@ -9,6 +9,8 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.hibernate.exception.ConstraintViolationException;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
@@ -37,7 +39,7 @@ class QuestionService {
     requireValid(ownerId, input);
     Question question = new Question(ownerId);
     question.apply(input);
-    return view(questions.saveAndFlush(question));
+    return view(save(question));
   }
 
   @Transactional(readOnly = true)
@@ -105,7 +107,23 @@ class QuestionService {
       return questions.saveAndFlush(question);
     } catch (ObjectOptimisticLockingFailureException e) {
       throw new ConflictException(STALE);
+    } catch (DataIntegrityViolationException e) {
+      // A topic deleted between the ownership check and this save: same answer as an unknown one.
+      if (violates(e, "question_topic_topic_same_owner_fkey")
+          || violates(e, "question_primary_topic_same_owner_fkey")) {
+        throw new NotFoundException(TOPIC_NOT_FOUND);
+      }
+      throw e;
     }
+  }
+
+  private static boolean violates(Throwable e, String constraint) {
+    for (Throwable t = e; t != null; t = t.getCause()) {
+      if (t instanceof ConstraintViolationException c && constraint.equals(c.getConstraintName())) {
+        return true;
+      }
+    }
+    return false;
   }
 
   private QuestionView view(Question q) {

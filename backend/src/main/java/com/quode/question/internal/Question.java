@@ -157,13 +157,19 @@ class Question {
     topics.retainAll(wanted);
     topics.addAll(wanted);
 
-    // Options are replaced wholesale; the position key is deferred, so old and new rows can
-    // overlap.
-    options.clear();
+    // Options are matched by position: an option keeps its id while it keeps its place, so later
+    // modules (quiz attempts) can refer to it. Extra old ones go, extra new ones come.
     List<QuestionInput.OptionInput> wantedOptions = input.optionsOrEmpty();
     for (int i = 0; i < wantedOptions.size(); i++) {
       QuestionInput.OptionInput option = wantedOptions.get(i);
-      options.add(new AnswerOption(this, option.textMd(), option.correct(), (short) i));
+      if (i < options.size()) {
+        options.get(i).change(option.textMd(), option.correct());
+      } else {
+        options.add(new AnswerOption(this, option.textMd(), option.correct(), (short) i));
+      }
+    }
+    while (options.size() > wantedOptions.size()) {
+      options.removeLast();
     }
   }
 

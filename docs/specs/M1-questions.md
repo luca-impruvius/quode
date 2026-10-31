@@ -22,6 +22,7 @@ Domain rules: [domain.md](../domain.md) §4 (rules 1–4).
 - **Status:** new questions are `ACTIVE`. `DRAFT` exists in the model only.
 - **Archive instead of delete:** archive sets `archivedAt`; unarchive clears it. Archived questions don't count in topic counts, but still block deleting their topics.
 - **Optimistic locking:** every question has a `version`. Edit, archive and unarchive send the version the client read; an older one → 409 "This question changed elsewhere. Reload to see the latest version." Edits of one question are also serialized with a row lock, so two saves of the same version give exactly one 200 and one 409.
+- **A topic deleted while a question is being saved:** the database keys decide; the question save answers 404 (topic not found), the topic delete 409 (in use).
 - **Owner only:** another user's question, or a topic id that's unknown or someone else's, is answered exactly like a missing one (404).
 - **Markdown:** text fields are stored as typed (Markdown); rendering is the client's job (M1-05, never raw HTML).
 - **Module boundary:** `question` reads topics through `taxonomy`'s public `TopicLookup` and tells taxonomy about usage by implementing `TopicUsage`. Taxonomy never depends on question.
@@ -46,7 +47,7 @@ All under `/api/v1/questions`, signed in, CSRF token on writes. Errors are Probl
 - `question (id, owner_id, type, prompt_md, answer_md, explanation_md, difficulty, status, source_url, primary_topic_id, flagged_at, flag_note, archived_at, version, created_at, updated_at)` with check constraints for type, status, difficulty, lengths and the link format. `(primary_topic_id, owner_id) → topic`.
 - `question_topic (question_id, topic_id, owner_id)`: both keys include `owner_id`, so the database refuses a topic of another user; the topic key blocks deleting a used topic.
 - `question (id, primary_topic_id) → question_topic`, deferred: the primary is always one of the question's topics.
-- `answer_option (id, question_id, text_md, is_correct, position)`; `(question_id, position)` unique, deferred (edits replace options).
+- `answer_option (id, question_id, text_md, is_correct, position)`; `(question_id, position)` unique, deferred. Edits update options in place by position: an option keeps its id while it keeps its place, so later modules can refer to it; extra options are removed or added at the end.
 
 ## Acceptance criteria
 - [ ] Migrations for `question`, `answer_option`, `question_topic`; all four types; DRAFT/ACTIVE; difficulty; flag columns; `archived_at`; `version`
