@@ -1,6 +1,5 @@
 package com.quode.user.internal;
 
-import com.quode.shared.ErrorDetails;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
@@ -9,14 +8,14 @@ import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
 
 /**
- * Answers a failed Google sign-in with Problem Details instead of Spring's /login?error redirect:
- * 403 for an account that isn't allowed, 401 for anything else (cancelled at Google, expired or
- * tampered callback).
+ * The Google callback is a browser navigation, so a failed sign-in goes back to the app's login
+ * screen with a reason it can show: "no-access" for an account that isn't allowed, "failed" for
+ * anything else (cancelled at Google, expired or tampered callback).
  */
 class SignInFailureHandler implements AuthenticationFailureHandler {
 
-  static final String NOT_ALLOWED = "This Google account isn't allowed to use Quode.";
-  static final String FAILED = "Sign-in failed. Please try again.";
+  static final String NO_ACCESS = "/login?error=no-access";
+  static final String FAILED = "/login?error=failed";
 
   @Override
   public void onAuthenticationFailure(
@@ -25,8 +24,7 @@ class SignInFailureHandler implements AuthenticationFailureHandler {
     boolean notAllowed =
         exception instanceof OAuth2AuthenticationException oauth
             && AllowlistOidcUserService.NOT_ALLOWED.equals(oauth.getError().getErrorCode());
-    request.setAttribute(ErrorDetails.ATTRIBUTE, notAllowed ? NOT_ALLOWED : FAILED);
-    response.sendError(
-        notAllowed ? HttpServletResponse.SC_FORBIDDEN : HttpServletResponse.SC_UNAUTHORIZED);
+    // Paths from the site root, not the /api context path: the login screen is the SPA's.
+    response.sendRedirect(notAllowed ? NO_ACCESS : FAILED);
   }
 }

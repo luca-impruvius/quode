@@ -20,7 +20,8 @@ import org.springframework.security.web.servlet.util.matcher.PathPatternRequestM
 
 /**
  * Google sign-in with an email allowlist (ADR-0015), sessions in Postgres (ADR-0017). Paths here
- * are relative to the /api context path. The API answers 401/403 Problem Details, never redirects.
+ * are relative to the /api context path. The API answers 401 Problem Details, never redirects; only
+ * the browser-facing sign-in redirects (to Google, then back to / or /login?error=...).
  */
 @Configuration(proxyBeanMethods = false)
 @EnableConfigurationProperties(SecurityProperties.class)
