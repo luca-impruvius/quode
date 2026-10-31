@@ -26,6 +26,7 @@ Quode: mobile-first spaced-repetition study app. Single user for now (Phase 1). 
 <!-- Backend confirmed by task 2; frontend by task 6; CI (.github/workflows/ci.yml) runs the same commands. -->
 - Backend: `cd backend && ./gradlew build` (tests + Spotless), `./gradlew spotlessApply` (fix formatting), `./gradlew bootRun` (API on :8080 under `/api`, Actuator on :8081)
 - Frontend: `cd frontend && npm run dev | test | lint | typecheck | build`
+- API changed (Docker running): `cd backend && ./gradlew updateOpenApi`, then `cd frontend && npm run generate:api`; commit both (CI checks them)
 - Local DB: `docker compose -f compose.dev.yml up -d`
 
 ## Architecture rules

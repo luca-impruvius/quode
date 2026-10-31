@@ -1,42 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ApiError, apiGet, apiSend } from './client';
+import type { components } from './schema';
 
-// Hand-typed from docs/specs/M1-questions.md until M1-08 types the API from the spec.
-export type QuestionType = 'FLASHCARD' | 'SINGLE_CHOICE' | 'MULTIPLE_CHOICE' | 'OPEN_TEXT';
-
-export interface QuestionInput {
-  type: QuestionType;
-  promptMd: string;
-  answerMd: string | null;
-  explanationMd: string | null;
-  difficulty: number;
-  sourceUrl: string | null;
-  topicIds: string[];
-  primaryTopicId: string;
-  options: { textMd: string; correct: boolean }[];
-  /** The version the edit started from; required on edit. */
-  version?: number;
-}
-
-export interface QuestionView {
-  id: string;
-  type: QuestionType;
-  promptMd: string;
-  answerMd: string | null;
-  explanationMd: string | null;
-  difficulty: number;
-  status: 'DRAFT' | 'ACTIVE';
-  sourceUrl: string | null;
-  /** The primary first, then by path. */
-  topics: { id: string; name: string; path: string; primary: boolean }[];
-  options: { id: string; textMd: string; correct: boolean }[];
-  flaggedAt: string | null;
-  flagNote: string | null;
-  archivedAt: string | null;
-  version: number;
-  createdAt: string;
-  updatedAt: string;
-}
+// Types from the OpenAPI spec (docs/specs/M1-questions.md).
+export type QuestionView = components['schemas']['QuestionView'];
+export type QuestionType = QuestionView['type'];
+/** What create and edit send; `version` is required on edit. */
+export type QuestionInput = components['schemas']['QuestionInput'];
 
 export const questionKey = (id: string) => ['questions', id] as const;
 
@@ -47,7 +17,7 @@ export const questionKey = (id: string) => ['questions', id] as const;
 export function useQuestion(id: string | undefined, { live = true }: { live?: boolean } = {}) {
   return useQuery({
     queryKey: questionKey(id ?? ''),
-    queryFn: () => apiGet<QuestionView>(`/v1/questions/${id}`),
+    queryFn: () => apiGet('/v1/questions/{id}', { path: { id: id ?? '' } }),
     enabled: id !== undefined,
     // A missing question won't appear on a retry.
     retry: false,
@@ -82,20 +52,27 @@ export function useRefreshOnConflict() {
 }
 
 export const questionApi = {
-  create: (input: QuestionInput) => apiSend<QuestionView>('POST', '/v1/questions', input),
+  create: (input: QuestionInput) => apiSend('post', '/v1/questions', { body: input }),
   update: (args: { id: string; input: QuestionInput }) =>
-    apiSend<QuestionView>('PUT', `/v1/questions/${args.id}`, args.input),
+    apiSend('put', '/v1/questions/{id}', { path: { id: args.id }, body: args.input }),
   archive: (args: { id: string; version: number }) =>
-    apiSend<QuestionView>('POST', `/v1/questions/${args.id}/archive`, { version: args.version }),
+    apiSend('post', '/v1/questions/{id}/archive', {
+      path: { id: args.id },
+      body: { version: args.version },
+    }),
   flag: (args: { id: string; version: number; note: string }) =>
-    apiSend<QuestionView>('POST', `/v1/questions/${args.id}/flag`, {
-      version: args.version,
-      note: args.note,
+    apiSend('post', '/v1/questions/{id}/flag', {
+      path: { id: args.id },
+      body: { version: args.version, note: args.note },
     }),
   unflag: (args: { id: string; version: number }) =>
-    apiSend<QuestionView>('POST', `/v1/questions/${args.id}/unflag`, { version: args.version }),
+    apiSend('post', '/v1/questions/{id}/unflag', {
+      path: { id: args.id },
+      body: { version: args.version },
+    }),
   unarchive: (args: { id: string; version: number }) =>
-    apiSend<QuestionView>('POST', `/v1/questions/${args.id}/unarchive`, {
-      version: args.version,
+    apiSend('post', '/v1/questions/{id}/unarchive', {
+      path: { id: args.id },
+      body: { version: args.version },
     }),
 };

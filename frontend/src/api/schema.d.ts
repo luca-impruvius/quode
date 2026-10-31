@@ -4,7 +4,7 @@
  */
 
 export interface paths {
-    "/v1/topics/{id}/parent": {
+    "/client-errors": {
         parameters: {
             query?: never;
             header?: never;
@@ -12,7 +12,23 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        put: operations["move"];
+        put?: never;
+        post: operations["report"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["me"];
+        put?: never;
         post?: never;
         delete?: never;
         options?: never;
@@ -20,16 +36,16 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/topics/{id}/name": {
+    "/v1/questions": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get?: never;
-        put: operations["rename"];
-        post?: never;
+        get: operations["list_1"];
+        put?: never;
+        post: operations["create_1"];
         delete?: never;
         options?: never;
         head?: never;
@@ -46,6 +62,70 @@ export interface paths {
         get: operations["get"];
         put: operations["update"];
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/questions/{id}/archive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["archive"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/questions/{id}/flag": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["flag"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/questions/{id}/unarchive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["unarchive"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/questions/{id}/unflag": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["unflag"];
         delete?: never;
         options?: never;
         head?: never;
@@ -84,118 +164,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/questions": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["list_1"];
-        put?: never;
-        post: operations["create_1"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/questions/{id}/unflag": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["unflag"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/questions/{id}/unarchive": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["unarchive"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/questions/{id}/flag": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["flag"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/questions/{id}/archive": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["archive"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/client-errors": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["report"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/me": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["me"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/v1/topics/{id}": {
         parameters: {
             query?: never;
@@ -212,190 +180,169 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/error": {
+    "/v1/topics/{id}/name": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get: operations["error"];
-        put: operations["error_2"];
-        post: operations["error_1"];
-        delete: operations["error_3"];
-        options: operations["error_6"];
-        head: operations["error_5"];
-        patch: operations["error_4"];
+        get?: never;
+        put: operations["rename"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/topics/{id}/parent": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["move"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
-        JsonNode: {
-            empty?: boolean;
-            array?: boolean;
-            null?: boolean;
-            object?: boolean;
-            float?: boolean;
-            number?: boolean;
-            short?: boolean;
-            int?: boolean;
-            long?: boolean;
-            string?: boolean;
-            pojo?: boolean;
-            binary?: boolean;
-            /** @deprecated */
-            textual?: boolean;
-            boolean?: boolean;
-            double?: boolean;
-            container?: boolean;
-            bigDecimal?: boolean;
-            bigInteger?: boolean;
-            floatingPointNumber?: boolean;
-            valueNode?: boolean;
-            missingNode?: boolean;
-            /** @enum {string} */
-            nodeType?: "ARRAY" | "BINARY" | "BOOLEAN" | "MISSING" | "NULL" | "NUMBER" | "OBJECT" | "POJO" | "STRING";
-            integralNumber?: boolean;
-            embeddedValue?: boolean;
-        };
-        TopicView: {
-            /** Format: uuid */
-            id?: string;
-            /** Format: uuid */
-            parentId?: string;
-            name?: string;
-            /** Format: int64 */
-            questionCount?: number;
-        };
-        RenameTopic: {
-            name?: string;
-        };
-        OptionInput: {
-            textMd?: string;
-            correct?: boolean;
-        };
-        QuestionInput: {
-            /** @enum {string} */
-            type?: "FLASHCARD" | "SINGLE_CHOICE" | "MULTIPLE_CHOICE" | "OPEN_TEXT";
-            promptMd?: string;
-            answerMd?: string;
-            explanationMd?: string;
-            /** Format: int32 */
-            difficulty?: number;
-            sourceUrl?: string;
-            topicIds?: string[];
-            /** Format: uuid */
-            primaryTopicId?: string;
-            options?: components["schemas"]["OptionInput"][];
-            /** Format: int64 */
-            version?: number;
-        };
-        OptionItem: {
-            /** Format: uuid */
-            id?: string;
-            textMd?: string;
-            correct?: boolean;
-        };
-        QuestionView: {
-            /** Format: uuid */
-            id?: string;
-            /** @enum {string} */
-            type?: "FLASHCARD" | "SINGLE_CHOICE" | "MULTIPLE_CHOICE" | "OPEN_TEXT";
-            promptMd?: string;
-            answerMd?: string;
-            explanationMd?: string;
-            /** Format: int32 */
-            difficulty?: number;
-            /** @enum {string} */
-            status?: "DRAFT" | "ACTIVE";
-            sourceUrl?: string;
-            topics?: components["schemas"]["TopicItem"][];
-            options?: components["schemas"]["OptionItem"][];
-            /** Format: date-time */
-            flaggedAt?: string;
-            flagNote?: string;
-            /** Format: date-time */
-            archivedAt?: string;
-            /** Format: int64 */
-            version?: number;
-            /** Format: date-time */
-            createdAt?: string;
-            /** Format: date-time */
-            updatedAt?: string;
-        };
-        TopicItem: {
-            /** Format: uuid */
-            id?: string;
-            name?: string;
-            path?: string;
-            primary?: boolean;
-        };
         CreateTopic: {
             name?: string;
             /** Format: uuid */
             parentId?: string;
         };
-        VersionInput: {
-            /** Format: int64 */
-            version?: number;
-        };
         FlagInput: {
+            note?: string;
             /** Format: int64 */
             version?: number;
-            note?: string;
         };
         LibraryItem: {
-            /** Format: uuid */
-            id?: string;
-            /** @enum {string} */
-            type?: "FLASHCARD" | "SINGLE_CHOICE" | "MULTIPLE_CHOICE" | "OPEN_TEXT";
-            promptMd?: string;
+            archived: boolean;
+            /** Format: date-time */
+            createdAt: string;
             /** Format: int32 */
-            difficulty?: number;
-            primaryTopic?: components["schemas"]["TopicRef"];
-            archived?: boolean;
-            flagged?: boolean;
-            flagNote?: string;
+            difficulty: number;
+            flagNote: string | null;
+            flagged: boolean;
+            /** Format: uuid */
+            id: string;
+            primaryTopic: components["schemas"]["TopicRef"];
+            promptMd: string;
+            /** @enum {string} */
+            type: "FLASHCARD" | "SINGLE_CHOICE" | "MULTIPLE_CHOICE" | "OPEN_TEXT";
             /** Format: date-time */
-            createdAt?: string;
-            /** Format: date-time */
-            updatedAt?: string;
+            updatedAt: string;
         };
         LibraryPage: {
-            items?: components["schemas"]["LibraryItem"][];
+            hasNext: boolean;
+            items: components["schemas"]["LibraryItem"][];
             /** Format: int32 */
-            page?: number;
+            page: number;
             /** Format: int32 */
-            size?: number;
+            size: number;
             /** Format: int64 */
-            totalElements?: number;
-            hasNext?: boolean;
+            totalElements: number;
+        };
+        MeResponse: {
+            email: string;
+            name: string;
+            timeZone: string;
+        };
+        MoveTopic: {
+            /** Format: uuid */
+            parentId: string | null;
+        };
+        OptionInput: {
+            correct?: boolean;
+            textMd?: string;
+        };
+        OptionItem: {
+            correct: boolean;
+            /** Format: uuid */
+            id: string;
+            textMd: string;
+        };
+        QuestionInput: {
+            answerMd?: string | null;
+            /** Format: int32 */
+            difficulty?: number;
+            explanationMd?: string | null;
+            options?: components["schemas"]["OptionInput"][];
+            /** Format: uuid */
+            primaryTopicId?: string;
+            promptMd?: string;
+            sourceUrl?: string | null;
+            topicIds?: string[];
+            /** @enum {string} */
+            type?: "FLASHCARD" | "SINGLE_CHOICE" | "MULTIPLE_CHOICE" | "OPEN_TEXT";
+            /** Format: int64 */
+            version?: number;
+        };
+        QuestionView: {
+            answerMd: string | null;
+            /** Format: date-time */
+            archivedAt: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: int32 */
+            difficulty: number;
+            explanationMd: string | null;
+            flagNote: string | null;
+            /** Format: date-time */
+            flaggedAt: string | null;
+            /** Format: uuid */
+            id: string;
+            options: components["schemas"]["OptionItem"][];
+            promptMd: string;
+            sourceUrl: string | null;
+            /** @enum {string} */
+            status: "DRAFT" | "ACTIVE";
+            topics: components["schemas"]["TopicItem"][];
+            /** @enum {string} */
+            type: "FLASHCARD" | "SINGLE_CHOICE" | "MULTIPLE_CHOICE" | "OPEN_TEXT";
+            /** Format: date-time */
+            updatedAt: string;
+            /** Format: int64 */
+            version: number;
+        };
+        RenameTopic: {
+            name?: string;
+        };
+        TopicItem: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            path: string;
+            primary: boolean;
         };
         TopicRef: {
             /** Format: uuid */
-            id?: string;
-            name?: string;
-            path?: string;
+            id: string;
+            name: string;
+            path: string;
         };
-        MeResponse: {
-            name?: string;
-            email?: string;
-            timeZone?: string;
+        TopicView: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            /** Format: uuid */
+            parentId: string | null;
+            /** Format: int64 */
+            questionCount: number;
         };
-        ProblemDetail: {
-            /** Format: uri */
-            type?: string;
-            title?: string;
-            /** Format: int32 */
-            status?: number;
-            detail?: string;
-            /** Format: uri */
-            instance?: string;
-            properties?: {
-                [key: string]: unknown;
-            };
+        VersionInput: {
+            /** Format: int64 */
+            version?: number;
         };
     };
     responses: never;
@@ -406,327 +353,6 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    move: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["JsonNode"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["TopicView"];
-                };
-            };
-        };
-    };
-    rename: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["RenameTopic"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["TopicView"];
-                };
-            };
-        };
-    };
-    get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["QuestionView"];
-                };
-            };
-        };
-    };
-    update: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["QuestionInput"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["QuestionView"];
-                };
-            };
-        };
-    };
-    list: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["TopicView"][];
-                };
-            };
-        };
-    };
-    create: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreateTopic"];
-            };
-        };
-        responses: {
-            /** @description Created */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["TopicView"];
-                };
-            };
-        };
-    };
-    addStarterTopics: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Created */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["TopicView"][];
-                };
-            };
-        };
-    };
-    list_1: {
-        parameters: {
-            query?: {
-                topicId?: string;
-                type?: "FLASHCARD" | "SINGLE_CHOICE" | "MULTIPLE_CHOICE" | "OPEN_TEXT";
-                difficulty?: number;
-                status?: string;
-                q?: string;
-                sort?: string;
-                page?: number;
-                size?: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["LibraryPage"];
-                };
-            };
-        };
-    };
-    create_1: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["QuestionInput"];
-            };
-        };
-        responses: {
-            /** @description Created */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["QuestionView"];
-                };
-            };
-        };
-    };
-    unflag: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["VersionInput"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["QuestionView"];
-                };
-            };
-        };
-    };
-    unarchive: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["VersionInput"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["QuestionView"];
-                };
-            };
-        };
-    };
-    flag: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["FlagInput"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["QuestionView"];
-                };
-            };
-        };
-    };
-    archive: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["VersionInput"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["QuestionView"];
-                };
-            };
-        };
-    };
     report: {
         parameters: {
             query?: never;
@@ -760,7 +386,276 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": components["schemas"]["MeResponse"];
+                    "application/json": components["schemas"]["MeResponse"];
+                };
+            };
+        };
+    };
+    list_1: {
+        parameters: {
+            query?: {
+                topicId?: string;
+                type?: "FLASHCARD" | "SINGLE_CHOICE" | "MULTIPLE_CHOICE" | "OPEN_TEXT";
+                difficulty?: number;
+                status?: string;
+                q?: string;
+                sort?: string;
+                page?: number;
+                size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryPage"];
+                };
+            };
+        };
+    };
+    create_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["QuestionInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QuestionView"];
+                };
+            };
+        };
+    };
+    get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QuestionView"];
+                };
+            };
+        };
+    };
+    update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["QuestionInput"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QuestionView"];
+                };
+            };
+        };
+    };
+    archive: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VersionInput"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QuestionView"];
+                };
+            };
+        };
+    };
+    flag: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FlagInput"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QuestionView"];
+                };
+            };
+        };
+    };
+    unarchive: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VersionInput"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QuestionView"];
+                };
+            };
+        };
+    };
+    unflag: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VersionInput"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QuestionView"];
+                };
+            };
+        };
+    };
+    list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TopicView"][];
+                };
+            };
+        };
+    };
+    create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateTopic"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TopicView"];
+                };
+            };
+        };
+    };
+    addStarterTopics: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TopicView"][];
                 };
             };
         };
@@ -785,14 +680,20 @@ export interface operations {
             };
         };
     };
-    error: {
+    rename: {
         parameters: {
             query?: never;
             header?: never;
-            path?: never;
+            path: {
+                id: string;
+            };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RenameTopic"];
+            };
+        };
         responses: {
             /** @description OK */
             200: {
@@ -800,39 +701,25 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": components["schemas"]["ProblemDetail"];
+                    "application/json": components["schemas"]["TopicView"];
                 };
             };
         };
     };
-    error_2: {
+    move: {
         parameters: {
             query?: never;
             header?: never;
-            path?: never;
+            path: {
+                id: string;
+            };
             cookie?: never;
         };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["ProblemDetail"];
-                };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MoveTopic"];
             };
         };
-    };
-    error_1: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
         responses: {
             /** @description OK */
             200: {
@@ -840,87 +727,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": components["schemas"]["ProblemDetail"];
-                };
-            };
-        };
-    };
-    error_3: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["ProblemDetail"];
-                };
-            };
-        };
-    };
-    error_6: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["ProblemDetail"];
-                };
-            };
-        };
-    };
-    error_5: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["ProblemDetail"];
-                };
-            };
-        };
-    };
-    error_4: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["ProblemDetail"];
+                    "application/json": components["schemas"]["TopicView"];
                 };
             };
         };

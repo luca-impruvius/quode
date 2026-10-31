@@ -8,7 +8,7 @@ export type Me = components['schemas']['MeResponse'];
 export function useMe() {
   return useQuery({
     queryKey: ['me'],
-    queryFn: () => apiGet<Me>('/me'),
+    queryFn: () => apiGet('/me'),
     retry: (failures, error) => !isSignedOut(error) && failures < 1,
     // Login reads the same query after the guard sent it there: reuse the 401, don't ask again.
     retryOnMount: false,

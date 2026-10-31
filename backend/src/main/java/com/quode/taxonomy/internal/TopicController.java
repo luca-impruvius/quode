@@ -1,6 +1,8 @@
 package com.quode.taxonomy.internal;
 
 import com.quode.user.CurrentUser;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
@@ -24,6 +26,13 @@ class TopicController {
   record CreateTopic(String name, UUID parentId) {}
 
   record RenameTopic(String name) {}
+
+  /** The move body as the API documents it (the controller reads raw JSON to require the key). */
+  record MoveTopic(
+      @Schema(
+              types = {"string", "null"},
+              requiredMode = Schema.RequiredMode.REQUIRED)
+          UUID parentId) {}
 
   private final TopicService topics;
   private final CurrentUser currentUser;
@@ -52,7 +61,12 @@ class TopicController {
   @PutMapping("/{id}/parent")
   // Body {"parentId": "<uuid>"} or {"parentId": null} for the top level. Read as JSON so a missing
   // key (an empty body, a typo) is an error instead of a silent move to the top level.
-  TopicView move(@PathVariable UUID id, @RequestBody JsonNode body) {
+  TopicView move(
+      @PathVariable UUID id,
+      @io.swagger.v3.oas.annotations.parameters.RequestBody(
+              content = @Content(schema = @Schema(implementation = MoveTopic.class)))
+          @RequestBody
+          JsonNode body) {
     JsonNode parent = body.get("parentId");
     if (parent == null || !(parent.isNull() || parent.isString())) {
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, TopicService.MISSING_PARENT);
