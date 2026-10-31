@@ -56,13 +56,14 @@ export function MePage() {
       </div>
 
       <div className="flex flex-col">
-        <h2 className="type-label text-ink-muted">{messages.me.settings}</h2>
+        <h2 className="type-label text-ink-muted uppercase">{messages.me.settings}</h2>
         <div className={row}>
           <span id="theme-label">{messages.me.theme}</span>
+          {/* No overflow-hidden here: it would clip the focus ring; the end buttons round instead. */}
           <div
             role="group"
             aria-labelledby="theme-label"
-            className="flex overflow-hidden rounded-sm border-bold border-outline"
+            className="flex rounded-sm border-bold border-outline"
           >
             {themes.map((option) => (
               <button
@@ -70,7 +71,7 @@ export function MePage() {
                 type="button"
                 aria-pressed={theme === option.value}
                 onClick={() => chooseTheme(option.value)}
-                className="min-h-11 px-space-3 type-body-sm aria-pressed:bg-ink aria-pressed:text-surface"
+                className="min-h-11 px-space-3 type-body-sm first:rounded-l-[6px] last:rounded-r-[6px] aria-pressed:bg-ink aria-pressed:text-surface"
               >
                 {option.label}
               </button>

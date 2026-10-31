@@ -85,6 +85,26 @@ describe('Me', () => {
     await userEvent.click(await screen.findByRole('button', { name: messages.me.signOut }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent(messages.errors.reference('abcdef'));
+    // Usable again, so a retry is possible.
+    expect(screen.getByRole('button', { name: messages.me.signOut })).toBeEnabled();
+  });
+
+  it('can be pressed only once while signing out', async () => {
+    let finish: (response: Response) => void = () => {};
+    mockApi({
+      '/api/me': me(),
+      'POST /api/logout': () =>
+        new Promise<Response>((resolve) => {
+          finish = resolve;
+        }),
+    });
+    renderAt('/me');
+    const button = await screen.findByRole('button', { name: messages.me.signOut });
+
+    await userEvent.click(button);
+
+    expect(button).toBeDisabled();
+    finish(new Response(null, { status: 204 }));
   });
 
   it('links to the Stats placeholder', async () => {

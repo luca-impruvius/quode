@@ -1,35 +1,12 @@
 import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { messages } from '../messages';
-import { renderAt } from '../test/renderApp';
+import { me, mockApi, renderAt, unauthorized } from '../test/renderApp';
 
-// Answers GET /api/me; anything else fails the test loudly.
-function meAnswers(response: Response) {
-  return vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
-    if (String(input) === '/api/me') {
-      return response.clone();
-    }
-    throw new Error(`Unexpected request: ${String(input)}`);
-  });
-}
-
-const signedIn = () =>
-  meAnswers(
-    Response.json({
-      name: 'Luca Example',
-      email: 'user@example.com',
-      timeZone: 'Europe/Bucharest',
-    }),
-  );
-
-const signedOut = () =>
-  meAnswers(
-    Response.json(
-      { status: 401, detail: 'Sign in to continue.' },
-      { status: 401, headers: { 'Content-Type': 'application/problem+json' } },
-    ),
-  );
+const meAnswers = (response: Response) => mockApi({ '/api/me': response });
+const signedIn = () => meAnswers(me());
+const signedOut = () => meAnswers(unauthorized());
 
 describe('Login', () => {
   it('sends signed-out users to the login screen', async () => {

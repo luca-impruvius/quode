@@ -25,7 +25,8 @@ export function renderAt(path: string) {
   return router;
 }
 
-type Answer = Response | (() => Response);
+// A function answer runs per request; it may return a promise to hold the request open.
+type Answer = Response | (() => Response | Promise<Response>);
 
 /**
  * Fakes the backend: keys are "METHOD /api/path" (GET when the method is left out). Any request
