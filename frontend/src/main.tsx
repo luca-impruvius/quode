@@ -8,6 +8,10 @@ import '@fontsource/ibm-plex-sans/700.css';
 import '@fontsource/ibm-plex-mono/400.css';
 import './styles/index.css';
 import { App } from './app/App';
+import { applyTheme, readTheme } from './app/theme';
+
+// index.html already did this before paint; repeated here in case that script was blocked.
+applyTheme(readTheme());
 
 const root = document.getElementById('root');
 if (!root) {

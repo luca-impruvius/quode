@@ -1,4 +1,4 @@
-import { BarChart3, BookOpen, House, Plus, Settings, type LucideIcon } from 'lucide-react';
+import { BookOpen, House, ListChecks, Plus, UserRound, type LucideIcon } from 'lucide-react';
 import { NavLink, Outlet } from 'react-router';
 import { messages } from '../messages';
 
@@ -13,8 +13,8 @@ const leftTabs: Tab[] = [
   { to: '/library', label: messages.tabs.library, Icon: BookOpen },
 ];
 const rightTabs: Tab[] = [
-  { to: '/stats', label: messages.tabs.stats, Icon: BarChart3 },
-  { to: '/settings', label: messages.tabs.settings, Icon: Settings },
+  { to: '/quizzes', label: messages.tabs.quizzes, Icon: ListChecks },
+  { to: '/me', label: messages.tabs.me, Icon: UserRound },
 ];
 
 /** The signed-in frame: the screen above, the tab bar with the add button at the bottom. */
@@ -26,7 +26,7 @@ export function AppShell() {
       </main>
       <nav
         aria-label={messages.tabs.label}
-        className="fixed inset-x-0 bottom-0 mx-auto flex h-[calc(72px+env(safe-area-inset-bottom))] max-w-md items-start justify-around border-t border-hair border-line bg-surface pt-2.5 pb-[env(safe-area-inset-bottom)]"
+        className="fixed inset-x-0 bottom-0 mx-auto flex h-[calc(72px+env(safe-area-inset-bottom))] max-w-md items-start justify-around border-t border-line bg-surface pt-2.5 pb-[env(safe-area-inset-bottom)]"
       >
         {leftTabs.map((tab) => (
           <TabLink key={tab.to} {...tab} />
