@@ -1,28 +1,10 @@
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { apiGet } from './client';
 import type { QuestionType } from './questions';
+import type { components } from './schema';
 
-// Hand-typed from docs/specs/M1-library.md until M1-08 types the API from the spec.
-export interface LibraryItem {
-  id: string;
-  type: QuestionType;
-  promptMd: string;
-  difficulty: number;
-  primaryTopic: { id: string; name: string; path: string } | null;
-  archived: boolean;
-  flagged: boolean;
-  flagNote: string | null;
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface LibraryPageResponse {
-  items: LibraryItem[];
-  page: number;
-  size: number;
-  totalElements: number;
-  hasNext: boolean;
-}
+// Types from the OpenAPI spec (docs/specs/M1-library.md).
+export type LibraryItem = components['schemas']['LibraryItem'];
 
 export type LibraryStatus = 'active' | 'archived' | 'flagged';
 export type LibrarySort = 'created' | 'updated' | 'difficulty';
@@ -45,17 +27,19 @@ export function useLibrary(filters: LibraryFilters) {
     queryKey: ['library', filters],
     initialPageParam: 0,
     queryFn: ({ pageParam }) => {
-      const params = new URLSearchParams({
-        status: filters.status,
-        sort: filters.sort,
-        page: String(pageParam),
-        size: String(PAGE_SIZE),
+      // Empty values are left out of the URL by the client.
+      return apiGet('/v1/questions', {
+        query: {
+          status: filters.status,
+          sort: filters.sort,
+          page: pageParam,
+          size: PAGE_SIZE,
+          ...(filters.q ? { q: filters.q } : {}),
+          ...(filters.topicId ? { topicId: filters.topicId } : {}),
+          ...(filters.type ? { type: filters.type } : {}),
+          ...(filters.difficulty ? { difficulty: filters.difficulty } : {}),
+        },
       });
-      if (filters.q) params.set('q', filters.q);
-      if (filters.topicId) params.set('topicId', filters.topicId);
-      if (filters.type) params.set('type', filters.type);
-      if (filters.difficulty) params.set('difficulty', String(filters.difficulty));
-      return apiGet<LibraryPageResponse>(`/v1/questions?${params}`);
     },
     getNextPageParam: (last) => (last.hasNext ? last.page + 1 : undefined),
   });

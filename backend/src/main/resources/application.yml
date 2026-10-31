@@ -37,6 +37,11 @@ quode:
     # Google accounts allowed to sign in (comma-separated, any case). Empty means nobody.
     allowed-emails: ${QUODE_ALLOWED_EMAILS:}
 
+springdoc:
+  # The spec is the frontend's type source (M1-08): stable key order and real JSON content types.
+  writer-with-order-by-keys: true
+  default-produces-media-type: application/json
+
 server:
   servlet:
     # Caddy forwards /api/* unchanged, so every backend URL starts with /api.

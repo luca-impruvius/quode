@@ -1,6 +1,7 @@
 package com.quode.question.internal;
 
 import com.quode.taxonomy.TopicRef;
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -13,6 +14,6 @@ record LibraryItem(
     TopicRef primaryTopic,
     boolean archived,
     boolean flagged,
-    String flagNote,
+    @Schema(types = {"string", "null"}) String flagNote,
     Instant createdAt,
     Instant updatedAt) {}
