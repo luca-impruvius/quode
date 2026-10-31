@@ -1,4 +1,4 @@
-import { screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { messages } from '../messages';
@@ -159,6 +159,126 @@ describe('Question detail', () => {
 
     expect(await screen.findByRole('alert')).toHaveTextContent('This question changed elsewhere.');
     await waitFor(() => expect(gets).toBe(2));
+  });
+
+  it('flags the question with a note, then shows it', async () => {
+    let flagged = false;
+    const fetchMock = mockApi({
+      '/api/me': me(),
+      '/api/v1/questions/q1': () =>
+        Response.json(
+          questionView(
+            flagged
+              ? { flaggedAt: '2026-10-31T12:00:00Z', flagNote: 'Typo in the answer', version: 4 }
+              : {},
+          ),
+        ),
+      'POST /api/v1/questions/q1/flag': () => {
+        flagged = true;
+        return Response.json(
+          questionView({
+            flaggedAt: '2026-10-31T12:00:00Z',
+            flagNote: 'Typo in the answer',
+            version: 4,
+          }),
+        );
+      },
+    });
+    renderAt('/questions/q1');
+
+    await userEvent.click(await screen.findByRole('button', { name: d.flag }));
+    const sheet = screen.getByRole('dialog', { name: d.flagTitle });
+    await userEvent.type(within(sheet).getByLabelText(d.flagNote), 'Typo in the answer');
+    expect(within(sheet).getByText(d.flagNoteHint(200 - 18))).toBeInTheDocument();
+    await userEvent.click(within(sheet).getByRole('button', { name: d.flagSave }));
+
+    expect(await screen.findByText(d.flagged)).toBeInTheDocument();
+    expect(screen.getByText('Typo in the answer')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: d.flag })).not.toBeInTheDocument();
+    const call = fetchMock.mock.calls.find(([url]) => String(url).endsWith('/flag'));
+    expect(JSON.parse(String(call?.[1]?.body))).toEqual({ version: 3, note: 'Typo in the answer' });
+  });
+
+  it('limits the note to 200 characters, counting an emoji once', async () => {
+    mockApi({ '/api/me': me(), '/api/v1/questions/q1': Response.json(questionView()) });
+    renderAt('/questions/q1');
+    await userEvent.click(await screen.findByRole('button', { name: d.flag }));
+    const note = screen.getByLabelText(d.flagNote);
+
+    fireEvent.change(note, { target: { value: '🦆'.repeat(150) } });
+    expect(screen.getByText(d.flagNoteHint(50))).toBeInTheDocument();
+
+    fireEvent.change(note, { target: { value: 'x'.repeat(250) } });
+    expect(note).toHaveValue('x'.repeat(200));
+    expect(screen.getByText(d.flagNoteHint(0))).toBeInTheDocument();
+  });
+
+  it('keeps focus on the banner after flagging and on the button after unflagging', async () => {
+    let flagged = false;
+    const view = () =>
+      questionView(
+        flagged ? { flaggedAt: '2026-10-31T12:00:00Z', flagNote: null, version: 4 } : {},
+      );
+    mockApi({
+      '/api/me': me(),
+      '/api/v1/questions/q1': () => Response.json(view()),
+      'POST /api/v1/questions/q1/flag': () => {
+        flagged = true;
+        return Response.json(view());
+      },
+      'POST /api/v1/questions/q1/unflag': () => {
+        flagged = false;
+        return Response.json(view());
+      },
+    });
+    renderAt('/questions/q1');
+
+    await userEvent.click(await screen.findByRole('button', { name: d.flag }));
+    await userEvent.click(screen.getByRole('button', { name: d.flagSave }));
+    await waitFor(() => expect(screen.getByText(d.flagged).closest('p')).toHaveFocus());
+
+    await userEvent.click(screen.getByRole('button', { name: d.unflag }));
+    await waitFor(() => expect(screen.getByRole('button', { name: d.flag })).toHaveFocus());
+  });
+
+  it('loads the latest version after a stale flag', async () => {
+    let gets = 0;
+    mockApi({
+      '/api/me': me(),
+      '/api/v1/questions/q1': () => {
+        gets += 1;
+        return Response.json(questionView({ version: gets === 1 ? 3 : 4 }));
+      },
+      'POST /api/v1/questions/q1/flag': problem(
+        409,
+        'This question changed elsewhere. Reload to see the latest version.',
+      ),
+    });
+    renderAt('/questions/q1');
+
+    await userEvent.click(await screen.findByRole('button', { name: d.flag }));
+    await userEvent.click(screen.getByRole('button', { name: d.flagSave }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('This question changed elsewhere.');
+    await waitFor(() => expect(gets).toBe(2));
+  });
+
+  it('unflags with the version it read', async () => {
+    const fetchMock = mockApi({
+      '/api/me': me(),
+      '/api/v1/questions/q1': Response.json(
+        questionView({ flaggedAt: '2026-10-31T12:00:00Z', flagNote: 'Fix me', version: 5 }),
+      ),
+      'POST /api/v1/questions/q1/unflag': () => Response.json(questionView({ version: 6 })),
+    });
+    renderAt('/questions/q1');
+
+    await userEvent.click(await screen.findByRole('button', { name: d.unflag }));
+
+    expect(await screen.findByRole('button', { name: d.flag })).toBeInTheDocument();
+    expect(screen.queryByText(d.flagged)).not.toBeInTheDocument();
+    const call = fetchMock.mock.calls.find(([url]) => String(url).endsWith('/unflag'));
+    expect(JSON.parse(String(call?.[1]?.body))).toEqual({ version: 5 });
   });
 
   it("says when the question doesn't exist", async () => {

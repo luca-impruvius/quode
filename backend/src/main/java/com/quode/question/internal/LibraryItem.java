@@ -13,5 +13,6 @@ record LibraryItem(
     TopicRef primaryTopic,
     boolean archived,
     boolean flagged,
+    String flagNote,
     Instant createdAt,
     Instant updatedAt) {}

@@ -64,7 +64,9 @@ export function useQuestionMutation<Args>(send: (args: Args) => Promise<Question
     mutationFn: send,
     onSuccess: (saved) => {
       queryClient.setQueryData(questionKey(saved.id), saved);
+      // Counts, badges and filtered lists may all have changed.
       void queryClient.invalidateQueries({ queryKey: ['topics'] });
+      void queryClient.invalidateQueries({ queryKey: ['library'] });
     },
   });
 }
@@ -85,6 +87,13 @@ export const questionApi = {
     apiSend<QuestionView>('PUT', `/v1/questions/${args.id}`, args.input),
   archive: (args: { id: string; version: number }) =>
     apiSend<QuestionView>('POST', `/v1/questions/${args.id}/archive`, { version: args.version }),
+  flag: (args: { id: string; version: number; note: string }) =>
+    apiSend<QuestionView>('POST', `/v1/questions/${args.id}/flag`, {
+      version: args.version,
+      note: args.note,
+    }),
+  unflag: (args: { id: string; version: number }) =>
+    apiSend<QuestionView>('POST', `/v1/questions/${args.id}/unflag`, { version: args.version }),
   unarchive: (args: { id: string; version: number }) =>
     apiSend<QuestionView>('POST', `/v1/questions/${args.id}/unarchive`, {
       version: args.version,

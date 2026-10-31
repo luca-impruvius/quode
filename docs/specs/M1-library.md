@@ -31,7 +31,7 @@ I can find any of my questions quickly: by topic (sub-topics included), type, di
 ## API
 `GET /api/v1/questions?topicId&type&difficulty&status&q&sort&page&size` (signed in).
 
-Response: `{items: [{id, type, promptMd, difficulty, primaryTopic {id, name, path}, archived, flagged, createdAt, updatedAt}], page, size, totalElements, hasNext}`.
+Response: `{items: [{id, type, promptMd, difficulty, primaryTopic {id, name, path}, archived, flagged, flagNote, createdAt, updatedAt}], page, size, totalElements, hasNext}`. Flagged rows show their note.
 
 Errors: 400 (fixed message) for page < 0, size outside 1–50, difficulty outside 1–3, unknown status or sort, search over 200 characters, an unknown type or a malformed topic id; 404 for a topic that isn't mine; 401 signed out.
 

@@ -141,6 +141,8 @@ class Question {
 
   /** Replaces everything the client edits; input already passed QuestionRules. */
   void apply(QuestionInput input) {
+    // Saving an edit is the fix: the flag goes (docs/specs/M1-questions.md).
+    unflag();
     type = input.type();
     promptMd = input.promptMd();
     answerMd = blankToNull(input.answerMd());
@@ -181,6 +183,17 @@ class Question {
 
   void unarchive() {
     archivedAt = null;
+  }
+
+  /** Marks the question to fix later; flagging again replaces the note. */
+  void flag(String note, Instant now) {
+    flaggedAt = now;
+    flagNote = note;
+  }
+
+  void unflag() {
+    flaggedAt = null;
+    flagNote = null;
   }
 
   private static String blankToNull(String text) {
