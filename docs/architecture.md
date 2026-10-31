@@ -13,7 +13,7 @@ Living document. Constraint: total running cost ≤ €6/month; free plans every
 | Database | PostgreSQL 18 (official `postgres:18` image, the same locally, in tests and in production) in Docker on the VPS; Flyway migrations | 0019, 0037 |
 | Auth | Google sign-in (Spring Security OAuth2), email allowlist; sessions in Postgres (Spring Session JDBC) | 0015, 0017 |
 | API | REST under `/api/v1`, OpenAPI via springdoc, Problem Details (RFC 9457), page-based pagination, Java records as DTOs | 0030, 0033 |
-| Frontend | React + TypeScript (strict) + Vite, TanStack Query, React Router, Tailwind CSS v4 (theme generated from `design-system/tokens.json`), React Hook Form + Zod, self-hosted fonts (Fontsource), API types generated from the backend's OpenAPI spec (springdoc, off in production), vite-plugin-pwa, react-markdown; English UI, translation-ready | 0031, 0032 |
+| Frontend | React + TypeScript (strict) + Vite, TanStack Query, React Router, Tailwind CSS v4 (theme generated from `design-system/tokens.json`), React Hook Form + Zod, self-hosted fonts (Fontsource), Lucide icons (lucide-react), API types generated from the backend's OpenAPI spec (springdoc, off in production), vite-plugin-pwa, react-markdown; English UI, translation-ready | 0031, 0032 |
 | Hosting | One OVHcloud VPS-1 (2 vCores, 4 GB RAM) running Docker Compose | 0019 |
 | Reverse proxy | Caddy (automatic HTTPS), single origin | 0020 |
 | Domain & DNS | Cloudflare Registrar and DNS | 0020 |
@@ -45,11 +45,11 @@ flowchart LR
 
 ## 4. Authentication flow
 
-1. The SPA calls the API; without a session it gets **401** and navigates to `/api/oauth2/authorization/google`.
-2. Google signs the user in and redirects to `/api/login/oauth2/code/google`. Spring Security checks the email against `quode.security.allowed-emails`; anyone else gets 403.
+1. The SPA calls `GET /api/me`; without a session it gets **401** and shows the Login screen, whose "Continue with Google" button is a full page load of `/api/oauth2/authorization/google`.
+2. Google signs the user in and redirects to `/api/login/oauth2/code/google`. Spring Security checks the email against `quode.security.allowed-emails`; anyone else is sent back to `/login?error=no-access`.
 3. On the first allowed login the `app_user` row is created (email lowercased, Google `sub`, display name, default time zone); later logins find it by `sub`.
 4. Session cookie `SESSION`: HttpOnly, Secure, SameSite=Lax, stored in Postgres (Spring Session JDBC), ending after **30 days without a request**. CSRF: the cookie `XSRF-TOKEN`, which the SPA sends back in the `X-XSRF-TOKEN` header on every POST/PUT/PATCH/DELETE (`apiSend` in `frontend/src/api/client.ts`). Only `POST /api/client-errors` is exempt (anonymous, no session).
-5. Errors: signed out → **401** Problem Details ("Sign in to continue."), never a redirect; an account not on the allowlist or with an unverified email → **403** ("This Google account isn't allowed to use Quode."); other sign-in failures → 401. `GET /api/me` returns name, email and time zone. `POST /api/logout` → 204.
+5. Errors: API calls while signed out → **401** Problem Details ("Sign in to continue."), never a redirect; the SPA then shows its Login screen. A failed Google sign-in is a browser navigation, so it goes back to the SPA: account not on the allowlist or email not verified → `/login?error=no-access` ("This account has no access."); anything else (cancelled, expired) → `/login?error=failed`. `GET /api/me` returns name, email and time zone. `POST /api/logout` → 204.
 6. Public without sign-in: `/api/health`, `POST /api/client-errors`, the sign-in endpoints, and `/api/v3/api-docs` where springdoc is on (never in prod). Actuator stays on the management port.
 
 Google OAuth clients: **Quode local** (redirects to `localhost:5173` and `localhost:8080` under `/api/login/oauth2/code/google`) and **Quode production** (the domain). The production secret exists only on the server.

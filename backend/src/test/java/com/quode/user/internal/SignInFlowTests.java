@@ -69,10 +69,11 @@ class SignInFlowTests {
   }
 
   @Test
-  void anAccountNotOnTheListGets403AndNoUser() throws Exception {
+  void anAccountNotOnTheListGoesBackToLoginAndGetsNoUser() throws Exception {
     MvcResult callback = signInAs("sub-other", "someone@example.com");
 
-    assertThat(callback.getResponse().getStatus()).isEqualTo(403);
+    assertThat(callback.getResponse().getStatus()).isEqualTo(302);
+    assertThat(callback.getResponse().getRedirectedUrl()).isEqualTo("/login?error=no-access");
     assertThat(users.findByGoogleSub("sub-other")).isEmpty();
   }
 
