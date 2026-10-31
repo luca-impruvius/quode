@@ -121,15 +121,11 @@ function EditorForm({
   const type = watch('type');
   const choice = isChoice(type);
 
-  // Explanation and source link live under "More options": open it when one of them is wrong,
-  // or Save would seem to do nothing.
+  // Explanation and source link live under "More options": it stays open while one of them is
+  // wrong, or Save would seem to do nothing.
   const hiddenError =
     formState.errors.explanationMd !== undefined || formState.errors.sourceUrl !== undefined;
-  useEffect(() => {
-    if (hiddenError) {
-      setMoreOpen(true);
-    }
-  }, [hiddenError, formState.submitCount]);
+  const showMore = moreOpen || hiddenError;
 
   const sourceErrorId = useId();
 
@@ -241,14 +237,14 @@ function EditorForm({
           <div className="h-px bg-line" />
           <button
             type="button"
-            aria-expanded={moreOpen}
-            onClick={() => setMoreOpen((open) => !open)}
+            aria-expanded={showMore}
+            onClick={() => setMoreOpen(!showMore)}
             className="flex min-h-11 items-center justify-between font-bold"
           >
             {e.moreOptions}
-            <span aria-hidden="true">{moreOpen ? '▴' : '▾'}</span>
+            <span aria-hidden="true">{showMore ? '▴' : '▾'}</span>
           </button>
-          {moreOpen && (
+          {showMore && (
             <>
               <Segmented
                 legend={e.type}
