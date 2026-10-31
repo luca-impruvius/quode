@@ -41,6 +41,8 @@ springdoc:
   # The spec is the frontend's type source (M1-08): stable key order and real JSON content types.
   writer-with-order-by-keys: true
   default-produces-media-type: application/json
+  # Spring Boot's error controller would document ProblemDetail as a 200 answer.
+  paths-to-exclude: /error
 
 server:
   servlet:

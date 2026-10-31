@@ -109,6 +109,12 @@ class OpenApiContractTests {
   }
 
   @Test
+  void theErrorControllerIsNotPartOfTheSpec() throws Exception {
+    assertThat(spec().path("paths").has("/error")).isFalse();
+    assertThat(spec().path("components").path("schemas").has("ProblemDetail")).isFalse();
+  }
+
+  @Test
   void responsesAreJson() throws Exception {
     JsonNode content =
         spec()

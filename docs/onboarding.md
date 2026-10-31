@@ -94,7 +94,7 @@ npm test               # Vitest
 npm run lint           # ESLint + Prettier check (npm run format fixes formatting)
 npm run typecheck      # TypeScript only, faster than a build
 npm run build          # type-check and production build
-npm run generate:api   # regenerate src/api/schema.d.ts from src/api/openapi.json (after ./gradlew updateOpenApi)
+npm run generate:api   # regenerate src/api/schema.d.ts from src/api/openapi.json (after ./gradlew updateOpenApi, which needs Docker)
 ```
 
 The Tailwind theme is generated from `design-system/tokens.json` before each of these; never edit `src/styles/theme.generated.css`.

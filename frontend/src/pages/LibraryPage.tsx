@@ -280,7 +280,7 @@ export function LibraryPage() {
 }
 
 function Row({ question: q }: { question: LibraryItem }) {
-  const meta = [q.primaryTopic?.name, messages.questionTypeNames[q.type]]
+  const meta = [q.primaryTopic.name, messages.questionTypeNames[q.type]]
     .filter(Boolean)
     .join(' · ');
   return (
