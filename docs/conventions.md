@@ -153,4 +153,6 @@ See [runbooks/production-debugging.md](runbooks/production-debugging.md).
 - **Timestamps:** `created_at` and `updated_at` come from the database clock (`now()`, Hibernate `@CurrentTimestamp(source = DB)`), for entity and plain SQL writes alike.
 - **Ownership:** every owned query takes the owner id from `com.quode.user.CurrentUser` and filters by it (`findByIdAndOwnerId`, never `findById`). Another user's row is answered exactly like a missing one: 404. Tests prove it with a second user.
 - **Business-rule conflicts:** throw `com.quode.shared.ConflictException` with a fixed user-facing sentence → 409 Problem Details. Check rules before changing an entity (a query would auto-flush the change); keep a database constraint as the last word.
+- **Optimistic locking:** editable aggregates carry `@Version`; edit requests send the `version` they read, an older one → 409 (`QuestionService.STALE`). Lock the row for the edit (`@Lock(PESSIMISTIC_WRITE)`) so concurrent saves queue up and the loser gets the same clean 409.
+- **Replaced child rows:** when an edit replaces children wholesale (answer options), make their unique keys `deferrable initially deferred`: Hibernate inserts the new rows before deleting the old ones.
 - **Tests:** every `@SpringBootTest` imports the shared `TestcontainersConfiguration` (`postgres:18`, `@ServiceConnection`).
