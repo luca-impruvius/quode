@@ -78,6 +78,10 @@ export function MePage() {
             ))}
           </div>
         </div>
+        <Link to="/library?status=archived" className={row}>
+          <span>{messages.me.archived}</span>
+          <ChevronRight aria-hidden="true" size={20} strokeWidth={2} />
+        </Link>
         <Link to="/stats" className={row}>
           <span>{messages.me.stats}</span>
           <ChevronRight aria-hidden="true" size={20} strokeWidth={2} />

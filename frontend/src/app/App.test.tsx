@@ -79,7 +79,8 @@ describe('App shell', () => {
       messages.tabs.me,
     ]);
 
-    for (const tab of [messages.tabs.library, messages.tabs.quizzes]) {
+    // Library has its own tests (LibraryPage.test.tsx).
+    for (const tab of [messages.tabs.quizzes]) {
       await userEvent.click(screen.getByRole('link', { name: tab }));
       expect(await screen.findByRole('heading', { name: tab })).toBeInTheDocument();
       expect(screen.getByText(messages.comingSoon)).toBeInTheDocument();
