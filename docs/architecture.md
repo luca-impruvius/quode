@@ -14,9 +14,9 @@ Living document. Constraint: total running cost ≤ €6/month; free plans every
 | Auth | Google sign-in (Spring Security OAuth2), email allowlist; sessions in Postgres (Spring Session JDBC) | 0015, 0017 |
 | API | REST under `/api/v1`, OpenAPI via springdoc, Problem Details (RFC 9457), page-based pagination, Java records as DTOs | 0030, 0033 |
 | Frontend | React + TypeScript (strict) + Vite, TanStack Query, React Router, Tailwind CSS v4 (theme generated from `design-system/tokens.json`), React Hook Form + Zod, self-hosted fonts (Fontsource), Lucide icons (lucide-react), API types generated from the backend's OpenAPI spec (springdoc, off in production), vite-plugin-pwa, react-markdown; English UI, translation-ready | 0031, 0032 |
-| Hosting | One OVHcloud VPS-1 (2 vCores, 4 GB RAM) running Docker Compose | 0019 |
+| Hosting | One FreakHosting Budget VPS in Frankfurt (KVM, 3 vCPU, 4 GB RAM, Ubuntu) running Docker Compose | 0019, 0040 |
 | Reverse proxy | Caddy (automatic HTTPS), single origin | 0020 |
-| Domain & DNS | Cloudflare Registrar and DNS | 0020 |
+| Domain & DNS | `quode.app` at Cloudflare Registrar; Cloudflare DNS, DNS only (no proxy) | 0020, 0040 |
 | Backups | Nightly `pg_dump` to Cloudflare R2 (EU), 14-day lifecycle | 0036 |
 | Code, tasks, CI/CD | Public GitHub repo, GitHub Issues + Projects, GitHub Actions | 0021, 0024 |
 | Time | UTC `timestamptz`; per-user time zone for "today" | 0029 |
@@ -26,7 +26,7 @@ Living document. Constraint: total running cost ≤ €6/month; free plans every
 ```mermaid
 flowchart LR
   U["Phone / Browser<br>React PWA"] -->|"HTTPS"| C["Caddy"]
-  subgraph VPS["OVHcloud VPS · Docker Compose"]
+  subgraph VPS["FreakHosting VPS · Frankfurt · Docker Compose"]
     C -->|"/"| FE["frontend<br>static React build"]
     C -->|"/api/*"| BE["backend<br>Spring Boot"]
     BE --> DB[("postgres<br>private network only")]
@@ -52,7 +52,7 @@ flowchart LR
 5. Errors: API calls while signed out → **401** Problem Details ("Sign in to continue."), never a redirect; the SPA then shows its Login screen. A failed Google sign-in is a browser navigation, so it goes back to the SPA: account not on the allowlist or email not verified → `/login?error=no-access` ("This account has no access."); anything else (cancelled, expired) → `/login?error=failed`. `GET /api/me` returns name, email and time zone. `POST /api/logout` → 204.
 6. Public without sign-in: `/api/health`, `POST /api/client-errors`, the sign-in endpoints, and `/api/v3/api-docs` where springdoc is on (never in prod). Actuator stays on the management port.
 
-Google OAuth clients: **Quode local** (redirects to `localhost:5173` and `localhost:8080` under `/api/login/oauth2/code/google`) and **Quode production** (the domain). The production secret exists only on the server.
+Google OAuth clients: **Quode local** (redirects to `localhost:5173` and `localhost:8080` under `/api/login/oauth2/code/google`) and **Quode production** (origin `https://quode.app`, redirect `https://quode.app/api/login/oauth2/code/google`). The production secret exists only on the server.
 
 ## 5. Repository structure
 
@@ -96,7 +96,7 @@ Each module is a top-level package. Its root package holds the public API (servi
 - Nightly compressed `pg_dump` to Cloudflare R2 (EU jurisdiction) with a bucket-scoped token; lifecycle deletes objects after 14 days.
 - The script refuses dumps over 500 MB and alerts instead (free-tier guard).
 - Monthly: copy the latest dump to the laptop (a copy outside Cloudflare).
-- OVH's daily VPS backup is a second layer only.
+- Provider snapshots are not part of the plan: the R2 dumps are the backup (ADR-0040).
 - Restore test in M0 and after every Postgres upgrade. Target: a lost server is rebuilt in under one hour.
 
 ## 9. CI/CD
@@ -117,10 +117,10 @@ Each module is a top-level package. Its root package holds the public API (servi
 
 | Item | Monthly (incl. 21% VAT) |
 |---|---|
-| OVHcloud VPS-1 | ≈ €4.60 |
-| Domain | ≈ €0.90 |
+| FreakHosting Budget VPS (24 RON) | ≈ €4.80 |
+| Domain `quode.app` (≈ $13 a year) | ≈ €0.95 |
 | GitHub, Cloudflare DNS + R2, Google sign-in, UptimeRobot, healthchecks.io | €0 (free plans) |
-| **Total** | **≈ €5.50** |
+| **Total** | **≈ €5.75** |
 
 R2 is the only usage-billed service; a Cloudflare budget alert at $1 warns early.
 

@@ -1,6 +1,6 @@
 # ADR-0019: Everything on one OVHcloud VPS
 
-- **Status:** Partially superseded by ADR-0037
+- **Status:** Partially superseded by ADR-0037 and ADR-0040
 - **Date:** 2026-10-06
 
 ## Context
