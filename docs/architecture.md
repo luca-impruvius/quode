@@ -115,7 +115,7 @@ Each module is a top-level package. Its root package holds the public API (servi
 
 ## 11. Cost
 
-| Item | Monthly (incl. 21% VAT) |
+| Item | Monthly (as quoted; VAT to confirm from the first invoices) |
 |---|---|
 | FreakHosting Budget VPS (24 RON) | ≈ €4.80 |
 | Domain `quode.app` (≈ $13 a year) | ≈ €0.95 |

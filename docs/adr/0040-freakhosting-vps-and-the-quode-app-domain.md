@@ -6,7 +6,7 @@
 
 ## Context
 
-ADR-0019 put everything on one OVHcloud VPS-1 (4 GB) for about €5.50 a month. By November 2026 that plan was no longer available in any EU location (only Singapore, about 200–250 ms from Romania and outside the EU), and OVHcloud had raised it to €6.49 a month. ADR-0020 decided to buy a domain but not which one.
+ADR-0019 put everything on one OVHcloud VPS-1 (4 GB): about €4.60 a month for the server, €5.50 including the domain. By November 2026 that plan was no longer available in any EU location (only Singapore, about 200–250 ms from Romania and outside the EU), and OVHcloud had raised it to €6.49 a month. ADR-0020 decided to buy a domain but not which one.
 
 ## Options considered
 
@@ -26,7 +26,7 @@ ADR-0019 put everything on one OVHcloud VPS-1 (4 GB) for about €5.50 a month. 
 - **Hosting:** FreakHosting Budget VPS:
   - Frankfurt (EU);
   - KVM virtualization, so Docker runs normally;
-  - 3 vCPU, 4 GB DDR4, NVMe disk, unmetered traffic;
+  - 3 vCPU, 4 GB DDR4, unmetered traffic;
   - Ubuntu;
   - about 24 RON (≈ €4.80) a month.
 
@@ -37,7 +37,7 @@ ADR-0019 put everything on one OVHcloud VPS-1 (4 GB) for about €5.50 a month. 
 
 ## Consequences
 
-- About €5.75 a month in total (server plus domain), under the original budget, with one more vCPU than planned.
+- About €5.75 a month in total (server plus domain) at the quoted prices, with one more vCPU than planned. Whether VAT is included in each price is still to be confirmed from the first invoices; if both add 21%, the total is about €7.
 - FreakHosting is a small budget provider, so we assume the server can be lost:
   - The R2 backups (ADR-0036) and the rebuild-in-under-an-hour target are the protection.
   - Provider snapshots are not part of the plan.
