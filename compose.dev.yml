@@ -13,7 +13,8 @@ services:
       POSTGRES_DB: quode
     ports:
       # Loopback only: the database is never reachable from the network.
-      - "127.0.0.1:5432:5432"
+      # QUODE_DB_PORT (from .env or the environment) moves it off 5432 when another PostgreSQL already uses that port.
+      - "127.0.0.1:${QUODE_DB_PORT:-5432}:5432"
     volumes:
       # postgres:18 keeps its data under /var/lib/postgresql/<major>/, so mount the parent.
       - postgres-data:/var/lib/postgresql

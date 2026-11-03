@@ -80,7 +80,11 @@ curl -i localhost:8080/api/health         # expect 200 {"status":"UP"}; 503 DOWN
 
 The local database uses dev-only credentials (`quode` / `quode`, database `quode`), which are also the backend's defaults; override them with `DB_URL`, `DB_USER` and `DB_PASSWORD`. Production has no defaults. `./gradlew build` starts its own throwaway Postgres through Testcontainers, so Docker must be running for the tests too.
 
-If `docker compose` reports that port 5432 is not available, another PostgreSQL (for example a native Windows install) is already using it: stop that service, or set it to manual start.
+If `docker compose` reports that port 5432 is not available, another PostgreSQL (for example a native Windows install) is already using it. Either stop that service (or set it to manual start), or move the dev database to another port: set `QUODE_DB_PORT=55432` and `DB_URL=jdbc:postgresql://127.0.0.1:55432/quode` in `.env` (see `.env.example`), keeping the two ports the same. Without `DB_URL` the backend still connects to 5432, reaches the other PostgreSQL and fails with "password authentication failed for user quode".
+
+To look inside the local database with a client such as DBeaver: PostgreSQL driver, host `127.0.0.1`, port 5432 (or your `QUODE_DB_PORT`), database, user and password `quode` (or your `DB_USER` / `DB_PASSWORD`).
+
+In IntelliJ, reload the Gradle project (Gradle tool window → Reload All Gradle Projects) after pulling changes to `build.gradle.kts` or `gradle/libs.versions.toml`. A stale classpath shows up at startup as `NoClassDefFoundError` or `ClassNotFoundException` for a library that the build has; setting "Build and run using" to Gradle avoids it.
 
 Google sign-in locally: copy `.env.example` to `.env` in the repository root (git-ignored) and fill in the local OAuth client values; the owner shares them through a password manager, never through chat, email or issues. Put your Google email in `QUODE_ALLOWED_EMAILS`; it must also be on the Google "test users" list (section 8). The backend reads `.env` on start. Sign in at `http://localhost:5173/api/oauth2/authorization/google`; afterwards `/api/me` shows your account. Use Chrome, Edge or Firefox locally: the session cookie is `Secure`, which Safari before 18 refuses over plain `http://localhost`.
 
