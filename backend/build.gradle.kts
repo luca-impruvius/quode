@@ -47,6 +47,9 @@ dependencyManagement {
 // Writes META-INF/build-info.properties; Actuator's /info shows it as "build".
 springBoot { buildInfo() }
 
+// A fixed jar name for backend/Dockerfile, whatever the version.
+tasks.bootJar { archiveFileName = "app.jar" }
+
 // Writes git.properties; Actuator's /info shows it as "git".
 // The Gradle build lives in backend/, but .git is in the repository root.
 gitProperties { dotGitDirectory = layout.projectDirectory.dir("../.git") }

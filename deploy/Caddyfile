@@ -9,31 +9,34 @@
 		reverse_proxy backend:8080
 	}
 
-	handle {
+	# Vite puts a content hash in every asset name, so an asset never changes under the same URL.
+	# A missing one (an old tab after a deploy) is a plain 404, never the app shell.
+	handle /assets/* {
 		root * /srv
-		# Client-side routes fall back to the app shell.
-		try_files {path} /index.html
+		@found file
+		header @found Cache-Control "public, max-age=31536000, immutable"
 		file_server
 	}
 
-	# Vite puts a content hash in every asset name, so assets never change under the same URL.
-	@assets path /assets/*
-	header @assets Cache-Control "public, max-age=31536000, immutable"
-	# The app shell and unhashed files must always be revalidated, or a deploy would not reach
-	# open tabs.
-	@shell path / /index.html /theme-init.js
-	header @shell Cache-Control "no-cache"
+	# Everything else: the app shell, client-side routes and unhashed files. Always revalidated, so
+	# a deploy reaches open tabs. (Headers apply before try_files, so this can't match on the path.)
+	handle {
+		root * /srv
+		header Cache-Control "no-cache"
+		try_files {path} /index.html
+		file_server
+	}
 
 	header {
 		Strict-Transport-Security "max-age=31536000; includeSubDomains"
 		X-Content-Type-Options "nosniff"
 		Referrer-Policy "strict-origin-when-cross-origin"
 		Permissions-Policy "camera=(), microphone=(), geolocation=()"
-		Content-Security-Policy "default-src 'self'; img-src 'self' data:; style-src 'self'; script-src 'self'; connect-src 'self'; font-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self' https://accounts.google.com"
+		Content-Security-Policy "default-src 'self'; img-src 'self' data:; style-src 'self'; script-src 'self'; connect-src 'self'; font-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
 		-Server
 	}
 }
 
 www.{$QUODE_DOMAIN} {
-	redir https://{$QUODE_DOMAIN}{uri} permanent
+	redir https://{$QUODE_DOMAIN}{uri} 308
 }
