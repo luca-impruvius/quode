@@ -86,9 +86,9 @@ Each module is a top-level package. Its root package holds the public API (servi
 ## 7. Server baseline
 
 - Set up step by step in `docs/runbooks/server-setup.md` (Ubuntu 24.04).
-- Non-root deploy user; SSH keys only; root and password login disabled. `deploy` is in the `docker` group, which is root-equivalent, so it accepts key logins only.
-- Firewall: only 22, 80, 443. Automatic security updates (security sources only, no automatic reboot); fail2ban on SSH.
-- Docker publishes ports past ufw, so only Caddy publishes ports (80/443); Postgres and the backend have none.
+- Non-root deploy user; SSH keys only; root and password login disabled. `deploy` is in the `docker` group, which is root-equivalent; acceptable because SSH is keys-only.
+- Firewall: only 22, 80, 443. Automatic security updates for Ubuntu packages (security sources only, no automatic reboot); Docker's packages are upgraded by hand monthly. fail2ban on SSH.
+- Docker publishes ports past ufw, so only Caddy publishes ports on public interfaces (80/443); Postgres publishes none; the backend publishes only `127.0.0.1:8081` (Actuator).
 - Compose services restart automatically; health via `/api/health` (public, status only). All Actuator endpoints (`health`, `info`, `loggers`) are on management port 8081, bound to `MANAGEMENT_SERVER_ADDRESS` (default `127.0.0.1`); in the container it is published on the host's localhost only and reached through an SSH tunnel.
 - Secrets only in the server's `.env` and GitHub Actions secrets.
 - JVM memory capped (e.g. `-Xmx768m`) so backend, Postgres and Caddy share 4 GB.

@@ -30,7 +30,7 @@ usermod -aG sudo deploy
 
 PowerShell on Windows (asks for the `deploy` password once):
 
-```bash
+```powershell
 type $env:USERPROFILE\.ssh\id_ed25519.pub | ssh deploy@<vps-ip> "mkdir -p ~/.ssh && chmod 700 ~/.ssh && cat >> ~/.ssh/authorized_keys && chmod 600 ~/.ssh/authorized_keys"
 ```
 
@@ -60,6 +60,8 @@ sudo systemctl restart ssh
 ## 5. Firewall: only 22, 80, 443
 
 ```bash
+sudo ufw default deny incoming
+sudo ufw default allow outgoing
 sudo ufw allow OpenSSH
 sudo ufw allow 80/tcp
 sudo ufw allow 443/tcp
@@ -69,7 +71,7 @@ sudo ufw status verbose     # active; 22, 80, 443 allowed for v4 and v6
 
 Then test a new SSH login again.
 
-**Docker publishes ports past ufw** (its own iptables rules). So in `deploy/compose.yml` only Caddy publishes ports (80/443), Postgres and the backend sit on an internal network with no published ports, and Actuator is bound to `127.0.0.1` (architecture §7).
+**Docker publishes ports past ufw** (its own iptables rules). So `deploy/compose.yml` (M0-10) must publish only Caddy on public interfaces (80/443). Postgres publishes nothing, and the backend publishes only Actuator on `127.0.0.1:8081`, reached through an SSH tunnel (architecture §7, production-debugging runbook).
 
 ## 6. fail2ban
 
@@ -85,7 +87,7 @@ maxretry = 5
 enabled = true
 backend = systemd
 EOF
-sudo systemctl enable --now fail2ban && sudo systemctl restart fail2ban
+sudo systemctl enable fail2ban && sudo systemctl restart fail2ban
 sudo fail2ban-client status sshd
 ```
 
@@ -111,6 +113,8 @@ sudo unattended-upgrade --dry-run --debug 2>&1 | grep -i "allowed origins"
 
 When `/var/run/reboot-required` exists (kernel updates), reboot at a quiet moment: `sudo reboot`.
 
+This covers Ubuntu's own packages only. Docker comes from Docker's repository and is **not** updated automatically: run `sudo apt-get update && sudo apt-get upgrade` monthly, and right away when Docker publishes a security advisory.
+
 ## 8. Docker Engine and Compose
 
 From Docker's own repository, not Ubuntu's `docker.io` package:
@@ -129,7 +133,12 @@ Signed-By: /etc/apt/keyrings/docker.asc
 EOF
 sudo apt-get update
 sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
-sudo usermod -aG docker deploy     # log out and in again for it to apply
+sudo usermod -aG docker deploy
+```
+
+The group change applies from the next login: log out, SSH in again, then:
+
+```bash
 docker run --rm hello-world
 docker version && docker compose version
 ```
@@ -142,10 +151,10 @@ docker version && docker compose version
 sudo sshd -T | grep -Ei '^(permitrootlogin|passwordauthentication)'   # both "no"
 sudo ufw status                                                    # active; 22, 80, 443
 sudo fail2ban-client status sshd                                   # jail running
-ls /etc/sudoers.d/                                                 # no leftover temporary files
+sudo ls /etc/sudoers.d/                                            # only README: no leftover temporary files
 sudo -k; sudo -v                                                   # asks for the password
 docker compose version
-sudo ss -tlnp                                                      # only sshd on 0.0.0.0:22 / [::]:22 until the stack runs
+sudo ss -tlnp                                                      # only :22 on a public address until the stack runs
 ```
 
 ## Notes
