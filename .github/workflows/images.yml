@@ -1,0 +1,60 @@
+# Builds the production images (M0-10, ADR-0041).
+# - Pull requests that touch them: build only, to catch a broken Dockerfile early.
+# - Run by hand ("Run workflow") on main: build and push to GitHub Container Registry, tagged with
+#   the commit SHA. That SHA is QUODE_TAG in the server's .env. M0-11 runs this on every merge.
+# Packages are private; the server pulls with a read-only token (deploy/README.md).
+# Actions are pinned to commit SHAs; Dependabot updates them.
+name: Images
+
+on:
+  pull_request:
+    paths:
+      - backend/**
+      - frontend/**
+      - design-system/**
+      - deploy/**
+      - .dockerignore
+      - .github/workflows/images.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: images-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  image:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        image: [backend, frontend]
+    env:
+      # Only images built from main are ever published.
+      PUBLISH: ${{ github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' }}
+    steps:
+      # No token left in .git: the backend build copies .git for Actuator's git info.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      - if: env.PUBLISH == 'true'
+        uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          file: ${{ matrix.image }}/Dockerfile
+          push: ${{ env.PUBLISH == 'true' }}
+          tags: ghcr.io/${{ github.repository_owner }}/quode-${{ matrix.image }}:${{ github.sha }}
+          labels: org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+          cache-from: type=gha,scope=${{ matrix.image }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.image }}

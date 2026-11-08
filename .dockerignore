@@ -1,0 +1,24 @@
+# Build context for backend/Dockerfile and frontend/Dockerfile (both build from the repository root).
+# Secrets never enter an image.
+.env
+.env.*
+**/.env
+*.pem
+*.key
+.gitleaks.local.toml
+api
+
+# Build output and dependencies are recreated inside the image.
+**/node_modules
+**/dist
+**/build
+**/.gradle
+**/coverage
+
+# Not needed in any image.
+.idea
+.vscode
+.claude
+docs
+deploy
+infra

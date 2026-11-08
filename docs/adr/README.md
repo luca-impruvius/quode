@@ -44,6 +44,7 @@ One file per decision. Accepted ADRs are never edited; a changed decision gets a
 | [0038](0038-ai-implements-owner-reviews.md) | AI implements, owner reviews | Partially superseded by ADR-0039 |
 | [0039](0039-claude-merges-approved-prs.md) | Claude merges approved PRs | Accepted |
 | [0040](0040-freakhosting-vps-and-the-quode-app-domain.md) | FreakHosting VPS in Frankfurt and the quode.app domain | Accepted |
+| [0041](0041-production-container-layout.md) | Production container layout | Accepted |
 
 ## Template
 
