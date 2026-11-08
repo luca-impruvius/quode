@@ -25,11 +25,11 @@ Living document. Constraint: total running cost ≤ €6/month; free plans every
 
 ```mermaid
 flowchart LR
-  U["Phone / Browser<br>React PWA"] -->|"HTTPS"| C["Caddy"]
+  U["Phone / Browser<br>React PWA"] -->|"HTTPS"| C["caddy<br>edge proxy + static React build"]
   subgraph VPS["FreakHosting VPS · Frankfurt · Docker Compose"]
-    C -->|"/"| FE["frontend<br>static React build"]
+    C
     C -->|"/api/*"| BE["backend<br>Spring Boot"]
-    BE --> DB[("postgres<br>private network only")]
+    BE --> DB[("postgres<br>private network; host localhost only")]
   end
   BE -->|OAuth2 login| G["Google Identity"]
   DB -.->|nightly pg_dump| BK["Cloudflare R2"]
@@ -38,9 +38,9 @@ flowchart LR
 
 ## 3. Deployment shape
 
-- **One server, separate deployments.** Frontend and backend are separate containers and images, deployable independently.
+- **One server, separate deployments.** Frontend and backend are separate images (built in GitHub Actions, private GHCR packages, tagged with the commit), deployable independently. The frontend image is Caddy plus the React build: one container is both the edge proxy and the static file server, with the Caddyfile mounted from `deploy/` (ADR-0041).
 - **One origin.** Caddy serves the React app at `/` and forwards `/api/*` to the backend. No CORS; the login cookie is first-party everywhere, including Safari.
-- **Postgres** runs on a private Docker network and is never exposed to the internet.
+- **Postgres** runs on a private Docker network and is never exposed to the internet; it is published on the host's `127.0.0.1:5432` only, for a database client through an SSH tunnel with the read-only role.
 - **Portability.** Moving hosts = copy the Compose setup, restore a dump, repoint DNS.
 
 ## 4. Authentication flow
@@ -88,10 +88,10 @@ Each module is a top-level package. Its root package holds the public API (servi
 - Set up step by step in `docs/runbooks/server-setup.md` (Ubuntu 24.04).
 - Non-root deploy user; SSH keys only; root and password login disabled. `deploy` is in the `docker` group, which is root-equivalent; acceptable because SSH is keys-only.
 - Firewall: only 22, 80, 443. Automatic security updates for Ubuntu packages (security sources only, no automatic reboot); Docker's packages are upgraded by hand monthly. fail2ban on SSH.
-- Docker publishes ports past ufw, so only Caddy publishes ports on public interfaces (80/443); Postgres publishes none; the backend publishes only `127.0.0.1:8081` (Actuator).
+- Docker publishes ports past ufw, so only Caddy publishes ports on public interfaces (80/443); Postgres publishes only `127.0.0.1:5432` and the backend only `127.0.0.1:8081` (Actuator).
 - Compose services restart automatically; health via `/api/health` (public, status only). All Actuator endpoints (`health`, `info`, `loggers`) are on management port 8081, bound to `MANAGEMENT_SERVER_ADDRESS` (default `127.0.0.1`); in the container it is published on the host's localhost only and reached through an SSH tunnel.
 - Secrets only in the server's `.env` and GitHub Actions secrets.
-- JVM memory capped (e.g. `-Xmx768m`) so backend, Postgres and Caddy share 4 GB.
+- Container memory limits: Caddy 256 MB, backend 1280 MB (heap 65% of it, about 830 MB; it restarts on out-of-memory), Postgres 1 GB; about 1.5 GB is left for the system and the nightly dump.
 
 ## 8. Backups & recovery
 

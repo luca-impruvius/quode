@@ -103,6 +103,8 @@ npm run generate:api   # regenerate src/api/schema.d.ts from src/api/openapi.jso
 
 The Tailwind theme is generated from `design-system/tokens.json` before each of these; never edit `src/styles/theme.generated.css`.
 
+Production stack locally (optional, to test `deploy/` changes): build the images from the repository root with `docker build -f backend/Dockerfile -t local/quode-backend:dev .` and `docker build -f frontend/Dockerfile -t local/quode-frontend:dev .`. Then copy `deploy/` to a scratch folder and add a `.env` with `QUODE_DOMAIN=localhost`, `QUODE_REGISTRY=local`, `QUODE_TAG=dev` and dummy values for the rest. Run `docker compose up -d` there, and `https://localhost` serves the app with a certificate from Caddy's local CA, which browsers warn about. Google sign-in doesn't work there (no matching OAuth client), and if port 5432 is taken, override the postgres port in a `compose.override.yml` with `ports: !override`.
+
 ---
 
 ## 5. How we work

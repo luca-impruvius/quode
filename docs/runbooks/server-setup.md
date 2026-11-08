@@ -71,7 +71,7 @@ sudo ufw status verbose     # active; 22, 80, 443 allowed for v4 and v6
 
 Then test a new SSH login again.
 
-**Docker publishes ports past ufw** (its own iptables rules). So `deploy/compose.yml` (M0-10) must publish only Caddy on public interfaces (80/443). Postgres publishes nothing, and the backend publishes only Actuator on `127.0.0.1:8081`, reached through an SSH tunnel (architecture §7, production-debugging runbook).
+**Docker publishes ports past ufw** (its own iptables rules). So `deploy/compose.yml` (M0-10) must publish only Caddy on public interfaces (80/443). Postgres publishes only `127.0.0.1:5432` and the backend only Actuator on `127.0.0.1:8081`, both reached through an SSH tunnel (architecture §7, production-debugging runbook).
 
 ## 6. fail2ban
 
@@ -154,7 +154,7 @@ sudo fail2ban-client status sshd                                   # jail runnin
 sudo ls /etc/sudoers.d/                                            # only README: no leftover temporary files
 sudo -k; sudo -v                                                   # asks for the password
 docker compose version
-sudo ss -tlnp                                                      # only :22 on a public address until the stack runs
+sudo ss -tlnp                                                      # only :22 on a public address until the stack runs; then also 80/443, plus 5432/8081 on 127.0.0.1
 ```
 
 ## Notes

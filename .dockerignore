@@ -1,0 +1,28 @@
+# Build context for backend/Dockerfile and frontend/Dockerfile (both build from the repository root).
+# Secrets never enter an image.
+.env
+.env.*
+**/.env
+**/.env.*
+*.pem
+*.key
+.gitleaks.local.toml
+api
+
+# Build output and dependencies are recreated inside the image.
+**/node_modules
+**/dist
+**/build
+**/.gradle
+**/coverage
+
+# .git is deliberately not ignored: backend/Dockerfile copies it into its build stage for
+# Actuator's git info. It never reaches the final image, and CI checks out without credentials.
+
+# Not needed in any image.
+.idea
+.vscode
+.claude
+docs
+deploy
+infra
