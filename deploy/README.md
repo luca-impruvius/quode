@@ -105,7 +105,7 @@ Roll forward the same way, with the newer SHA.
 
 **Copy these by hand.** The deploy key can't copy files, so when `compose.yml`, the `Caddyfile`, `initdb/` or `deploy.sh` change, copy them before the merge, or right after:
 - for example `scp deploy/compose.yml quode-prod:quode/`;
-- the deploy job warns when the server's `compose.yml`, `Caddyfile` or `deploy.sh` differs from the commit's;
+- the deploy job warns when the server's `compose.yml`, `Caddyfile` or `deploy.sh` differs from the commit's (not on rollback runs with **tag**);
 - for a Caddyfile-only change: `docker compose exec caddy caddy reload --config /etc/caddy/Caddyfile`.
 
 ### Setting up the deploy key (once)
