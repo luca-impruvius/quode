@@ -119,10 +119,8 @@ jobs:
       - name: Check the tag
         run: |
           [[ "$TAG" =~ ^[0-9a-f]{40}$ ]] || { echo "::error::tag must be a full 40-character commit SHA"; exit 1; }
-      # The deployed commit, so the file comparison below is against the right versions.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ env.TAG }}
           persist-credentials: false
       - name: Deploy over SSH
         env:
@@ -139,8 +137,10 @@ jobs:
             -o UserKnownHostsFile=~/.ssh/known_hosts -o ConnectTimeout=30 \
             -o ServerAliveInterval=15 -o ConnectionAttempts=3 \
             "deploy@$DEPLOY_HOST" "deploy $TAG" | tee deploy.log
-      # These files are copied to the server by hand (deploy/README.md).
+      # These files are copied to the server by hand (deploy/README.md). Not on a rollback: there the
+      # server should keep the newest files, so a difference from main is expected.
       - name: Compare the server's deploy files with the repository
+        if: inputs.tag == ''
         run: |
           check() {
             local name=$1 file=$2 server

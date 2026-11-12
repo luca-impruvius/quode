@@ -87,7 +87,7 @@ Every merge to `main` that touches `backend/`, `frontend/`, `design-system/` or 
 
    If any check fails, it **puts the previous tag back** and fails the job. Then the job checks the site from outside.
 
-   The deploy runs detached from the SSH session and logs to `~/quode/deploy.log`, so a dropped connection or a cancelled job can't stop it halfway, rollback included.
+   The deploy runs detached from the SSH session and logs to `~/quode/deploy.log`, so a dropped connection or a cancelled job can't stop it halfway, rollback included. This relies on Ubuntu's default `KillUserProcesses=no` in `/etc/systemd/logind.conf`; don't turn it on.
 3. **cleanup** keeps the newest 10 versions of each package on GHCR.
 
 Docs-only merges don't deploy. The backend is unavailable for about 10 to 20 seconds per deploy.

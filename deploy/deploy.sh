@@ -13,7 +13,8 @@
 # Container logs never go to the session (Actions logs are public): see failed-deploy.log.
 set -euo pipefail
 
-cd "$(dirname "$(readlink -f "$0")")"
+self=$(readlink -f "$0")
+cd "$(dirname "$self")"
 
 HEALTH_TIMEOUT_SECONDS=150
 LOCK_WAIT_SECONDS=300
@@ -129,7 +130,7 @@ start_deploy() {
   find . -maxdepth 1 -name '.deploy-exit.*' -mmin +60 -delete
   touch deploy.log
   start=$(wc -l < deploy.log)
-  setsid "$0" __worker "$tag" "$$" >> deploy.log 2>&1 < /dev/null &
+  setsid -w "$self" __worker "$tag" "$$" >> deploy.log 2>&1 < /dev/null &
   pid=$!
   tail -n "+$((start + 1))" -f --pid="$pid" deploy.log || true
   wait "$pid" 2>/dev/null || true
