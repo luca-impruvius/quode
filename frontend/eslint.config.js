@@ -15,7 +15,24 @@ export default tseslint.config(
     rules: {
       ...reactHooks.configs.recommended.rules,
       'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
+      // src/lib/zod.ts turns on jitless mode, which the production CSP needs (docs/conventions.md).
+      '@typescript-eslint/no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: 'zod',
+              message: "Import z from 'src/lib/zod' (jitless mode for the CSP).",
+              allowTypeImports: true,
+            },
+          ],
+        },
+      ],
     },
+  },
+  {
+    files: ['src/lib/zod.ts'],
+    rules: { '@typescript-eslint/no-restricted-imports': 'off' },
   },
   {
     files: ['scripts/**/*.mjs'],
