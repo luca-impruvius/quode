@@ -63,7 +63,7 @@ Host quode-prod
 
 ### First deployment record (2026-11-12)
 
-Images from `a856705` (the M0-10 PR A merge). Every check in step 6 passed:
+Images from `a856705` (the M0-10 PR A merge, #51). Every check in step 6 passed:
 
 - Let's Encrypt certificate for `quode.app` and `www.quode.app`, renewed by Caddy;
 - Flyway applied V1–V5; all three containers healthy; about 400 MB of 4 GB used;

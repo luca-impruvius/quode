@@ -1,8 +1,8 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
-import { z } from 'zod';
 import { useZodForm } from './forms';
+import { z } from './zod';
 
 const schema = z.object({ title: z.string().trim().min(1, 'Title is required') });
 
