@@ -1,6 +1,6 @@
 # deploy
 
-The production stack (M0-10, ADR-0041). It runs on the VPS (server setup: `docs/runbooks/server-setup.md`).
+The production stack (M0-10, ADR-0041) and its automatic deploys (M0-11, ADR-0042). It runs on the VPS (server setup: `docs/runbooks/server-setup.md`).
 
 | File | What it is |
 |---|---|
@@ -8,8 +8,9 @@ The production stack (M0-10, ADR-0041). It runs on the VPS (server setup: `docs/
 | `Caddyfile` | HTTPS, `/api` to the backend, caching, security headers; mounted into Caddy |
 | `.env.example` | Every setting the stack needs. The real `.env` exists only on the server |
 | `initdb/` | Runs once, on an empty database volume: creates the read-only role |
+| `deploy.sh` | Deploys one image tag, checks health, rolls back if unhealthy; run by GitHub Actions and by hand |
 
-Backups (`backup/`) come in M0-12; automatic deploys in M0-11.
+Backups (`backup/`) come in M0-12.
 
 ## On the server
 
@@ -18,7 +19,9 @@ Everything lives in `/home/deploy/quode/`, as the `deploy` user:
 ```
 /home/deploy/quode/
 ├── compose.yml, Caddyfile, initdb/   copied from this folder
-└── .env                              chmod 600, from .env.example and the password manager
+├── deploy.sh                         copied from this folder, chmod 755
+├── .env                              chmod 600, from .env.example and the password manager
+└── .previous-tag, .deploy.lock       written by deploy.sh
 ```
 
 ## SSH alias
@@ -46,7 +49,7 @@ Host quode-prod
    `diff <(grep -o '^[A-Z_]*=' .env.example | sort) <(grep -o '^[A-Z_]*=' .env | sort)` prints nothing when they match.
 3. **Log in to the registry once.** On GitHub, go to Settings → Developer settings → Personal access tokens → Tokens (classic) and create a token with **`read:packages` only** and an expiry, saved in the password manager. Then:
    `docker login ghcr.io -u luca-impruvius`. Paste the token when asked. Docker stores it unencrypted in `~/.docker/config.json`, which is why the token can only read packages.
-4. **Publish images:** GitHub → Actions → **Images** → Run workflow on `main`. Copy the run's commit SHA into `QUODE_TAG` in `.env`.
+4. **Publish images:** GitHub → Actions → **Images & deploy** → Run workflow on `main`. Copy the run's commit SHA into `QUODE_TAG` in `.env`. Until the deploy key is set up (below), that run's deploy job fails; on a first deployment that's expected.
 5. **Start it:** `docker compose pull && docker compose up -d`, then `docker compose ps` (all three healthy or up) and `docker compose logs backend --since 5m` (Flyway applied V1–V5, "Started QuodeApplication").
 6. **Check:**
    - `curl -I https://quode.app` returns 200, with the security headers;
@@ -73,11 +76,52 @@ Images from `a856705` (the M0-10 PR A merge, #51). Every check in step 6 passed:
 - `quode_readonly` can read the app tables but not the session tables, and can't write;
 - Google sign-in works on the phone, after the redirect URI on the production client was corrected.
 
-## Updating by hand (until M0-11 automates it)
+## Automatic deploys (M0-11)
 
-Publish images (step 4), set the new `QUODE_TAG` in `.env`, then `docker compose pull && docker compose up -d`. If `compose.yml` or `Caddyfile` changed, copy them over first. For a Caddyfile-only change: `docker compose exec caddy caddy reload --config /etc/caddy/Caddyfile`.
+Every merge to `main` that touches `backend/`, `frontend/`, `design-system/` or `deploy/` runs **Images & deploy** (`.github/workflows/images.yml`):
+1. **publish** builds both images and pushes them to GHCR, tagged with the merge commit.
+2. **deploy** runs `deploy.sh deploy <commit>` on the server through the deploy key. The script:
+   - sets `QUODE_TAG`, pulls, and runs `up -d`;
+   - waits for the backend to be healthy;
+   - checks that Actuator reports that commit and that Caddy answers `/api/health` over HTTPS.
 
-**Rollback:** put the previous `QUODE_TAG` back and run `docker compose up -d`. This is safe because destructive migrations take two releases.
+   If any check fails, it **puts the previous tag back** and fails the job. Then the job checks the site from outside.
+3. **cleanup** keeps the newest 10 versions of each package on GHCR.
+
+Docs-only merges don't deploy. The backend is unavailable for about 10 to 20 seconds per deploy.
+
+**When a deploy fails:**
+1. Read the deploy job's log. It shows which check failed, the backend's last log lines, and whether the rollback worked.
+2. Run `~/quode/deploy.sh status` on the server for the current and previous tags.
+3. A message saying the rollback is unhealthy too means the site is down: follow `docs/runbooks/production-debugging.md`.
+
+**Rollback** (safe because destructive migrations take two releases), either way:
+- **GitHub:** Actions → **Images & deploy** → Run workflow on `main`, with **tag** set to the full commit SHA to go back to. It skips the build. The previous tag is in `deploy.sh status`, and each run's tag is in the Actions history.
+- **Server:** `~/quode/deploy.sh deploy <full-commit-sha>`.
+
+Roll forward the same way, with the newer SHA.
+
+**Copy these by hand.** The deploy key can't copy files, so when `compose.yml`, the `Caddyfile`, `initdb/` or `deploy.sh` change, copy them before the merge, or right after:
+- for example `scp deploy/compose.yml quode-prod:quode/`;
+- the deploy job warns when the server's `compose.yml` or `Caddyfile` differs from the commit's;
+- for a Caddyfile-only change: `docker compose exec caddy caddy reload --config /etc/caddy/Caddyfile`.
+
+### Setting up the deploy key (once)
+
+The private key goes only to GitHub; it never passes through chat or the repository.
+1. **Create the key on the laptop.** Press Enter at the passphrase prompts, because GitHub can't type one:
+   `ssh-keygen -t ed25519 -C github-actions-deploy -f ~/.ssh/quode_deploy`
+2. **Allow it on the server, for `deploy.sh` only.** Copy `deploy.sh` to `~/quode/` (`chmod 755`), then run:
+   `scp ~/.ssh/quode_deploy.pub quode-prod:` and then
+   `ssh quode-prod 'echo "command=\"/home/deploy/quode/deploy.sh\",restrict $(cat quode_deploy.pub)" >> ~/.ssh/authorized_keys && rm quode_deploy.pub'`
+   **Check:** `ssh -o IdentitiesOnly=yes -i ~/.ssh/quode_deploy deploy@<vps-ip> status` prints the tags. The same command with `ls` instead of `status` prints the usage error, which proves the key can't run anything else.
+3. **GitHub environment:** Settings → Environments → New environment **`production`**. Under deployment branches and tags, choose **Selected branches and tags** and add `main`.
+4. **Its secrets**, with `gh` from the repository folder:
+   - `gh secret set DEPLOY_SSH_KEY --env production < ~/.ssh/quode_deploy`
+   - `gh secret set DEPLOY_HOST --env production --body <vps-ip>`
+   - `ssh-keyscan -t ed25519 <vps-ip> > host.pub`. Check that `ssh-keygen -lf host.pub` shows the fingerprint you know from the provider's console, then run `gh secret set DEPLOY_KNOWN_HOSTS --env production < host.pub`.
+5. **Store the private key in the password manager,** then delete it from the laptop if you like. GitHub keeps its copy.
+6. **GHCR cleanup permission:** if the first **cleanup** job fails with a permission error, open each package (Profile → Packages → `quode-backend` / `quode-frontend`) → Package settings → Manage Actions access, and give the `quode` repository the **Admin** role.
 
 ## Day to day
 
@@ -91,4 +135,5 @@ Publish images (step 4), set the new `QUODE_TAG` in `.env`, then `docker compose
 
 - **Registry token:** create a new one, run `docker login ghcr.io` again on the server, then delete the old token on GitHub.
 - **Read-only role password:** `docker compose exec postgres psql -U quode -d quode -c "ALTER ROLE quode_readonly PASSWORD '<new>'"`. Update `.env` too, though it's only read when the database is first created.
+- **Deploy key:** create a new key (step 1 of the setup), add its line on the server, update `DEPLOY_SSH_KEY`, run a deploy, then delete the old key's line from `~/.ssh/authorized_keys`.
 - **Google client secret:** create a new secret on the "Quode production" client, put it in `.env`, run `docker compose up -d backend`, then delete the old secret.

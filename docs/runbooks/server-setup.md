@@ -161,4 +161,5 @@ sudo ss -tlnp                                                      # only :22 on
 
 - **Temporary password-free sudo:** if you add one to automate the setup (`/etc/sudoers.d/90-…` with `NOPASSWD`), delete it at the end and check with `sudo -k; sudo -v`.
 - **Root:** the root password is for the provider's console only. SSH as root is off.
-- **Next:** the production stack runs from `deploy/` (M0-10, first deployment in `deploy/README.md`). Automatic deploys come in M0-11 and backups in M0-12.
+- **GitHub Actions has its own key** in `~/.ssh/authorized_keys`, limited to `deploy.sh` with `command=…,restrict` (ADR-0042, set up in `deploy/README.md`). Your own key's line has no such prefix; never add one to it.
+- **Next:** the production stack runs from `deploy/` (M0-10) and deploys itself on every merge (M0-11). Backups come in M0-12.

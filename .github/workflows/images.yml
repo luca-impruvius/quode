@@ -1,28 +1,39 @@
-# Builds the production images (M0-10, ADR-0041).
+# Builds the production images and deploys them (M0-10, M0-11; ADR-0041, ADR-0042).
 # - Pull requests that touch them: build only, to catch a broken Dockerfile early.
-# - Run by hand ("Run workflow") on main: build and push to GitHub Container Registry, tagged with
-#   the commit SHA. That SHA is QUODE_TAG in the server's .env. M0-11 runs this on every merge.
+# - Push to main (every merge that touches them): build, push to GitHub Container Registry tagged
+#   with the commit SHA, deploy over SSH, then keep only the newest package versions.
+# - Run by hand ("Run workflow") on main: the same; with "tag" set, deploy that existing image tag
+#   without building (rollback, deploy/README.md).
 # Packages are private; the server pulls with a read-only token (deploy/README.md).
 # Actions are pinned to commit SHAs; Dependabot updates them.
-name: Images
+name: Images & deploy
 
 on:
   pull_request:
-    paths:
+    paths: &image-paths
       - backend/**
       - frontend/**
       - design-system/**
       - deploy/**
       - .dockerignore
       - .github/workflows/images.yml
+  push:
+    branches: [main]
+    paths: *image-paths
   workflow_dispatch:
+    inputs:
+      tag:
+        description: Deploy this existing image tag (a full commit SHA) without building. Empty builds and deploys the selected branch.
+        required: false
+        default: ''
 
 permissions:
   contents: read
 
+# Pull requests: a newer push cancels the older build. Main: runs queue, so a deploy is never cut off.
 concurrency:
   group: images-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   # Pull requests: build only, with a read-only token.
@@ -46,9 +57,11 @@ jobs:
           push: false
           cache-from: type=gha,scope=${{ matrix.image }}
 
-  # Run by hand: only from main, and only this job may write packages.
+  # Main only, and only this job and cleanup may write packages.
   publish:
-    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
+    if: >-
+      github.ref == 'refs/heads/main' &&
+      (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.tag == ''))
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -72,7 +85,86 @@ jobs:
           context: .
           file: ${{ matrix.image }}/Dockerfile
           push: true
+          # One manifest per tag (no attestation index), so cleanup can count versions safely.
+          provenance: false
           tags: ghcr.io/${{ github.repository_owner }}/quode-${{ matrix.image }}:${{ github.sha }}
           labels: org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
           cache-from: type=gha,scope=${{ matrix.image }}
           cache-to: type=gha,mode=max,scope=${{ matrix.image }}
+
+  # Runs deploy/deploy.sh on the server through a key that can run nothing else (ADR-0042). The
+  # script checks health and rolls back by itself if the new version is unhealthy.
+  deploy:
+    needs: publish
+    if: >-
+      always() && github.ref == 'refs/heads/main' &&
+      (needs.publish.result == 'success' ||
+       (github.event_name == 'workflow_dispatch' && inputs.tag != '' && needs.publish.result == 'skipped'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment:
+      name: production
+      url: https://quode.app
+    concurrency:
+      group: deploy-production
+      cancel-in-progress: false
+    env:
+      TAG: ${{ inputs.tag || github.sha }}
+      SITE: https://quode.app
+    defaults:
+      run:
+        shell: bash # -eo pipefail: a failed ssh fails the step even when piped into tee
+    steps:
+      - name: Check the tag
+        run: |
+          [[ "$TAG" =~ ^[0-9a-f]{40}$ ]] || { echo "::error::tag must be a full 40-character commit SHA"; exit 1; }
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Deploy over SSH
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+        run: |
+          umask 077
+          mkdir -p ~/.ssh
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/deploy_key
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes \
+            -o UserKnownHostsFile=~/.ssh/known_hosts -o ConnectTimeout=30 \
+            -o ServerAliveInterval=15 -o ConnectionAttempts=3 \
+            "deploy@$DEPLOY_HOST" "deploy $TAG" | tee deploy.log
+          rm -f ~/.ssh/deploy_key
+      # compose.yml and the Caddyfile are copied to the server by hand (deploy/README.md).
+      - name: Compare the server's compose.yml and Caddyfile with the repository
+        run: |
+          check() {
+            local name=$1 file=$2 server
+            server=$(grep -oP "^$name \K[0-9a-f]+" deploy.log || true)
+            if [ "$server" != "$(sha256sum "$file" | cut -d' ' -f1)" ]; then
+              echo "::warning::The server's $file differs from this commit's. Copy it over by hand (deploy/README.md)."
+            fi
+          }
+          check compose-sha256 deploy/compose.yml
+          check caddyfile-sha256 deploy/Caddyfile
+      - name: Check the site from outside
+        run: curl -fsS --retry 5 --retry-delay 5 --retry-all-errors --max-time 10 "$SITE/api/health"
+
+  # Keeps the newest 10 versions of each package (private storage is limited; ADR-0041).
+  cleanup:
+    needs: deploy
+    if: needs.deploy.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      packages: write
+    strategy:
+      matrix:
+        image: [backend, frontend]
+    steps:
+      - uses: actions/delete-package-versions@e5bc658cc4c965c472efe991f8beea3981499c55 # v5.0.0
+        with:
+          package-name: quode-${{ matrix.image }}
+          package-type: container
+          min-versions-to-keep: 10
