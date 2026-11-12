@@ -23,7 +23,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: Deploy this existing image tag (a full commit SHA) without building. Empty builds and deploys the selected branch.
+        description: Deploy this existing image tag (a full commit SHA) without building. Empty builds and deploys main.
         required: false
         default: ''
 
@@ -97,11 +97,12 @@ jobs:
   deploy:
     needs: publish
     if: >-
-      always() && github.ref == 'refs/heads/main' &&
+      !cancelled() && github.ref == 'refs/heads/main' &&
       (needs.publish.result == 'success' ||
        (github.event_name == 'workflow_dispatch' && inputs.tag != '' && needs.publish.result == 'skipped'))
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    # Above deploy.sh's worst case: 5 min waiting for another deploy, the pull, two health waits.
+    timeout-minutes: 20
     environment:
       name: production
       url: https://quode.app
@@ -118,8 +119,10 @@ jobs:
       - name: Check the tag
         run: |
           [[ "$TAG" =~ ^[0-9a-f]{40}$ ]] || { echo "::error::tag must be a full 40-character commit SHA"; exit 1; }
+      # The deployed commit, so the file comparison below is against the right versions.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: ${{ env.TAG }}
           persist-credentials: false
       - name: Deploy over SSH
         env:
@@ -128,6 +131,7 @@ jobs:
           DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
         run: |
           umask 077
+          trap 'rm -f ~/.ssh/deploy_key' EXIT
           mkdir -p ~/.ssh
           printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/deploy_key
           printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
@@ -135,9 +139,8 @@ jobs:
             -o UserKnownHostsFile=~/.ssh/known_hosts -o ConnectTimeout=30 \
             -o ServerAliveInterval=15 -o ConnectionAttempts=3 \
             "deploy@$DEPLOY_HOST" "deploy $TAG" | tee deploy.log
-          rm -f ~/.ssh/deploy_key
-      # compose.yml and the Caddyfile are copied to the server by hand (deploy/README.md).
-      - name: Compare the server's compose.yml and Caddyfile with the repository
+      # These files are copied to the server by hand (deploy/README.md).
+      - name: Compare the server's deploy files with the repository
         run: |
           check() {
             local name=$1 file=$2 server
@@ -148,6 +151,7 @@ jobs:
           }
           check compose-sha256 deploy/compose.yml
           check caddyfile-sha256 deploy/Caddyfile
+          check deploy-sh-sha256 deploy/deploy.sh
       - name: Check the site from outside
         run: curl -fsS --retry 5 --retry-delay 5 --retry-all-errors --max-time 10 "$SITE/api/health"
 

@@ -25,7 +25,8 @@ M0-10 deploys by hand: run the Images workflow, edit `QUODE_TAG` on the server, 
 
 ## Consequences
 
-- **A leaked CI key can only redeploy an existing image tag.** It can't open a shell, read `.env`, or forward ports.
+- **A leaked CI key can only redeploy an existing image tag.** It can't open a shell, read `.env`, or forward ports. It could still roll back to an older image with a known flaw, one of the last 10 kept on GHCR. Rotating the key (`deploy/README.md`) is the answer.
+- **The deploy runs detached from the SSH session** and logs to `~/quode/deploy.log`, so a dropped connection can't stop it halfway. Container logs stay on the server, because Actions logs are public.
 - **Each deploy restarts the backend:** about 10 to 20 seconds without the API. That's acceptable for one user; zero-downtime deploys can come later if needed.
 - **A broken release usually fixes itself** by rolling back. A rollback that also fails is reported as such, and then a person has to look.
 - **Changes to `compose.yml` or the `Caddyfile` need a manual step,** which the run log points out.

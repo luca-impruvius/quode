@@ -86,13 +86,15 @@ Every merge to `main` that touches `backend/`, `frontend/`, `design-system/` or 
    - checks that Actuator reports that commit and that Caddy answers `/api/health` over HTTPS.
 
    If any check fails, it **puts the previous tag back** and fails the job. Then the job checks the site from outside.
+
+   The deploy runs detached from the SSH session and logs to `~/quode/deploy.log`, so a dropped connection or a cancelled job can't stop it halfway, rollback included.
 3. **cleanup** keeps the newest 10 versions of each package on GHCR.
 
 Docs-only merges don't deploy. The backend is unavailable for about 10 to 20 seconds per deploy.
 
 **When a deploy fails:**
-1. Read the deploy job's log. It shows which check failed, the backend's last log lines, and whether the rollback worked.
-2. Run `~/quode/deploy.sh status` on the server for the current and previous tags.
+1. Read the deploy job's log. It shows which check failed and whether the rollback worked. It never contains container logs, because Actions logs are public.
+2. On the server, `~/quode/failed-deploy.log` holds the failed version's backend log. `~/quode/deploy.sh status` shows the current and previous tags, and `~/quode/deploy.log` keeps every deploy's messages.
 3. A message saying the rollback is unhealthy too means the site is down: follow `docs/runbooks/production-debugging.md`.
 
 **Rollback** (safe because destructive migrations take two releases), either way:
@@ -103,17 +105,18 @@ Roll forward the same way, with the newer SHA.
 
 **Copy these by hand.** The deploy key can't copy files, so when `compose.yml`, the `Caddyfile`, `initdb/` or `deploy.sh` change, copy them before the merge, or right after:
 - for example `scp deploy/compose.yml quode-prod:quode/`;
-- the deploy job warns when the server's `compose.yml` or `Caddyfile` differs from the commit's;
+- the deploy job warns when the server's `compose.yml`, `Caddyfile` or `deploy.sh` differs from the commit's;
 - for a Caddyfile-only change: `docker compose exec caddy caddy reload --config /etc/caddy/Caddyfile`.
 
 ### Setting up the deploy key (once)
 
-The private key goes only to GitHub; it never passes through chat or the repository.
+The private key goes only to GitHub; it never passes through chat or the repository. The laptop commands are for a POSIX shell. On Windows, use **Git Bash**, not PowerShell: PowerShell has no `<` redirection and mangles the quotes in step 2.
 1. **Create the key on the laptop.** Press Enter at the passphrase prompts, because GitHub can't type one:
    `ssh-keygen -t ed25519 -C github-actions-deploy -f ~/.ssh/quode_deploy`
 2. **Allow it on the server, for `deploy.sh` only.** Copy `deploy.sh` to `~/quode/` (`chmod 755`), then run:
    `scp ~/.ssh/quode_deploy.pub quode-prod:` and then
-   `ssh quode-prod 'echo "command=\"/home/deploy/quode/deploy.sh\",restrict $(cat quode_deploy.pub)" >> ~/.ssh/authorized_keys && rm quode_deploy.pub'`
+   `ssh quode-prod 'sed -i -e "\$a\\" ~/.ssh/authorized_keys && echo "command=\"/home/deploy/quode/deploy.sh\",restrict $(cat quode_deploy.pub)" >> ~/.ssh/authorized_keys && rm quode_deploy.pub'`
+   The `sed` adds a final newline if one is missing, so the new line can't merge into your own key's line. Then, **in a new terminal**, check that `ssh quode-prod` still logs you in before closing the old one.
    **Check:** `ssh -o IdentitiesOnly=yes -i ~/.ssh/quode_deploy deploy@<vps-ip> status` prints the tags. The same command with `ls` instead of `status` prints the usage error, which proves the key can't run anything else.
 3. **GitHub environment:** Settings → Environments → New environment **`production`**. Under deployment branches and tags, choose **Selected branches and tags** and add `main`.
 4. **Its secrets**, with `gh` from the repository folder:
@@ -121,7 +124,8 @@ The private key goes only to GitHub; it never passes through chat or the reposit
    - `gh secret set DEPLOY_HOST --env production --body <vps-ip>`
    - `ssh-keyscan -t ed25519 <vps-ip> > host.pub`. Check that `ssh-keygen -lf host.pub` shows the fingerprint you know from the provider's console, then run `gh secret set DEPLOY_KNOWN_HOSTS --env production < host.pub`.
 5. **Store the private key in the password manager,** then delete it from the laptop if you like. GitHub keeps its copy.
-6. **GHCR cleanup permission:** if the first **cleanup** job fails with a permission error, open each package (Profile → Packages → `quode-backend` / `quode-frontend`) → Package settings → Manage Actions access, and give the `quode` repository the **Admin** role.
+6. **Old images and cleanup:** images published before M0-11 carry a provenance attestation, which makes each one several package versions. When cleanup trims them by age, the oldest of them may stop being pullable. Images from M0-11 on are one version each.
+7. **GHCR cleanup permission:** if the first **cleanup** job fails with a permission error, open each package (Profile → Packages → `quode-backend` / `quode-frontend`) → Package settings → Manage Actions access, and give the `quode` repository the **Admin** role.
 
 ## Day to day
 
