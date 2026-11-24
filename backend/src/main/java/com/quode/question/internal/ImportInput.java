@@ -2,7 +2,6 @@ package com.quode.question.internal;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.List;
-import java.util.UUID;
 
 /**
  * A bulk import (docs/specs/M2-exam-prep-mvp.md). {@code topic}: the path ("Cloud › GCP") every
@@ -18,7 +17,7 @@ record ImportInput(@Schema(types = {"string", "null"}) String topic, List<Import
    * 2. {@code topics}: extra topic paths.
    */
   record ImportItem(
-      UUID id,
+      @Schema(types = {"string", "null"}) String id,
       @Schema(types = {"string", "null"}) String type,
       @Schema(types = {"string", "null"}) String prompt,
       @Schema(types = {"string", "null"}) String answer,

@@ -250,6 +250,8 @@ class ImportApiTests {
 
   @Test
   void aDryRunReportsWhatAnImportWouldDo() throws Exception {
+    // Inside this test's transaction only the report can be checked; ImportDryRunTests checks
+    // that nothing is saved.
     String body = file(GCP, single("Dry one?"), unanswered("Dry two?"), single("Dry one?"));
     importAs(me(), true, body)
         .andExpect(status().isOk())
@@ -386,5 +388,68 @@ class ImportApiTests {
                 .content(body))
         .andExpect(status().isForbidden());
     assertThat(questionsOf(me) + questionsOf(other)).isZero();
+  }
+
+  @Test
+  void exactlyTwoThousandQuestionsAreAccepted() throws Exception {
+    String many =
+        IntStream.range(0, ImportService.MAX_QUESTIONS)
+            .mapToObj(i -> "{\"type\":\"FLASHCARD\",\"prompt\":\"Q" + i + "\",\"answer\":\"A\"}")
+            .collect(Collectors.joining(","));
+    importJson(file(GCP, many))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.created").value(ImportService.MAX_QUESTIONS));
+    assertThat(questionsOf(me)).isEqualTo(ImportService.MAX_QUESTIONS);
+  }
+
+  @Test
+  void topicNamesInAPathHaveUpToSixtyCharacters() throws Exception {
+    String sixty = "a".repeat(60);
+    String card = "{\"type\":\"FLASHCARD\",\"prompt\":\"%s\",\"answer\":\"x\",\"topics\":[\"%s\"]}";
+    importJson(
+            file(
+                null,
+                card.formatted("Sixty?", "Root › " + sixty),
+                card.formatted("Sixty-one?", "Root › " + sixty + "b")))
+        .andExpect(jsonPath("$.created").value(1))
+        .andExpect(jsonPath("$.problems[0].index").value(2));
+    assertThat(count("select count(*) from topic where owner_id = ? and name = ?", me, sixty))
+        .isEqualTo(1);
+  }
+
+  @Test
+  void difficultyDefaultsToTwo() throws Exception {
+    importJson(file(GCP, "{\"type\":\"FLASHCARD\",\"prompt\":\"Default?\",\"answer\":\"x\"}"))
+        .andExpect(jsonPath("$.created").value(1));
+    assertThat(count("select difficulty from question where owner_id = ?", me)).isEqualTo(2);
+  }
+
+  @Test
+  void aBadIdIsReportedAndAValueOfTheWrongJsonTypeRejectsTheFile() throws Exception {
+    importJson(file(null, "{\"id\":\"not-a-uuid\",\"answer\":\"x\"}"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.problems[0].reason").value(ImportService.BAD_ID));
+
+    importJson(
+            file(GCP, single("Fine?"), "{\"type\":\"FLASHCARD\",\"prompt\":\"P\",\"options\":{}}"))
+        .andExpect(status().isBadRequest());
+    assertThat(questionsOf(me)).isZero();
+  }
+
+  @Test
+  void aFillOnlyFileCreatesNoTopics() throws Exception {
+    importJson(file(GCP, unanswered("Fill only?")));
+    UUID id = onlyQuestion();
+    int topics = count("select count(*) from topic where owner_id = ?", me);
+
+    String filled =
+        """
+        {"id":"%s","options":[{"text":"A","correct":true},{"text":"B","correct":false}]}
+        """
+            .formatted(id);
+    importJson(file("Renamed › Elsewhere", filled))
+        .andExpect(jsonPath("$.filled").value(1))
+        .andExpect(jsonPath("$.topicsCreated").value(0));
+    assertThat(count("select count(*) from topic where owner_id = ?", me)).isEqualTo(topics);
   }
 }

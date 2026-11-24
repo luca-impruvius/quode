@@ -77,7 +77,7 @@ erDiagram
 10. Deleting a topic is blocked while questions or child topics reference it.
 11. "Flag for fixing" sets `flagged_at` with an optional note (up to 200 characters); flagged questions appear under the Library's Flagged filter. Saving an edit clears the flag; archive and unarchive keep it.
 12. Bulk import (M2): a question whose prompt equals one of the same user's questions, ignoring case and repeated spaces, is skipped. A question without a correct option or answer text is saved as `DRAFT`; saving a complete edit makes it `ACTIVE`.
-13. Filling answers by id on import completes a `DRAFT` question and makes it `ACTIVE`; an `ACTIVE` question is never overwritten.
+13. Filling answers by id on import completes a `DRAFT` question (options, answer, explanation, and difficulty or source link when given) and makes it `ACTIVE`; an `ACTIVE` question is never overwritten.
 
 ## 5. Conventions
 

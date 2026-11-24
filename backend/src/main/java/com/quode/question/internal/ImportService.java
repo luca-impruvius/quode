@@ -5,10 +5,13 @@ import com.quode.question.internal.ImportReport.ImportProblem;
 import com.quode.question.internal.QuestionInput.OptionInput;
 import com.quode.taxonomy.TopicPaths;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -34,12 +37,13 @@ class ImportService {
   static final String EMPTY = "This entry is empty.";
   static final String NO_TOPIC =
       "Give the question a topic: the file's \"topic\" or the question's own \"topics\".";
+  static final String BAD_ID = "This id is not a question id.";
   static final String NOT_FOUND = "No draft question with this id.";
   static final String ALREADY_ACTIVE = "This question already has an answer; it was not changed.";
   static final String STILL_NO_ANSWER =
       "Still no answer: mark a correct option or give the answer text.";
 
-  private static final Pattern SPACES = Pattern.compile("\\s+");
+  private static final Pattern SPACES = Pattern.compile("\\s+", Pattern.UNICODE_CHARACTER_CLASS);
 
   private final QuestionRepository questions;
   private final TopicPaths topicPaths;
@@ -59,7 +63,7 @@ class ImportService {
     for (int i = 0; i < items.size(); i++) {
       ImportItem item = items.get(i);
       Optional<String> problem =
-          item == null ? Optional.of(EMPTY) : item.id() != null ? run.fill(item) : run.create(item);
+          item == null ? Optional.of(EMPTY) : isFill(item) ? run.fill(item) : run.create(item);
       int position = i + 1;
       problem.ifPresent(reason -> run.problems.add(new ImportProblem(position, reason)));
     }
@@ -76,7 +80,11 @@ class ImportService {
         List.copyOf(run.problems));
   }
 
-  /** Prompts compare ignoring case and repeated spaces. */
+  private static boolean isFill(ImportItem item) {
+    return !QuestionRules.isBlank(item.id());
+  }
+
+  /** Prompts compare ignoring case and repeated spaces (non-breaking ones included). */
   static String normalize(String prompt) {
     return SPACES.matcher(prompt.strip()).replaceAll(" ").toLowerCase(Locale.ROOT);
   }
@@ -88,6 +96,7 @@ class ImportService {
     private final String fileTopic;
     private final TopicPaths.Resolved topics;
     private final Set<String> seenPrompts = new HashSet<>();
+    private final Map<UUID, Question> toFill = new HashMap<>();
     private final List<ImportProblem> problems = new ArrayList<>();
     private int created;
     private int filled;
@@ -98,17 +107,30 @@ class ImportService {
       this.ownerId = ownerId;
       this.fileTopic = QuestionRules.isBlank(fileTopic) ? null : fileTopic;
       Set<String> paths = new LinkedHashSet<>();
-      if (this.fileTopic != null) {
+      List<ImportItem> newOnes = items.stream().filter(i -> i != null && !isFill(i)).toList();
+      // A fill-only file (an export with answers) creates no topics, not even its own one.
+      if (this.fileTopic != null && !newOnes.isEmpty()) {
         paths.add(this.fileTopic);
       }
-      for (ImportItem item : items) {
-        if (item != null && item.id() == null && item.topics() != null) {
+      for (ImportItem item : newOnes) {
+        if (item.topics() != null) {
           item.topics().stream().filter(p -> !QuestionRules.isBlank(p)).forEach(paths::add);
         }
       }
       // Topics of questions that turn out invalid are still created: the import is one batch.
       this.topics = topicPaths.resolve(ownerId, paths);
       questions.findPrompts(ownerId).forEach(p -> seenPrompts.add(normalize(p)));
+      // Questions to fill, in one locking query before anything is saved (no N+1, no flushes).
+      List<UUID> ids =
+          items.stream()
+              .filter(i -> i != null && isFill(i))
+              .map(i -> parseId(i.id()))
+              .filter(Objects::nonNull)
+              .distinct()
+              .toList();
+      if (!ids.isEmpty()) {
+        questions.findAllForUpdate(ids, ownerId).forEach(q -> toFill.put(q.getId(), q));
+      }
     }
 
     Optional<String> create(ImportItem item) {
@@ -177,11 +199,14 @@ class ImportService {
 
     /** Export and fill: completes a DRAFT question; an ACTIVE one is never overwritten. */
     Optional<String> fill(ImportItem item) {
-      Optional<Question> found = questions.findForUpdate(item.id(), ownerId);
-      if (found.isEmpty()) {
+      UUID id = parseId(item.id());
+      if (id == null) {
+        return Optional.of(BAD_ID);
+      }
+      Question question = toFill.get(id);
+      if (question == null) {
         return Optional.of(NOT_FOUND);
       }
-      Question question = found.get();
       if (question.getStatus() == QuestionStatus.ACTIVE) {
         return Optional.of(ALREADY_ACTIVE);
       }
@@ -228,6 +253,14 @@ class ImportService {
     return options.stream()
         .map(o -> o == null ? null : new OptionInput(o.text(), Boolean.TRUE.equals(o.correct())))
         .toList();
+  }
+
+  private static UUID parseId(String id) {
+    try {
+      return UUID.fromString(id.strip());
+    } catch (IllegalArgumentException e) {
+      return null;
+    }
   }
 
   private static QuestionType parseType(String type) {

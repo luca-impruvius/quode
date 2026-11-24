@@ -70,5 +70,6 @@ class DraftRulesTests {
         .isEqualTo(ImportService.normalize("what is pub/sub?"));
     assertThat(ImportService.normalize("What is GKE?"))
         .isNotEqualTo(ImportService.normalize("What is GCE?"));
+    assertThat(ImportService.normalize("What is GKE?")).isEqualTo("what is gke?");
   }
 }
