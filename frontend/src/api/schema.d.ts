@@ -68,6 +68,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/questions/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["export"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/questions/{id}": {
         parameters: {
             query?: never;
@@ -236,6 +252,28 @@ export interface components {
             name?: string;
             /** Format: uuid */
             parentId?: string;
+        };
+        ExportFile: {
+            questions: components["schemas"]["ExportItem"][];
+            topic: string | null;
+        };
+        ExportItem: {
+            answer: string | null;
+            /** Format: int32 */
+            difficulty: number;
+            explanation: string | null;
+            /** Format: uuid */
+            id: string;
+            options: components["schemas"]["ExportOption"][];
+            prompt: string;
+            sourceUrl: string | null;
+            topics: string[];
+            /** @enum {string} */
+            type: "FLASHCARD" | "SINGLE_CHOICE" | "MULTIPLE_CHOICE" | "OPEN_TEXT";
+        };
+        ExportOption: {
+            correct: boolean;
+            text: string;
         };
         FlagInput: {
             note?: string;
@@ -520,6 +558,29 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["QuestionView"];
+                };
+            };
+        };
+    };
+    export: {
+        parameters: {
+            query?: {
+                status?: string;
+                topicId?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExportFile"];
                 };
             };
         };
