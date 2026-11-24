@@ -10,6 +10,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.jayway.jsonpath.JsonPath;
 import com.quode.TestcontainersConfiguration;
+import com.quode.study.AttemptRecorded;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -20,6 +21,8 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.test.context.event.ApplicationEvents;
+import org.springframework.test.context.event.RecordApplicationEvents;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
@@ -31,9 +34,12 @@ import org.springframework.transaction.annotation.Transactional;
 @AutoConfigureMockMvc
 @Import(TestcontainersConfiguration.class)
 @Transactional
+@RecordApplicationEvents
 class StudyApiTests {
 
   @Autowired private MockMvc mvc;
+
+  @Autowired private ApplicationEvents events;
 
   @Autowired private JdbcTemplate jdbc;
 
@@ -310,5 +316,103 @@ class StudyApiTests {
         .andExpect(status().isNotFound());
     mvc.perform(get("/api/v1/study/sessions/" + session).contextPath("/api"))
         .andExpect(status().isUnauthorized());
+  }
+
+  @Test
+  void aSelfGradedCardRevealsItsAnswerAndAChoiceCardDoesNot() throws Exception {
+    String session = fromGcp();
+    mvc.perform(get("/api/v1/study/sessions/" + session).contextPath("/api").with(me()))
+        .andExpect(jsonPath("$.current.answerMd").value(org.hamcrest.Matchers.nullValue()));
+    choose(session, "Serverless containers?", "Cloud Run");
+    choose(session, "Managed databases?", "Cloud SQL", "Spanner")
+        .andExpect(jsonPath("$.session.current.promptMd").value("What is IAM?"))
+        .andExpect(jsonPath("$.session.current.answerMd").value("Access control."));
+  }
+
+  @Test
+  void aTopicIncludesItsSubTopics() throws Exception {
+    UUID cloud =
+        jdbc.queryForObject(
+            "select id from topic where owner_id = ? and name = 'Cloud'", UUID.class, me);
+    send(post("/api/v1/study/sessions"), me(), "{\"topicIds\":[\"" + cloud + "\"]}")
+        .andExpect(status().isCreated())
+        .andExpect(jsonPath("$.total").value(3));
+  }
+
+  @Test
+  void eachAnswerPublishesAttemptRecorded() throws Exception {
+    String session = fromGcp();
+    choose(session, "Serverless containers?", "GKE");
+    grade(session, "What is IAM?", "GOT_IT").andExpect(status().isConflict());
+
+    assertThat(events.stream(AttemptRecorded.class))
+        .containsExactly(
+            new AttemptRecorded(
+                me,
+                UUID.fromString(session),
+                "ADHOC",
+                question("Serverless containers?"),
+                "WRONG"));
+  }
+
+  @Test
+  void partialCountsAsMissedForTheScoreRetryAndMissedMode() throws Exception {
+    String session = fromGcp();
+    choose(session, "Serverless containers?", "Cloud Run");
+    choose(session, "Managed databases?", "Cloud SQL", "Spanner");
+    grade(session, "What is IAM?", "PARTIAL");
+
+    finish(session)
+        .andExpect(jsonPath("$.correct").value(2))
+        .andExpect(jsonPath("$.partial").value(1))
+        .andExpect(jsonPath("$.missedQuestionIds.length()").value(1))
+        .andExpect(jsonPath("$.missedQuestionIds[0]").value(question("What is IAM?").toString()));
+    String missed = start("{\"topicIds\":[\"" + gcp + "\"],\"mode\":\"MISSED\"}");
+    mvc.perform(get("/api/v1/study/sessions/" + missed).contextPath("/api").with(me()))
+        .andExpect(jsonPath("$.total").value(1))
+        .andExpect(jsonPath("$.current.promptMd").value("What is IAM?"));
+  }
+
+  @Test
+  void othersCantAnswerMySessionUseMyQuestionsOrSeeMyAttempts() throws Exception {
+    String session = fromGcp();
+    send(
+            post("/api/v1/study/sessions/" + session + "/answers"),
+            other(),
+            "{\"questionId\":\"%s\",\"grade\":\"GOT_IT\"}"
+                .formatted(question("Serverless containers?")))
+        .andExpect(status().isNotFound());
+    send(
+            post("/api/v1/study/sessions"),
+            other(),
+            "{\"questionIds\":[\"%s\"]}".formatted(question("Serverless containers?")))
+        .andExpect(status().isConflict());
+
+    // The other user's own copy of a question: my wrong answer doesn't make it "missed" for them.
+    choose(session, "Serverless containers?", "GKE");
+    send(
+            post("/api/v1/imports"),
+            other(),
+            "{\"topic\":\"Theirs\",\"questions\":[{\"type\":\"FLASHCARD\",\"prompt\":\"Theirs?\",\"answer\":\"x\"}]}")
+        .andExpect(jsonPath("$.created").value(1));
+    UUID theirs =
+        jdbc.queryForObject(
+            "select id from topic where name = 'Theirs' and owner_id <> ?", UUID.class, me);
+    send(
+            post("/api/v1/study/sessions"),
+            other(),
+            "{\"topicIds\":[\"" + theirs + "\"],\"mode\":\"UNSEEN\"}")
+        .andExpect(status().isCreated())
+        .andExpect(jsonPath("$.total").value(1));
+  }
+
+  @Test
+  void aQuizStartsFromAtMostOneHundredTopics() throws Exception {
+    StringBuilder ids = new StringBuilder();
+    for (int i = 0; i <= StudyService.MAX_TOPICS; i++) {
+      ids.append(i == 0 ? "" : ",").append('"').append(UUID.randomUUID()).append('"');
+    }
+    send(post("/api/v1/study/sessions"), me(), "{\"topicIds\":[" + ids + "]}")
+        .andExpect(status().isBadRequest());
   }
 }

@@ -23,9 +23,17 @@ final class StudyDtos {
       @Schema(types = {"string", "null"}) String mode,
       Boolean shuffle) {}
 
-  /** A question to answer, without its answer. */
+  /**
+   * A question to answer. Choice questions come without their answer (graded by the server);
+   * flashcard and open questions carry it, because the screen reveals it before you grade yourself.
+   */
   record QuestionCard(
-      UUID id, QuestionCatalog.Type type, String promptMd, List<CardOption> options) {}
+      UUID id,
+      QuestionCatalog.Type type,
+      String promptMd,
+      List<CardOption> options,
+      @Schema(types = {"string", "null"}) String answerMd,
+      @Schema(types = {"string", "null"}) String explanationMd) {}
 
   record CardOption(UUID id, String textMd) {}
 

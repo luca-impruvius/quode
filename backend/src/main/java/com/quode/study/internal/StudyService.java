@@ -44,11 +44,12 @@ import org.springframework.web.server.ResponseStatusException;
 class StudyService {
 
   static final int MAX_QUESTIONS = 2_000;
+  static final int MAX_TOPICS = 100;
 
   static final String NOT_FOUND = "Study session not found.";
   static final String BAD_START =
-      "Start a quiz with topicIds or questionIds, count 1–2,000 or none for all, mode ALL, UNSEEN"
-          + " or MISSED.";
+      "Start a quiz with 1–100 topicIds or questionIds, count 1–2,000 or none for all (up to"
+          + " 2,000), mode ALL, UNSEEN or MISSED.";
   static final String NONE_MATCH = "No questions to study here yet.";
   static final String OUT_OF_ORDER =
       "This isn't the question the quiz is on. Reload to continue where it is.";
@@ -88,7 +89,8 @@ class StudyService {
         || mode == null
         || fromQuestions == fromTopics
         || (input.count() != null && (input.count() < 1 || input.count() > MAX_QUESTIONS))
-        || (fromQuestions && input.questionIds().size() > MAX_QUESTIONS)) {
+        || (fromQuestions && input.questionIds().size() > MAX_QUESTIONS)
+        || (fromTopics && input.topicIds().size() > MAX_TOPICS)) {
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, BAD_START);
     }
     List<UUID> candidates =
@@ -234,7 +236,9 @@ class StudyService {
       }
       String given =
           chosen.stream().map(u -> "\"" + u + "\"").sorted().toList().toString().replace(" ", "");
-      return new Graded(chosen.equals(right) ? "CORRECT" : "WRONG", given, "AUTO");
+      // A question edited back to having no correct option can't be answered right.
+      boolean correct = !right.isEmpty() && chosen.equals(right);
+      return new Graded(correct ? "CORRECT" : "WRONG", given, "AUTO");
     }
     String grade = input.grade() == null ? "" : input.grade().toUpperCase(Locale.ROOT);
     String outcome =
@@ -330,7 +334,9 @@ class StudyService {
                 q.id(),
                 q.type(),
                 q.promptMd(),
-                q.options().stream().map(o -> new CardOption(o.id(), o.textMd())).toList());
+                q.options().stream().map(o -> new CardOption(o.id(), o.textMd())).toList(),
+                q.type().isChoice() ? null : q.answerMd(),
+                q.type().isChoice() ? null : q.explanationMd());
       }
     }
     return new SessionView(

@@ -93,7 +93,16 @@ class OpenApiContractTests {
   void everySuccessResponsePropertyIsRequired() throws Exception {
     JsonNode schemas = spec().path("components").path("schemas");
     for (String name :
-        List.of("QuestionView", "TopicView", "LibraryPage", "LibraryItem", "TopicRef")) {
+        List.of(
+            "QuestionView",
+            "TopicView",
+            "LibraryPage",
+            "LibraryItem",
+            "TopicRef",
+            "SessionView",
+            "QuestionCard",
+            "AnswerResult",
+            "FinishResult")) {
       JsonNode schema = schemas.path(name);
       Set<String> properties = new HashSet<>(schema.path("properties").propertyNames());
       Set<String> required = new HashSet<>();
@@ -172,8 +181,39 @@ class OpenApiContractTests {
             .getResponse()
             .getContentAsString();
 
+    String session =
+        mvc.perform(
+                post("/api/v1/study/sessions")
+                    .contextPath("/api")
+                    .with(me)
+                    .with(csrf())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("{\"topicIds\":[\"%s\"]}".formatted(topic)))
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
+    JsonNode card = JSON.readTree(session).path("current");
+    String answer =
+        mvc.perform(
+                post("/api/v1/study/sessions/" + JSON.readTree(session).path("id").asString())
+                    .contextPath("/api")
+                    .with(me)
+                    .with(csrf())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(
+                        "{\"questionId\":\"%s\",\"selectedOptionIds\":[]}"
+                            .formatted(card.path("id").asString())))
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
+
     JsonNode schemas = spec().path("components").path("schemas");
     assertThat(nullFields(JSON.readTree(created))).isEqualTo(nullableIn(schemas, "QuestionView"));
+    // A choice card hides its answer; once every question is answered, current is null.
+    assertThat(nullFields(card)).isEqualTo(nullableIn(schemas, "QuestionCard"));
+    assertThat(nullFields(JSON.readTree(answer))).isEqualTo(nullableIn(schemas, "AnswerResult"));
+    assertThat(nullFields(JSON.readTree(answer).path("session")))
+        .isEqualTo(nullableIn(schemas, "SessionView"));
     assertThat(nullFields(JSON.readTree(topics).get(0)))
         .isEqualTo(nullableIn(schemas, "TopicView"));
     assertThat(nullFields(JSON.readTree(library).path("items").get(0)))
@@ -196,6 +236,7 @@ class OpenApiContractTests {
         schemas.path(name).path("properties").properties()) {
       List<String> types = new ArrayList<>();
       property.getValue().path("type").forEach(t -> types.add(t.asString()));
+      property.getValue().path("anyOf").forEach(s -> types.add(s.path("type").asString("")));
       if (types.contains("null")) {
         nullable.add(property.getKey());
       }

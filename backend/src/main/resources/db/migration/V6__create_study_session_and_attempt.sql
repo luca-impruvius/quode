@@ -9,13 +9,14 @@ create table study_session (
     current_index  integer     not null default 0 check (current_index >= 0),
     started_at     timestamptz not null default now(),
     finished_at    timestamptz,
-    constraint study_session_id_owner_key unique (id, owner_id)
+    constraint study_session_id_owner_key unique (id, owner_id),
+    constraint study_session_index_in_order check (current_index <= cardinality(question_order))
 );
 
 create index study_session_owner_idx on study_session (owner_id, started_at desc);
 
--- One answer to one question in one session. The question key keeps a question with attempts from
--- ever being hard-deleted (rule 4); questions are archived instead.
+-- One answer to one question in one session. The keys keep a question or session with attempts from
+-- ever being hard-deleted (rule 4); answer history stays.
 create table attempt (
     id           uuid        primary key default uuidv7(),
     session_id   uuid        not null,
@@ -28,7 +29,7 @@ create table attempt (
     answered_at  timestamptz not null default now(),
     constraint attempt_session_question_key unique (session_id, question_id),
     constraint attempt_session_same_owner_fkey
-        foreign key (session_id, owner_id) references study_session (id, owner_id) on delete cascade,
+        foreign key (session_id, owner_id) references study_session (id, owner_id),
     constraint attempt_question_same_owner_fkey
         foreign key (question_id, owner_id) references question (id, owner_id)
 );

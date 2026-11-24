@@ -462,6 +462,8 @@ export interface components {
             textMd: string;
         };
         QuestionCard: {
+            answerMd: string | null;
+            explanationMd: string | null;
             /** Format: uuid */
             id: string;
             options: components["schemas"]["CardOption"][];
@@ -520,7 +522,7 @@ export interface components {
             answered: number;
             /** Format: int32 */
             correct: number;
-            current: components["schemas"]["QuestionCard"];
+            current: components["schemas"]["QuestionCard"] | null;
             /** Format: date-time */
             finishedAt: string | null;
             /** Format: uuid */
