@@ -2,7 +2,9 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { ChevronLeft } from 'lucide-react';
 import { useEffect, useId, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
+import { ApiError } from '../api/client';
 import {
+  rememberedQuiz,
   rememberQuiz,
   sessionKey,
   studyApi,
@@ -19,6 +21,12 @@ import { messages } from '../messages';
 const m = messages.quiz;
 const grades: SelfGrade[] = ['GOT_IT', 'PARTIAL', 'MISSED'];
 
+interface Feedback {
+  card: QuestionCard;
+  chosen: string[];
+  result: AnswerResult;
+}
+
 /**
  * One quick quiz (docs/specs/M2-exam-prep-mvp.md). Progress lives on the server, so reopening this
  * URL resumes at the same question. Choice questions are graded at once; flashcard and open ones
@@ -26,23 +34,45 @@ const grades: SelfGrade[] = ['GOT_IT', 'PARTIAL', 'MISSED'];
  */
 export function QuizPage() {
   const { id = '' } = useParams();
+  // Keyed by id: Retry missed or back/forward starts with fresh state.
+  return <Quiz key={id} id={id} />;
+}
+
+function Quiz({ id }: { id: string }) {
   const session = useSession(id);
   const queryClient = useQueryClient();
   // The answered card stays on screen with its feedback until Next.
-  const [feedback, setFeedback] = useState<{
-    card: QuestionCard;
-    chosen: string[];
-    result: AnswerResult;
-  } | null>(null);
+  const [feedback, setFeedback] = useState<Feedback | null>(null);
+  const [announcement, setAnnouncement] = useState('');
 
   const answer = useMutation({
-    mutationFn: studyApi.answer,
-    onSuccess: (result) => queryClient.setQueryData(sessionKey(id), result.session),
+    mutationFn: (args: { card: QuestionCard; chosen?: string[]; grade?: SelfGrade }) =>
+      studyApi.answer({
+        id,
+        questionId: args.card.id,
+        ...(args.chosen ? { selectedOptionIds: args.chosen } : {}),
+        ...(args.grade ? { grade: args.grade } : {}),
+      }),
+    onSuccess: (result, args) => {
+      // Feedback and the next card arrive together, so the answered card keeps its marks.
+      if (args.chosen) {
+        setFeedback({ card: args.card, chosen: args.chosen, result });
+        setAnnouncement(result.outcome === 'CORRECT' ? m.correct : m.wrong);
+      }
+      queryClient.setQueryData(sessionKey(id), result.session);
+    },
+    onError: (error) => {
+      // Answered elsewhere (another tab): show where the quiz really is.
+      if (error instanceof ApiError && error.status === 409) {
+        void queryClient.invalidateQueries({ queryKey: sessionKey(id) });
+      }
+    },
   });
 
   const data = session.data;
   const card = feedback?.card ?? data?.current ?? null;
   const done = data !== undefined && feedback === null && data.current === null;
+  const position = data ? Math.min(data.answered + (feedback ? 0 : 1), data.total) : 0;
 
   return (
     <div className="mx-auto flex min-h-dvh max-w-md flex-col">
@@ -55,17 +85,18 @@ export function QuizPage() {
           {m.quit}
         </Link>
         {data && !done && (
-          <span className="px-space-2 text-ink-muted" aria-live="polite">
-            {m.progress(Math.min(data.answered + (feedback ? 0 : 1), data.total), data.total)}
+          <span className="px-space-2 text-ink-muted">
+            <span aria-hidden="true">{m.progress(position, data.total)}</span>
+            <span className="sr-only">{m.progressLong(position, data.total)}</span>
           </span>
         )}
       </header>
       <main className="flex flex-1 flex-col gap-space-4 px-space-4 py-space-4">
-        {session.isPending && (
-          <p role="status" className="text-ink-muted">
-            {messages.loading}
-          </p>
-        )}
+        {/* Always mounted, so screen readers announce what is written into it. */}
+        <p role="status" className="sr-only">
+          {announcement}
+        </p>
+        {session.isPending && <p className="text-ink-muted">{messages.loading}</p>}
         {session.isError && <ErrorNotice error={session.error} />}
         {done && <Results id={id} />}
         {!done && card && (
@@ -75,15 +106,11 @@ export function QuizPage() {
             feedback={feedback}
             busy={answer.isPending}
             error={answer.error}
-            onChoose={(chosen) =>
-              answer.mutate(
-                { id, questionId: card.id, selectedOptionIds: chosen },
-                { onSuccess: (result) => setFeedback({ card, chosen, result }) },
-              )
-            }
-            onGrade={(grade) => answer.mutate({ id, questionId: card.id, grade })}
+            onChoose={(chosen) => !answer.isPending && answer.mutate({ card, chosen })}
+            onGrade={(grade) => !answer.isPending && answer.mutate({ card, grade })}
             onNext={() => {
               answer.reset();
+              setAnnouncement('');
               setFeedback(null);
             }}
             last={feedback?.result.session.current === null}
@@ -96,7 +123,7 @@ export function QuizPage() {
 
 interface CardProps {
   card: QuestionCard;
-  feedback: { chosen: string[]; result: AnswerResult } | null;
+  feedback: Feedback | null;
   busy: boolean;
   error: unknown;
   last: boolean;
@@ -108,18 +135,30 @@ interface CardProps {
 function Card({ card, feedback, busy, error, last, onChoose, onGrade, onNext }: CardProps) {
   const choice = card.type === 'SINGLE_CHOICE' || card.type === 'MULTIPLE_CHOICE';
   const multiple = card.type === 'MULTIPLE_CHOICE';
-  const [chosen, setChosen] = useState<string[]>([]);
+  const [chosenNow, setChosen] = useState<string[]>([]);
   const [revealed, setRevealed] = useState(false);
   const promptId = useId();
+  const outcomeId = useId();
+  const prompt = useRef<HTMLDivElement>(null);
   const next = useRef<HTMLButtonElement>(null);
+  const firstGrade = useRef<HTMLButtonElement>(null);
   const answered = feedback !== null;
+  const chosen = feedback?.chosen ?? chosenNow;
 
-  // After feedback, Next takes focus so Enter moves on.
+  // A new card takes focus on its prompt; feedback moves it to Next; a reveal to the grades.
+  useEffect(() => {
+    prompt.current?.focus();
+  }, []);
   useEffect(() => {
     if (answered) {
       next.current?.focus();
     }
   }, [answered]);
+  useEffect(() => {
+    if (revealed) {
+      firstGrade.current?.focus();
+    }
+  }, [revealed]);
 
   function toggle(optionId: string) {
     if (answered) {
@@ -138,7 +177,7 @@ function Card({ card, feedback, busy, error, last, onChoose, onGrade, onNext }: 
   const button = 'min-h-12 rounded-md border-bold border-outline px-space-4 font-semibold';
   return (
     <article aria-labelledby={promptId} className="flex flex-col gap-space-4">
-      <div id={promptId} className="type-question">
+      <div id={promptId} ref={prompt} tabIndex={-1} className="type-question">
         <Markdown text={card.promptMd} />
       </div>
 
@@ -161,7 +200,7 @@ function Card({ card, feedback, busy, error, last, onChoose, onGrade, onNext }: 
             return (
               <label
                 key={option.id}
-                className={`flex min-h-12 items-start gap-space-3 rounded-md border-bold p-space-3 ${state}`}
+                className={`flex min-h-12 items-start gap-space-3 rounded-md border-bold p-space-3 has-focus-visible:outline-3 has-focus-visible:outline-focus ${state}`}
               >
                 <input
                   type={multiple ? 'checkbox' : 'radio'}
@@ -191,7 +230,7 @@ function Card({ card, feedback, busy, error, last, onChoose, onGrade, onNext }: 
           type="button"
           disabled={chosen.length === 0}
           aria-disabled={busy}
-          onClick={() => !busy && onChoose(chosen)}
+          onClick={() => onChoose(chosen)}
           className={`${button} bg-accent text-on-accent disabled:opacity-45`}
         >
           {m.check}
@@ -199,7 +238,7 @@ function Card({ card, feedback, busy, error, last, onChoose, onGrade, onNext }: 
       )}
 
       {choice && feedback && (
-        <section role="status" className="flex flex-col gap-space-2">
+        <section id={outcomeId} className="flex flex-col gap-space-2">
           <p className="font-semibold">
             {feedback.result.outcome === 'CORRECT' ? m.correct : m.wrong}
           </p>
@@ -220,10 +259,7 @@ function Card({ card, feedback, busy, error, last, onChoose, onGrade, onNext }: 
 
       {!choice && revealed && (
         <>
-          <div
-            role="status"
-            className="flex flex-col gap-space-2 rounded-md bg-surface-sunken p-space-3"
-          >
+          <div className="flex flex-col gap-space-2 rounded-md bg-surface-sunken p-space-3">
             <p className="type-label text-ink-muted">{m.answer}</p>
             <Markdown text={card.answerMd ?? ''} />
             {card.explanationMd && (
@@ -236,12 +272,13 @@ function Card({ card, feedback, busy, error, last, onChoose, onGrade, onNext }: 
           <fieldset className="flex flex-col gap-space-2">
             <legend className="font-semibold">{m.gradePrompt}</legend>
             <div className="flex gap-space-2">
-              {grades.map((grade) => (
+              {grades.map((grade, i) => (
                 <button
                   key={grade}
+                  ref={i === 0 ? firstGrade : undefined}
                   type="button"
                   aria-disabled={busy}
-                  onClick={() => !busy && onGrade(grade)}
+                  onClick={() => onGrade(grade)}
                   className={`${button} flex-1`}
                 >
                   {m.grades[grade]}
@@ -256,6 +293,7 @@ function Card({ card, feedback, busy, error, last, onChoose, onGrade, onNext }: 
         <button
           ref={next}
           type="button"
+          aria-describedby={choice ? outcomeId : undefined}
           onClick={onNext}
           className={`${button} bg-accent text-on-accent`}
         >
@@ -276,7 +314,10 @@ function Results({ id }: { id: string }) {
   const { mutate } = finish;
 
   useEffect(() => {
-    rememberQuiz(null);
+    // Only forget the quiz to continue if it is this one.
+    if (rememberedQuiz() === id) {
+      rememberQuiz(null);
+    }
     mutate(id);
   }, [id, mutate]);
   useEffect(() => {
@@ -286,17 +327,19 @@ function Results({ id }: { id: string }) {
   }, [finish.data]);
 
   if (finish.isError) {
-    return <ErrorNotice error={finish.error} />;
-  }
-  if (!finish.data) {
     return (
-      <p role="status" className="text-ink-muted">
-        {messages.loading}
-      </p>
+      <>
+        <ErrorNotice error={finish.error} />
+        <Link to="/quizzes" className="font-semibold underline">
+          {m.backToQuizzes}
+        </Link>
+      </>
     );
   }
+  if (!finish.data) {
+    return <p className="text-ink-muted">{messages.loading}</p>;
+  }
   const r = finish.data;
-  const missed = r.missedQuestionIds;
   return (
     <section className="flex flex-col gap-space-4">
       <h1 ref={heading} tabIndex={-1} className="type-title">
@@ -306,21 +349,31 @@ function Results({ id }: { id: string }) {
       {(r.partial > 0 || r.wrong > 0) && (
         <p className="text-ink-muted">{m.breakdown(r.partial, r.wrong)}</p>
       )}
-      {missed.length > 0 && (
-        <button
-          type="button"
-          aria-disabled={retry.isPending}
-          onClick={() =>
-            !retry.isPending &&
-            retry.mutate(
-              { kind: 'ADHOC', questionIds: missed },
-              { onSuccess: (session) => void navigate(`/quiz/${session.id}`) },
-            )
-          }
-          className="min-h-12 rounded-md border-bold border-outline bg-accent font-semibold text-on-accent"
-        >
-          {m.retryMissed(missed.length)}
-        </button>
+      {r.missed.length > 0 && (
+        <>
+          <h2 className="font-semibold">{m.missedTitle}</h2>
+          <ul className="flex flex-col gap-space-2">
+            {r.missed.map((q) => (
+              <li key={q.id} className="rounded-md bg-surface-sunken p-space-3 type-body-sm">
+                <Markdown text={q.promptMd} />
+              </li>
+            ))}
+          </ul>
+          <button
+            type="button"
+            aria-disabled={retry.isPending}
+            onClick={() =>
+              !retry.isPending &&
+              retry.mutate(
+                { kind: 'ADHOC', questionIds: r.missedQuestionIds },
+                { onSuccess: (session) => void navigate(`/quiz/${session.id}`) },
+              )
+            }
+            className="min-h-12 rounded-md border-bold border-outline bg-accent font-semibold text-on-accent"
+          >
+            {m.retryMissed(r.missed.length)}
+          </button>
+        </>
       )}
       {retry.isError && <ErrorNotice error={retry.error} />}
       <Link to="/quizzes" className="font-semibold underline">

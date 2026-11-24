@@ -9,6 +9,7 @@ import com.quode.study.internal.StudyDtos.AnswerInput;
 import com.quode.study.internal.StudyDtos.AnswerResult;
 import com.quode.study.internal.StudyDtos.CardOption;
 import com.quode.study.internal.StudyDtos.FinishResult;
+import com.quode.study.internal.StudyDtos.MissedQuestion;
 import com.quode.study.internal.StudyDtos.QuestionCard;
 import com.quode.study.internal.StudyDtos.SessionView;
 import com.quode.study.internal.StudyDtos.StartSession;
@@ -207,8 +208,14 @@ class StudyService {
         missed.add(question);
       }
     }
+    Map<UUID, StudyQuestion> prompts = catalog.find(ownerId, missed);
+    List<MissedQuestion> missedList =
+        missed.stream()
+            .filter(prompts::containsKey)
+            .map(q -> new MissedQuestion(q, prompts.get(q).promptMd()))
+            .toList();
     return new FinishResult(
-        session.order().size(), outcomes.size(), correct, partial, wrong, missed);
+        session.order().size(), outcomes.size(), correct, partial, wrong, missed, missedList);
   }
 
   private record Graded(String outcome, String given, String by) {}

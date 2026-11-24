@@ -103,13 +103,13 @@ export const messages = {
   quiz: {
     quit: 'Quizzes',
     progress: (n: number, total: number) => `${n} / ${total}`,
+    progressLong: (n: number, total: number) => `Question ${n} of ${total}`,
     check: 'Check',
     reveal: 'Reveal answer',
     next: 'Next',
     results: 'See results',
     correct: 'Right',
     wrong: 'Not quite',
-    partial: 'Partly',
     rightAnswer: 'Right answer',
     yourChoice: 'Your choice',
     answer: 'Answer',
@@ -124,7 +124,6 @@ export const messages = {
     missedTitle: 'To practise again',
     retryMissed: (n: number) => (n === 1 ? 'Retry the missed one' : `Retry ${n} missed`),
     backToQuizzes: 'Back to quizzes',
-    unavailable: 'This question is no longer available.',
   },
   importer: {
     title: 'Import',

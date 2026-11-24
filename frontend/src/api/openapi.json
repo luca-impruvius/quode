@@ -867,6 +867,12 @@
             "type" : "integer",
             "format" : "int32"
           },
+          "missed" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/MissedQuestion"
+            }
+          },
           "missedQuestionIds" : {
             "type" : "array",
             "items" : {
@@ -887,7 +893,7 @@
             "format" : "int32"
           }
         },
-        "required" : [ "answered", "correct", "missedQuestionIds", "partial", "total", "wrong" ]
+        "required" : [ "answered", "correct", "missed", "missedQuestionIds", "partial", "total", "wrong" ]
       },
       "FlagInput" : {
         "type" : "object",
@@ -1092,6 +1098,19 @@
           }
         },
         "required" : [ "email", "name", "timeZone" ]
+      },
+      "MissedQuestion" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "promptMd" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "id", "promptMd" ]
       },
       "MoveTopic" : {
         "type" : "object",

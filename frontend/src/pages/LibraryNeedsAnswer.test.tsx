@@ -239,6 +239,26 @@ describe('Library: Needs answer', () => {
     expect(screen.queryByRole('button', { name: l.download })).not.toBeInTheDocument();
   });
 
+  it('links a topic-filtered Active list to a quiz on that topic', async () => {
+    backend();
+    renderAt('/library?topicId=coll');
+    expect(await screen.findByRole('link', { name: messages.quizzes.quizTopic })).toHaveAttribute(
+      'href',
+      '/quizzes?topicId=coll',
+    );
+  });
+
+  it('offers no quiz link while other filters narrow the list', async () => {
+    backend();
+    renderAt('/library?topicId=coll&type=FLASHCARD');
+    expect(
+      await screen.findByText('Which service runs containers serverless?'),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('link', { name: messages.quizzes.quizTopic }),
+    ).not.toBeInTheDocument();
+  });
+
   it('offers no export outside Needs answer', async () => {
     backend();
     renderAt('/library');

@@ -366,7 +366,9 @@ class StudyApiTests {
         .andExpect(jsonPath("$.correct").value(2))
         .andExpect(jsonPath("$.partial").value(1))
         .andExpect(jsonPath("$.missedQuestionIds.length()").value(1))
-        .andExpect(jsonPath("$.missedQuestionIds[0]").value(question("What is IAM?").toString()));
+        .andExpect(jsonPath("$.missedQuestionIds[0]").value(question("What is IAM?").toString()))
+        .andExpect(jsonPath("$.missed[0].id").value(question("What is IAM?").toString()))
+        .andExpect(jsonPath("$.missed[0].promptMd").value("What is IAM?"));
     String missed = start("{\"topicIds\":[\"" + gcp + "\"],\"mode\":\"MISSED\"}");
     mvc.perform(get("/api/v1/study/sessions/" + missed).contextPath("/api").with(me()))
         .andExpect(jsonPath("$.total").value(1))

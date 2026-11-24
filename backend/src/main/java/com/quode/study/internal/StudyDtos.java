@@ -69,5 +69,14 @@ final class StudyDtos {
 
   /** The score, and the questions to retry (wrong or partial). */
   record FinishResult(
-      int total, int answered, int correct, int partial, int wrong, List<UUID> missedQuestionIds) {}
+      int total,
+      int answered,
+      int correct,
+      int partial,
+      int wrong,
+      List<UUID> missedQuestionIds,
+      List<MissedQuestion> missed) {}
+
+  /** A question to practise again, for the results list. */
+  record MissedQuestion(UUID id, String promptMd) {}
 }

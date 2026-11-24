@@ -13,13 +13,14 @@ export type SelfGrade = 'GOT_IT' | 'PARTIAL' | 'MISSED';
 
 export const sessionKey = (id: string) => ['study', id] as const;
 
-/** One quiz; fetched once and then kept up to date from the answers' responses. */
+/** One quiz; read when its screen opens, then kept up to date from the answers' responses. */
 export function useSession(id: string) {
   return useQuery({
     queryKey: sessionKey(id),
     queryFn: () => apiGet('/v1/study/sessions/{id}', { path: { id } }),
     retry: false,
-    staleTime: Infinity,
+    // Always read the server when a quiz screen opens: it may have moved on in another tab.
+    refetchOnMount: 'always',
     refetchOnWindowFocus: false,
   });
 }

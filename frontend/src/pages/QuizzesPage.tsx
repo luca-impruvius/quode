@@ -26,13 +26,13 @@ export function QuizzesPage() {
   const ids = { topic: useId(), count: useId(), mode: useId(), shuffle: useId() };
 
   function onStart() {
-    if (topicId === '' || start.isPending) {
+    if (chosenTopic === '' || start.isPending) {
       return;
     }
     start.mutate(
       {
         kind: 'ADHOC',
-        topicIds: [topicId],
+        topicIds: [chosenTopic],
         mode,
         shuffle,
         ...(count === 'all' ? {} : { count: Number(count) }),
@@ -42,12 +42,15 @@ export function QuizzesPage() {
   }
 
   const options = [...paths.entries()].sort(([, a], [, b]) => a.localeCompare(b));
+  // A topic from the URL that isn't (or is no longer) the user's counts as none chosen.
+  const chosenTopic = topics.isSuccess && !paths.has(topicId) ? '' : topicId;
   return (
     <section className="flex flex-col gap-space-4">
       <h1 className="type-title">{m.title}</h1>
       <ContinueQuiz />
 
       <h2 className="font-semibold">{m.start}</h2>
+      {topics.isError && <ErrorNotice error={topics.error} />}
       {topics.isSuccess && options.length === 0 ? (
         <p className="text-ink-muted">{m.noTopics}</p>
       ) : (
@@ -58,7 +61,7 @@ export function QuizzesPage() {
             </label>
             <select
               id={ids.topic}
-              value={topicId}
+              value={chosenTopic}
               onChange={(e) => setTopicId(e.target.value)}
               className="min-h-11 rounded-md border-bold border-outline bg-surface px-space-3"
             >
@@ -101,7 +104,7 @@ export function QuizzesPage() {
 
           <button
             type="button"
-            disabled={topicId === ''}
+            disabled={chosenTopic === ''}
             aria-disabled={start.isPending}
             onClick={onStart}
             className="min-h-12 rounded-md border-bold border-outline bg-accent font-semibold text-on-accent disabled:opacity-45"
@@ -130,7 +133,7 @@ function Choice<T extends string>(props: {
         {props.values.map((v) => (
           <label
             key={v}
-            className={`flex min-h-11 items-center rounded-pill border-bold px-space-4 ${
+            className={`flex min-h-11 items-center rounded-pill border-bold px-space-4 has-focus-visible:outline-3 has-focus-visible:outline-focus ${
               v === props.value ? 'border-outline bg-accent text-on-accent' : 'border-line'
             }`}
           >
