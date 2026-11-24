@@ -1,6 +1,7 @@
 package com.quode.question.internal;
 
 import jakarta.persistence.LockModeType;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -19,4 +20,8 @@ interface QuestionRepository extends JpaRepository<Question, UUID> {
   @Lock(LockModeType.PESSIMISTIC_WRITE)
   @Query("select q from Question q where q.id = :id and q.ownerId = :ownerId")
   Optional<Question> findForUpdate(UUID id, UUID ownerId);
+
+  /** Every prompt of the owner, archived and draft included, for duplicate checks on import. */
+  @Query("select q.promptMd from Question q where q.ownerId = :ownerId")
+  List<String> findPrompts(UUID ownerId);
 }

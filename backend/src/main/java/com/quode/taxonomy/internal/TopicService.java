@@ -2,16 +2,22 @@ package com.quode.taxonomy.internal;
 
 import com.quode.shared.ConflictException;
 import com.quode.shared.NotFoundException;
+import com.quode.taxonomy.TopicPaths;
 import com.quode.taxonomy.TopicUsage;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.regex.Pattern;
 import org.hibernate.exception.ConstraintViolationException;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -33,6 +39,8 @@ class TopicService {
   static final String NOT_EMPTY = "Starter topics are only for an empty topic list.";
   static final String BAD_NAME = "A topic name needs 1 to 60 characters.";
   static final String MISSING_PARENT = "Give parentId: a topic id, or null for the top level.";
+  static final String BAD_PATH =
+      "A topic path needs names of 1 to 60 characters, separated by \"›\".";
 
   private static final int MAX_NAME = 60;
 
@@ -132,6 +140,57 @@ class TopicService {
     StarterTopics.TREE.forEach(node -> createStarter(ownerId, null, node));
     topics.flush();
     return list(ownerId);
+  }
+
+  /**
+   * Finds or creates the topics on each path (TopicPaths). Runs in the caller's transaction and
+   * holds the tree lock until it commits, so names stay unique among siblings.
+   */
+  @Transactional
+  TopicPaths.Resolved resolvePaths(UUID ownerId, Collection<String> paths) {
+    lockTree(ownerId);
+    // Existing topics by (parent, lower-case name); new ones are added as they are created.
+    Map<String, UUID> byKey = new HashMap<>();
+    topics
+        .findAllByOwnerId(ownerId)
+        .forEach(t -> byKey.put(key(t.getParentId(), t.getName()), t.getId()));
+    Map<String, UUID> ids = new LinkedHashMap<>();
+    Map<String, String> problems = new LinkedHashMap<>();
+    int created = 0;
+    for (String path : new LinkedHashSet<>(paths)) {
+      List<String> names = splitPath(path);
+      if (names.isEmpty() || names.stream().anyMatch(n -> n.isEmpty() || n.length() > MAX_NAME)) {
+        problems.put(path, BAD_PATH);
+        continue;
+      }
+      UUID parentId = null;
+      for (String name : names) {
+        String key = key(parentId, name);
+        UUID id = byKey.get(key);
+        if (id == null) {
+          id = topics.save(new Topic(ownerId, parentId, name)).getId();
+          byKey.put(key, id);
+          created++;
+        }
+        parentId = id;
+      }
+      ids.put(path, parentId);
+    }
+    topics.flush();
+    return new TopicPaths.Resolved(ids, problems, created);
+  }
+
+  private static List<String> splitPath(String path) {
+    if (path == null || path.isBlank()) {
+      return List.of();
+    }
+    return Arrays.stream(path.split(Pattern.quote(TopicPaths.SEPARATOR), -1))
+        .map(String::strip)
+        .toList();
+  }
+
+  private static String key(UUID parentId, String name) {
+    return parentId + "/" + name.toLowerCase(Locale.ROOT);
   }
 
   private void createStarter(UUID ownerId, UUID parentId, StarterTopics.Node node) {

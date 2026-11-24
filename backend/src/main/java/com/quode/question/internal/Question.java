@@ -175,6 +175,16 @@ class Question {
     }
   }
 
+  /** Saved without its answer yet (bulk import, M2): kept out of quizzes and reviews. */
+  void markDraft() {
+    status = QuestionStatus.DRAFT;
+  }
+
+  /** The answer is in: the question can be studied. */
+  void activate() {
+    status = QuestionStatus.ACTIVE;
+  }
+
   void archive(Instant now) {
     if (archivedAt == null) {
       archivedAt = now;
