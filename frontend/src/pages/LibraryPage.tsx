@@ -1,7 +1,8 @@
 import { ChevronDown, Search } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import {
+  exportDrafts,
   useLibrary,
   type LibraryFilters,
   type LibraryItem,
@@ -16,7 +17,7 @@ import { messages } from '../messages';
 
 const l = messages.library;
 const types: QuestionType[] = ['FLASHCARD', 'SINGLE_CHOICE', 'MULTIPLE_CHOICE', 'OPEN_TEXT'];
-const statuses: LibraryStatus[] = ['active', 'archived', 'flagged'];
+const statuses: LibraryStatus[] = ['active', 'needs_answer', 'archived', 'flagged'];
 const sorts: LibrarySort[] = ['created', 'updated', 'difficulty'];
 
 const pick = <T extends string>(value: string | null, allowed: readonly T[], fallback: T): T =>
@@ -218,7 +219,16 @@ export function LibraryPage() {
         </p>
       )}
       {library.isSuccess && items.length === 0 && (
-        <p className="py-space-5 text-ink-muted">{filtered ? l.noMatches : l.noQuestions}</p>
+        <p className="py-space-5 text-ink-muted">
+          {filters.status === 'needs_answer' && !filters.q && !filters.type && !filters.difficulty
+            ? l.allAnswered
+            : filtered
+              ? l.noMatches
+              : l.noQuestions}
+        </p>
+      )}
+      {filters.status === 'needs_answer' && items.length > 0 && (
+        <ExportDrafts key={filters.topicId ?? 'all'} topicId={filters.topicId} />
       )}
       {items.length > 0 && (
         <ul aria-label={l.results} className="flex flex-col">
@@ -356,4 +366,118 @@ function Choices({
       </div>
     </Sheet>
   );
+}
+
+const toJson = (file: unknown) => JSON.stringify(file, null, 2);
+
+/**
+ * Copies the export. Safari only allows a clipboard write inside the click itself, so where it
+ * exists the write starts at once with the file still loading (ClipboardItem with a promise).
+ */
+function copyExport(file: Promise<unknown>): Promise<void> {
+  if (typeof ClipboardItem !== 'undefined' && navigator.clipboard?.write) {
+    const blob = file.then((f) => new Blob([toJson(f)], { type: 'text/plain' }));
+    // The browser may refuse before reading the item; the caller handles the export's own error.
+    blob.catch(() => undefined);
+    return navigator.clipboard.write([new ClipboardItem({ 'text/plain': blob })]);
+  }
+  return file.then((f) => navigator.clipboard.writeText(toJson(f)));
+}
+
+/** Export of the Needs-answer list (M2): download or copy the import JSON with ids. */
+function ExportDrafts({ topicId }: { topicId: string | undefined }) {
+  const hintId = useId();
+  const [busy, setBusy] = useState<'download' | 'copy' | null>(null);
+  const running = useRef(false);
+  const [done, setDone] = useState<string | null>(null);
+  const [error, setError] = useState<unknown>(null);
+
+  async function run(how: 'download' | 'copy') {
+    // A ref, not the state: two quick clicks before the next render must not start two exports.
+    if (running.current) {
+      return;
+    }
+    running.current = true;
+    setBusy(how);
+    setDone(null);
+    setError(null);
+    const file = exportDrafts(topicId);
+    try {
+      if (how === 'copy') {
+        try {
+          await copyExport(file);
+        } catch (e) {
+          // A failed export is the server's error; anything else is the clipboard refusing.
+          await file;
+          throw new CopyFailed(e);
+        }
+      } else {
+        const url = URL.createObjectURL(
+          new Blob([toJson(await file)], { type: 'application/json' }),
+        );
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = l.exportFileName;
+        link.click();
+        // Safari may cancel a download whose blob URL goes away in the same moment.
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+      }
+      const { questions, remaining } = await file;
+      const parts = [how === 'copy' ? l.copied(questions.length) : l.downloaded(questions.length)];
+      if (remaining > 0) {
+        parts.push(l.exportRemaining(remaining));
+      }
+      setDone(parts.join(' '));
+    } catch (e) {
+      setError(e);
+    } finally {
+      setBusy(null);
+      running.current = false;
+    }
+  }
+
+  const button = 'min-h-11 rounded-md border-bold border-outline px-space-4 font-semibold';
+  return (
+    <section className="flex flex-col gap-space-2 rounded-md bg-surface-sunken p-space-4">
+      <p id={hintId} className="type-body-sm">
+        {l.exportHint(topicId !== undefined)}
+      </p>
+      <div className="flex flex-wrap gap-space-2">
+        <button
+          type="button"
+          aria-disabled={busy !== null}
+          aria-describedby={hintId}
+          onClick={() => void run('download')}
+          className={button}
+        >
+          {busy === 'download' ? l.exporting : l.download}
+        </button>
+        <button
+          type="button"
+          aria-disabled={busy !== null}
+          aria-describedby={hintId}
+          onClick={() => void run('copy')}
+          className={button}
+        >
+          {busy === 'copy' ? l.exporting : l.copy}
+        </button>
+      </div>
+      <p role="status" className="type-body-sm">
+        {done}
+      </p>
+      {error instanceof CopyFailed ? (
+        <p role="alert" className="rounded-md bg-missed-bg px-space-4 py-space-3 text-ink">
+          {l.copyFailed}
+        </p>
+      ) : (
+        error !== null && <ErrorNotice error={error} />
+      )}
+    </section>
+  );
+}
+
+class CopyFailed extends Error {
+  constructor(cause: unknown) {
+    super('Copy failed', { cause });
+  }
 }
