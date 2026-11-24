@@ -2,10 +2,12 @@ package com.quode.shared.internal;
 
 import io.swagger.v3.oas.models.Operation;
 import io.swagger.v3.oas.models.media.Content;
+import io.swagger.v3.oas.models.media.JsonSchema;
 import io.swagger.v3.oas.models.media.MediaType;
 import io.swagger.v3.oas.models.media.Schema;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -65,7 +67,30 @@ class OpenApiConfig {
           schema.setRequired(new ArrayList<>(new TreeSet<>(schema.getProperties().keySet())));
         }
       }
+      schemas.values().forEach(OpenApiConfig::nullableRefsAsAnyOf);
     };
+  }
+
+  // A nullable object field comes out as {"type": ["object", "null"], "$ref": …}, and type
+  // generators ignore the type next to a $ref. anyOf [the ref, null] says the same in a way they
+  // read: the field is that object or null.
+  @SuppressWarnings({"rawtypes", "unchecked"})
+  private static void nullableRefsAsAnyOf(Schema<?> schema) {
+    if (schema.getProperties() == null) {
+      return;
+    }
+    Map<String, Schema> properties = (Map<String, Schema>) (Map) schema.getProperties();
+    properties.replaceAll(
+        (name, property) -> {
+          if (property.get$ref() == null
+              || property.getTypes() == null
+              || !property.getTypes().contains("null")) {
+            return property;
+          }
+          Schema ref = new JsonSchema().$ref(property.get$ref());
+          Schema nothing = new JsonSchema().types(new LinkedHashSet<>(List.of("null")));
+          return new JsonSchema().anyOf(List.of(ref, nothing));
+        });
   }
 
   @SuppressWarnings("rawtypes")

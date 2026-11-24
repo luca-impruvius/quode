@@ -38,8 +38,8 @@ Rejected: strict hierarchy only (one-home paralysis), free tags only (duplicates
 | `question_topic` | Many-to-many link | question_id, topic_id, owner_id (the primary topic is `question.primary_topic_id`, which must be one of these) |
 | `quiz` | Fixed list or saved filter | id, owner_id, name, description, kind (FIXED / DYNAMIC), filter_json, created_at |
 | `quiz_question` | Questions in a fixed quiz | quiz_id, question_id, position |
-| `study_session` | One run of a review or quiz | id, owner_id, kind (REVIEW / QUIZ / ADHOC), quiz_id, question_order, current_index, started_at, finished_at |
-| `attempt` | One answer to one question | id, session_id, question_id, outcome (CORRECT / PARTIAL / WRONG), given_answer, graded_by (SELF / AUTO / AI), answered_at |
+| `study_session` | One run of a review or quiz | id, owner_id, kind (REVIEW / QUIZ / ADHOC), question_order, current_index, started_at, finished_at; `quiz_id` comes with saved quizzes (additive) |
+| `attempt` | One answer to one question | id, session_id, owner_id, question_id, outcome (CORRECT / PARTIAL / WRONG), given_answer, graded_by (SELF / AUTO / AI), answered_at |
 | `review_state` | Spaced-repetition schedule per user + question | owner_id, question_id, due_at, interval_days, ease, reps, lapses, last_reviewed_at |
 
 Question types: `FLASHCARD` (self-graded), `SINGLE_CHOICE` (auto), `MULTIPLE_CHOICE` (auto, all-or-nothing), `OPEN_TEXT` (self-graded; AI in Phase 2). Status: `DRAFT` or `ACTIVE`.

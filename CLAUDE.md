@@ -18,7 +18,7 @@ Quode: mobile-first spaced-repetition study app. Single user for now (Phase 1). 
 2. Branch `<type>/<issue>-<slug>` from an up-to-date `main`.
 3. Tests first from the acceptance criteria. Run the full build and paste the output as evidence; don't claim success without it.
 4. Commit, then run the `reviewer` agent; fix every Blocking and Should-fix item.
-5. Small PRs (< ~400 lines) using the PR template, with `Closes #<issue>`. Title in Conventional Commits: `feat(review): ...`, scopes = module names, `frontend`, `infra`, `deps`, `adr`.
+5. One PR per feature, backend and screens together where both are needed, up to about 800 lines of code (tests and generated API files don't count; ADR-0044), using the PR template, with `Closes #<issue>`. Title in Conventional Commits: `feat(review): ...`, scopes = module names, `frontend`, `infra`, `deps`, `adr`.
 6. Merge per ADR-0043 (ordinary PRs) or ADR-0039 (`review:careful`, after Luca's yes): up to date with `main`, rebuilt, squash, never `--admin` or `--auto`. After a deploy, run the spec's checklist on quode.app and report with screenshots.
 7. If a decision changes, update the living doc (`docs/architecture.md`, `docs/domain.md`, `docs/spaced-repetition.md`, `docs/conventions.md`, `docs/onboarding.md`) in the same PR, or add a new ADR in `docs/adr/`.
 

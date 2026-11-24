@@ -57,7 +57,7 @@ Living docs change in the same PR whenever a decision changes. After two failed 
 
 ## 6. Pull requests
 
-- Aim for under ~400 changed lines; bigger means split the issue.
+- One PR per feature, up to about 800 lines of code; tests and generated API files don't count (ADR-0044). Bigger means split the feature.
 - Description sections: **What**, **Why**, **Risks**, **How it was verified** (pasted test/build output), **Review focus**, plus the template checklist.
 
 ## 7. Quality gates (CI)
