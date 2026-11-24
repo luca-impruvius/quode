@@ -24,9 +24,9 @@ class ExportService {
     this.topics = topics;
   }
 
-  /** {@code topicId}: only questions with a topic in its subtree, like the Library filter. */
   static final int MAX_QUESTIONS = ImportService.MAX_QUESTIONS;
 
+  /** {@code topicId}: only questions with a topic in its subtree, like the Library filter. */
   @Transactional(readOnly = true)
   ExportFile export(UUID ownerId, QuestionStatus status, UUID topicId) {
     Set<UUID> subtree =

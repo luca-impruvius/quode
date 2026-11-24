@@ -188,8 +188,9 @@ class ExportApiTests {
   void anExportHoldsAtMostOneImportAndCountsTheRest() throws Exception {
     UUID gcp = topic("GCP");
     jdbc.update(
-        "insert into question (owner_id, type, prompt_md, status, primary_topic_id)"
-            + " select ?, 'FLASHCARD', 'Bulk ' || g, 'DRAFT', ? from generate_series(1, 2001) g",
+        "insert into question (owner_id, type, prompt_md, status, primary_topic_id, created_at)"
+            + " select ?, 'FLASHCARD', 'Bulk ' || g, 'DRAFT', ?, now() + g * interval '1 second'"
+            + " from generate_series(1, 2001) g",
         me,
         gcp);
     jdbc.update(
@@ -201,6 +202,10 @@ class ExportApiTests {
     export(me(), "")
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.questions.length()").value(ExportService.MAX_QUESTIONS))
-        .andExpect(jsonPath("$.remaining").value(2004 - ExportService.MAX_QUESTIONS));
+        .andExpect(jsonPath("$.remaining").value(2004 - ExportService.MAX_QUESTIONS))
+        // Oldest first: the 3 drafts from setup, then Bulk 1 to 1997; the 4 newest wait.
+        .andExpect(jsonPath("$.questions[0].prompt").value("Unanswered GCP?"))
+        .andExpect(jsonPath("$.questions[3].prompt").value("Bulk 1"))
+        .andExpect(jsonPath("$.questions[1999].prompt").value("Bulk 1997"));
   }
 }
