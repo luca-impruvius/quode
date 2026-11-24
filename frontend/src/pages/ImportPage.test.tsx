@@ -122,6 +122,22 @@ describe('Import', () => {
     expect(screen.getByRole('button', { name: m.import })).toBeDisabled();
   });
 
+  it('focuses a new report once, never while the text is being edited', async () => {
+    mockApi({ '/api/me': me(), 'POST /api/v1/imports?dryRun=true': report() });
+    const user = userEvent.setup();
+    renderAt('/import');
+
+    const box = await screen.findByLabelText(m.text);
+    await user.type(box, text);
+    await user.click(screen.getByRole('button', { name: m.check }));
+    expect(await screen.findByRole('heading', { name: m.checkedTitle })).toHaveFocus();
+
+    await user.click(box);
+    await user.type(box, 'x{Backspace}');
+    expect(screen.getByText(m.checkedTitle)).toBeInTheDocument();
+    expect(box).toHaveFocus();
+  });
+
   it('loads a chosen file into the text box', async () => {
     mockApi({ '/api/me': me() });
     const user = userEvent.setup();

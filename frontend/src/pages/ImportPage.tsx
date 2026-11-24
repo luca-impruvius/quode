@@ -20,6 +20,8 @@ export function ImportPage() {
   const [checked, setChecked] = useState<{ text: string; topic: string } | null>(null);
   const [result, setResult] = useState<{ report: ImportReport; dryRun: boolean } | null>(null);
   const run = useImport();
+  // The report that already got focus: a check report shown again after an undo must not steal it.
+  const [focused, setFocused] = useState<ImportReport | null>(null);
   const ids = { topic: useId(), text: useId(), file: useId(), hint: useId() };
 
   const busy = run.isPending;
@@ -111,7 +113,10 @@ export function ImportPage() {
             id={ids.text}
             value={text}
             readOnly={busy}
-            onChange={(e) => setText(e.target.value)}
+            onChange={(e) => {
+              setText(e.target.value);
+              setInputError(null);
+            }}
             rows={10}
             spellCheck={false}
             autoCapitalize="off"
@@ -151,7 +156,7 @@ export function ImportPage() {
             type="button"
             disabled={!upToDate}
             aria-disabled={busy}
-            aria-describedby={upToDate ? undefined : ids.hint}
+            aria-describedby={!upToDate && text.trim() !== '' && !busy ? ids.hint : undefined}
             onClick={() => send(false)}
             className={`${button} bg-accent text-on-accent disabled:opacity-45 aria-disabled:opacity-45`}
           >
@@ -170,19 +175,36 @@ export function ImportPage() {
           </p>
         )}
         {run.isError && <ErrorNotice error={run.error} />}
-        {shownResult && <Report report={shownResult.report} dryRun={shownResult.dryRun} />}
+        {shownResult && (
+          <Report
+            report={shownResult.report}
+            dryRun={shownResult.dryRun}
+            focus={focused !== shownResult.report}
+            onFocused={() => setFocused(shownResult.report)}
+          />
+        )}
       </main>
     </div>
   );
 }
 
-function Report({ report, dryRun }: { report: ImportReport; dryRun: boolean }) {
+interface ReportProps {
+  report: ImportReport;
+  dryRun: boolean;
+  focus: boolean;
+  onFocused: () => void;
+}
+
+function Report({ report, dryRun, focus, onFocused }: ReportProps) {
   const heading = useRef<HTMLHeadingElement>(null);
   const titleId = useId();
-  // Focus moves to the new report, so screen readers read it and the keyboard continues from it.
+  // A new report takes focus once, so screen readers read it and the keyboard continues from it.
   useEffect(() => {
-    heading.current?.focus();
-  }, [report]);
+    if (focus) {
+      heading.current?.focus();
+      onFocused();
+    }
+  }, [focus, onFocused]);
   const lines = [
     m.created(report.created),
     report.drafts > 0 && m.drafts(report.drafts),

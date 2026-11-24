@@ -98,6 +98,13 @@ describe('parseImport', () => {
     });
   });
 
+  it('refuses a second explanation in one block', () => {
+    expect(parseImport('Q: foo\nAnswer: x\nExplanation: one\nExplanation: two', '')).toEqual({
+      ok: false,
+      error: m.badBlock(1, m.twoQuestions),
+    });
+  });
+
   it('accepts lowercase letters, A. markers, Q1. and Windows line ends', () => {
     const input = questions(
       'Q1. Pick one\r\na) GKE\r\nb. Cloud Run\r\nAnswer: b\r\n\r\nQ: Next\r\nA) x\r\nB) y\r\nAnswer: B,A',
