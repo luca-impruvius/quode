@@ -2,6 +2,7 @@ import { ChevronDown, Search } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import {
+  exportDrafts,
   useLibrary,
   type LibraryFilters,
   type LibraryItem,
@@ -16,7 +17,7 @@ import { messages } from '../messages';
 
 const l = messages.library;
 const types: QuestionType[] = ['FLASHCARD', 'SINGLE_CHOICE', 'MULTIPLE_CHOICE', 'OPEN_TEXT'];
-const statuses: LibraryStatus[] = ['active', 'archived', 'flagged'];
+const statuses: LibraryStatus[] = ['active', 'needs_answer', 'archived', 'flagged'];
 const sorts: LibrarySort[] = ['created', 'updated', 'difficulty'];
 
 const pick = <T extends string>(value: string | null, allowed: readonly T[], fallback: T): T =>
@@ -220,6 +221,9 @@ export function LibraryPage() {
       {library.isSuccess && items.length === 0 && (
         <p className="py-space-5 text-ink-muted">{filtered ? l.noMatches : l.noQuestions}</p>
       )}
+      {filters.status === 'needs_answer' && items.length > 0 && (
+        <ExportDrafts topicId={filters.topicId} />
+      )}
       {items.length > 0 && (
         <ul aria-label={l.results} className="flex flex-col">
           {items.map((question) => (
@@ -355,5 +359,74 @@ function Choices({
         ))}
       </div>
     </Sheet>
+  );
+}
+
+/** Export of the Needs-answer list (M2): download or copy the import JSON with ids. */
+function ExportDrafts({ topicId }: { topicId: string | undefined }) {
+  const [busy, setBusy] = useState(false);
+  const [done, setDone] = useState<string | null>(null);
+  const [error, setError] = useState<unknown>(null);
+
+  async function run(how: 'download' | 'copy') {
+    setBusy(true);
+    setDone(null);
+    setError(null);
+    try {
+      const file = await exportDrafts(topicId);
+      const json = JSON.stringify(file, null, 2);
+      if (how === 'copy') {
+        await navigator.clipboard.writeText(json);
+      } else {
+        const url = URL.createObjectURL(new Blob([json], { type: 'application/json' }));
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = l.exportFileName;
+        link.click();
+        URL.revokeObjectURL(url);
+      }
+      const count = file.questions.length;
+      setDone(
+        [
+          how === 'copy' ? l.copied(count) : l.downloaded(count),
+          file.remaining > 0 ? l.exportRemaining(file.remaining) : '',
+        ]
+          .join(' ')
+          .trim(),
+      );
+    } catch (e) {
+      setError(e);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const button = 'min-h-11 rounded-md border-bold border-outline px-space-4 font-semibold';
+  return (
+    <section className="flex flex-col gap-space-2 rounded-md bg-surface-sunken p-space-4">
+      <p className="type-body-sm">{l.exportHint}</p>
+      <div className="flex gap-space-2">
+        <button
+          type="button"
+          aria-disabled={busy}
+          onClick={() => void (busy || run('download'))}
+          className={button}
+        >
+          {busy ? l.exporting : l.download}
+        </button>
+        <button
+          type="button"
+          aria-disabled={busy}
+          onClick={() => void (busy || run('copy'))}
+          className={button}
+        >
+          {l.copy}
+        </button>
+      </div>
+      <p role="status" className="type-body-sm">
+        {done}
+      </p>
+      {error !== null && <ErrorNotice error={error} />}
+    </section>
   );
 }
