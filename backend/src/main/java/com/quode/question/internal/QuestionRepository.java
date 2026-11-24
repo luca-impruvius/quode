@@ -30,4 +30,10 @@ interface QuestionRepository extends JpaRepository<Question, UUID> {
   /** Every prompt of the owner, archived and draft included, for duplicate checks on import. */
   @Query("select q.promptMd from Question q where q.ownerId = :ownerId")
   List<String> findPrompts(UUID ownerId);
+
+  /** The owner's non-archived questions of one status, oldest first (export). */
+  @Query(
+      "select q from Question q where q.ownerId = :ownerId and q.status = :status"
+          + " and q.archivedAt is null order by q.createdAt, q.id")
+  List<Question> findForExport(UUID ownerId, QuestionStatus status);
 }

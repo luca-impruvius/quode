@@ -185,6 +185,41 @@
         "tags" : [ "question-controller" ]
       }
     },
+    "/v1/questions/export" : {
+      "get" : {
+        "operationId" : "export",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "status",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "default" : "DRAFT"
+          }
+        }, {
+          "in" : "query",
+          "name" : "topicId",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ExportFile"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "export-controller" ]
+      }
+    },
     "/v1/questions/{id}" : {
       "get" : {
         "operationId" : "get",
@@ -571,6 +606,75 @@
             "format" : "uuid"
           }
         }
+      },
+      "ExportFile" : {
+        "type" : "object",
+        "properties" : {
+          "questions" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ExportItem"
+            }
+          },
+          "topic" : {
+            "type" : [ "string", "null" ]
+          }
+        },
+        "required" : [ "questions", "topic" ]
+      },
+      "ExportItem" : {
+        "type" : "object",
+        "properties" : {
+          "answer" : {
+            "type" : [ "string", "null" ]
+          },
+          "difficulty" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "explanation" : {
+            "type" : [ "string", "null" ]
+          },
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "options" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ExportOption"
+            }
+          },
+          "prompt" : {
+            "type" : "string"
+          },
+          "sourceUrl" : {
+            "type" : [ "string", "null" ]
+          },
+          "topics" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "type" : {
+            "type" : "string",
+            "enum" : [ "FLASHCARD", "SINGLE_CHOICE", "MULTIPLE_CHOICE", "OPEN_TEXT" ]
+          }
+        },
+        "required" : [ "answer", "difficulty", "explanation", "id", "options", "prompt", "sourceUrl", "topics", "type" ]
+      },
+      "ExportOption" : {
+        "type" : "object",
+        "properties" : {
+          "correct" : {
+            "type" : "boolean"
+          },
+          "text" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "correct", "text" ]
       },
       "FlagInput" : {
         "type" : "object",
