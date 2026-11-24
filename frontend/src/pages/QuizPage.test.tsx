@@ -86,7 +86,10 @@ describe('Quiz', () => {
       selectedOptionIds: ['o1'],
     });
     expect(screen.getByRole('button', { name: m.next })).toHaveFocus();
-    expect(screen.getByRole('status')).toHaveTextContent(m.wrong);
+    // The outcome is read with the focused Next button.
+    expect(screen.getByRole('button', { name: m.next })).toHaveAccessibleDescription(
+      new RegExp(m.wrong),
+    );
 
     await user.click(screen.getByRole('button', { name: m.next }));
     expect(await screen.findByText('What is IAM?')).toBeInTheDocument();
@@ -142,6 +145,7 @@ describe('Quiz', () => {
     await user.click(await screen.findByRole('radio', { name: 'GKE' }));
     await user.click(screen.getByRole('button', { name: m.check }));
     expect(await screen.findByText('What is IAM?')).toBeInTheDocument();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 
   it('offers no retry when nothing was missed', async () => {

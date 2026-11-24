@@ -43,7 +43,6 @@ function Quiz({ id }: { id: string }) {
   const queryClient = useQueryClient();
   // The answered card stays on screen with its feedback until Next.
   const [feedback, setFeedback] = useState<Feedback | null>(null);
-  const [announcement, setAnnouncement] = useState('');
 
   const answer = useMutation({
     mutationFn: (args: { card: QuestionCard; chosen?: string[]; grade?: SelfGrade }) =>
@@ -57,7 +56,6 @@ function Quiz({ id }: { id: string }) {
       // Feedback and the next card arrive together, so the answered card keeps its marks.
       if (args.chosen) {
         setFeedback({ card: args.card, chosen: args.chosen, result });
-        setAnnouncement(result.outcome === 'CORRECT' ? m.correct : m.wrong);
       }
       queryClient.setQueryData(sessionKey(id), result.session);
     },
@@ -92,10 +90,6 @@ function Quiz({ id }: { id: string }) {
         )}
       </header>
       <main className="flex flex-1 flex-col gap-space-4 px-space-4 py-space-4">
-        {/* Always mounted, so screen readers announce what is written into it. */}
-        <p role="status" className="sr-only">
-          {announcement}
-        </p>
         {session.isPending && <p className="text-ink-muted">{messages.loading}</p>}
         {session.isError && <ErrorNotice error={session.error} />}
         {done && <Results id={id} />}
@@ -105,12 +99,12 @@ function Quiz({ id }: { id: string }) {
             card={card}
             feedback={feedback}
             busy={answer.isPending}
-            error={answer.error}
+            // A failed answer belongs to its own card; after a 409 the next card shows clean.
+            error={answer.variables?.card.id === card.id ? answer.error : null}
             onChoose={(chosen) => !answer.isPending && answer.mutate({ card, chosen })}
             onGrade={(grade) => !answer.isPending && answer.mutate({ card, grade })}
             onNext={() => {
               answer.reset();
-              setAnnouncement('');
               setFeedback(null);
             }}
             last={feedback?.result.session.current === null}
@@ -177,7 +171,7 @@ function Card({ card, feedback, busy, error, last, onChoose, onGrade, onNext }: 
   const button = 'min-h-12 rounded-md border-bold border-outline px-space-4 font-semibold';
   return (
     <article aria-labelledby={promptId} className="flex flex-col gap-space-4">
-      <div id={promptId} ref={prompt} tabIndex={-1} className="type-question">
+      <div id={promptId} ref={prompt} tabIndex={-1} className="type-question outline-none">
         <Markdown text={card.promptMd} />
       </div>
 
