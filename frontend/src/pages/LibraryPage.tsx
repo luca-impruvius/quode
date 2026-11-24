@@ -227,6 +227,14 @@ export function LibraryPage() {
               : l.noQuestions}
         </p>
       )}
+      {filters.topicId && filters.status === 'active' && items.length > 0 && (
+        <Link
+          to={`/quizzes?topicId=${filters.topicId}`}
+          className="flex min-h-11 items-center justify-center rounded-md border-bold border-outline font-semibold"
+        >
+          {messages.quizzes.quizTopic}
+        </Link>
+      )}
       {filters.status === 'needs_answer' && items.length > 0 && (
         <ExportDrafts key={filters.topicId ?? 'all'} topicId={filters.topicId} />
       )}
