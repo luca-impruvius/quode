@@ -1,6 +1,6 @@
 # ADR-0043: Owner checks results; Claude merges when checks pass
 
-- **Status:** Proposed
+- **Status:** Accepted (Luca, 2026-11-24)
 - **Date:** 2026-11-24
 - **Supersedes:** the approval step of ADR-0039 for ordinary tasks
 

@@ -1,7 +1,7 @@
 # Exam-prep MVP: import, quizzes, desktop
 
 - Milestone: M2
-- Status: Draft (awaiting Luca's approval)
+- Status: Approved (Luca, 2026-11-24)
 - Issues: to be created after approval
 - Design: reuse the design system; no new hi-fi screens (ADR-0035)
 
@@ -62,7 +62,7 @@ All under `/api/v1`, signed in, CSRF token on writes, errors as Problem Details.
 - No change to `question` (the DRAFT status already exists).
 
 ## Order of work and time box
-1. **Backups (M0-12, `review:careful`) before real data.** Needs Luca's Cloudflare R2 bucket and keys. Until it is running, Luca keeps the original import files: re-importing them restores everything, because duplicates are skipped.
+1. **Backups (M0-12, `review:careful`): deferred by Luca's decision (2026-11-24).** Until they run, Luca keeps the original import files: re-importing them restores everything, because duplicates are skipped. Revisit before the data matters more than the originals.
 2. **Day 1:** import, Needs-answer list, export and fill.
 3. **Day 2:** quick quiz and results.
 4. **Days 2–3:** desktop layout.
