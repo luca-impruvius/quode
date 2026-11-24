@@ -55,6 +55,8 @@ class QuestionService {
     Question question = findAtVersion(ownerId, id, input.version());
     requireValid(ownerId, input);
     question.apply(input);
+    // A saved edit passed every rule, answer included, so a draft becomes studyable.
+    question.activate();
     return view(save(question));
   }
 

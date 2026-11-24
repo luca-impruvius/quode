@@ -36,6 +36,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/imports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["importQuestions"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/questions": {
         parameters: {
             query?: never;
@@ -226,6 +242,44 @@ export interface components {
             /** Format: int64 */
             version?: number;
         };
+        ImportInput: {
+            questions?: components["schemas"]["ImportItem"][];
+            topic?: string | null;
+        };
+        ImportItem: {
+            answer?: string | null;
+            /** Format: int32 */
+            difficulty?: number;
+            explanation?: string | null;
+            id?: string | null;
+            options?: components["schemas"]["ImportOption"][];
+            prompt?: string | null;
+            sourceUrl?: string | null;
+            topics?: string[];
+            type?: string | null;
+        };
+        ImportOption: {
+            correct?: boolean;
+            text?: string;
+        };
+        ImportProblem: {
+            /** Format: int32 */
+            index: number;
+            reason: string;
+        };
+        ImportReport: {
+            /** Format: int32 */
+            created: number;
+            /** Format: int32 */
+            drafts: number;
+            /** Format: int32 */
+            filled: number;
+            problems: components["schemas"]["ImportProblem"][];
+            /** Format: int32 */
+            skippedDuplicates: number;
+            /** Format: int32 */
+            topicsCreated: number;
+        };
         LibraryItem: {
             archived: boolean;
             /** Format: date-time */
@@ -387,6 +441,32 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MeResponse"];
+                };
+            };
+        };
+    };
+    importQuestions: {
+        parameters: {
+            query?: {
+                dryRun?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ImportInput"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImportReport"];
                 };
             };
         };

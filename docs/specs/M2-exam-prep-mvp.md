@@ -30,9 +30,9 @@ Domain rules: [domain.md](../domain.md) §4. This spec adds rules 12 and 13 ther
   `type` is one of the four existing types. `answer`, `explanation`, `difficulty` (default 2), `sourceUrl` and extra `topics` are optional. Topic paths use `›` and are created when missing (limits of [M1-topics](M1-topics.md) apply).
 - **Pasted-text layout** (parsed in the browser into the same JSON, then previewed): blocks separated by a blank line, each `Q:` prompt, options `A)`, `B)`, …, `Answer: B` or `Answer: B, D`, optional `Explanation:`. Anything messier is converted to JSON by Claude first; the app does not guess.
 - **Missing answers:** a choice question with no correct option, or a flashcard/open question with no answer, is imported as `DRAFT`. Drafts never appear in quizzes or reviews (rule 3). The Library gets a **Needs answer** filter (the DRAFT list).
-- **Fill answers later:** *Export* on the Needs-answer list produces the same JSON, with each question's `id`. Importing an item that has an `id` fills in a DRAFT question's options, answer and explanation and makes it `ACTIVE` once it satisfies the rules. A question that is already `ACTIVE` is never overwritten; the report says so.
+- **Fill answers later:** *Export* on the Needs-answer list produces the same JSON, with each question's `id`. Importing an item that has an `id` fills in a DRAFT question's options, answer and explanation (and difficulty or source link when given; type, prompt and topics stay) and makes it `ACTIVE` once it satisfies the rules. A file that only fills answers creates no topics. A question that is already `ACTIVE` is never overwritten; the report says so.
 - **Duplicates:** a question whose prompt equals an existing one of the same user (ignoring case and repeated spaces) is skipped and counted.
-- **Validation:** each question is checked with the existing question rules. Invalid ones are listed (position and reason); the valid ones are still imported. One import is one database transaction.
+- **Validation:** each question is checked with the existing question rules. Invalid ones are listed (position from 1, and reason); the valid ones are still imported. One import is one database transaction. A value of the wrong JSON kind (say `options` that isn't a list) rejects the whole file with a 400, since the file can't be read; a malformed `id` is reported for that question only.
 - **Preview:** *Check* runs everything without saving and returns the same report. *Import* saves.
 
 ### Quick quiz
@@ -56,6 +56,9 @@ All under `/api/v1`, signed in, CSRF token on writes, errors as Problem Details.
 | GET | `/study/sessions/{id}` | — | 200 current question and progress |
 | POST | `/study/sessions/{id}/answers` | `{questionId, selectedOptionIds[]}` or `{questionId, grade}` | 200 outcome, correct options, explanation |
 | POST | `/study/sessions/{id}/finish` | — | 200 score and missed question ids |
+
+## Module boundary
+- `taxonomy` exposes `TopicPaths.resolve(ownerId, paths)`: finds topics by path ("A › B", names matched ignoring case) and creates the missing ones in the caller's transaction, under the topic tree lock. `question` uses it for imports.
 
 ## Data
 - `V6__create_study_session_and_attempt.sql`: `study_session` and `attempt` as in [domain.md](../domain.md) §2. Additive only.

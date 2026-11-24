@@ -38,6 +38,43 @@
         "tags" : [ "me-controller" ]
       }
     },
+    "/v1/imports" : {
+      "post" : {
+        "operationId" : "importQuestions",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "dryRun",
+          "required" : false,
+          "schema" : {
+            "type" : "boolean",
+            "default" : false
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ImportInput"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ImportReport"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "import-controller" ]
+      }
+    },
     "/v1/questions" : {
       "get" : {
         "operationId" : "list_1",
@@ -546,6 +583,115 @@
             "format" : "int64"
           }
         }
+      },
+      "ImportInput" : {
+        "type" : "object",
+        "properties" : {
+          "questions" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ImportItem"
+            }
+          },
+          "topic" : {
+            "type" : [ "string", "null" ]
+          }
+        }
+      },
+      "ImportItem" : {
+        "type" : "object",
+        "properties" : {
+          "answer" : {
+            "type" : [ "string", "null" ]
+          },
+          "difficulty" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "explanation" : {
+            "type" : [ "string", "null" ]
+          },
+          "id" : {
+            "type" : [ "string", "null" ]
+          },
+          "options" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ImportOption"
+            }
+          },
+          "prompt" : {
+            "type" : [ "string", "null" ]
+          },
+          "sourceUrl" : {
+            "type" : [ "string", "null" ]
+          },
+          "topics" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "type" : {
+            "type" : [ "string", "null" ]
+          }
+        }
+      },
+      "ImportOption" : {
+        "type" : "object",
+        "properties" : {
+          "correct" : {
+            "type" : "boolean"
+          },
+          "text" : {
+            "type" : "string"
+          }
+        }
+      },
+      "ImportProblem" : {
+        "type" : "object",
+        "properties" : {
+          "index" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "reason" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "index", "reason" ]
+      },
+      "ImportReport" : {
+        "type" : "object",
+        "properties" : {
+          "created" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "drafts" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "filled" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "problems" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ImportProblem"
+            }
+          },
+          "skippedDuplicates" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "topicsCreated" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        },
+        "required" : [ "created", "drafts", "filled", "problems", "skippedDuplicates", "topicsCreated" ]
       },
       "LibraryItem" : {
         "type" : "object",
