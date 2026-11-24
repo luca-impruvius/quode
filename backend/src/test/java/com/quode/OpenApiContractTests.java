@@ -195,7 +195,9 @@ class OpenApiContractTests {
     JsonNode card = JSON.readTree(session).path("current");
     String answer =
         mvc.perform(
-                post("/api/v1/study/sessions/" + JSON.readTree(session).path("id").asString())
+                post("/api/v1/study/sessions/"
+                        + JSON.readTree(session).path("id").asString()
+                        + "/answers")
                     .contextPath("/api")
                     .with(me)
                     .with(csrf())
