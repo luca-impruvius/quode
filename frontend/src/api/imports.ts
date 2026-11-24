@@ -15,6 +15,8 @@ export function useImport() {
       if (!args.dryRun) {
         void queryClient.invalidateQueries({ queryKey: ['topics'] });
         void queryClient.invalidateQueries({ queryKey: ['library'] });
+        // Filling answers by id changes those questions' cached detail pages too.
+        void queryClient.invalidateQueries({ queryKey: ['questions'] });
       }
     },
   });

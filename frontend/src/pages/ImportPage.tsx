@@ -1,5 +1,5 @@
 import { ChevronLeft } from 'lucide-react';
-import { useId, useState, type ChangeEvent } from 'react';
+import { useEffect, useId, useRef, useState, type ChangeEvent } from 'react';
 import { Link } from 'react-router';
 import { useImport, type ImportReport } from '../api/imports';
 import { ErrorNotice } from '../components/ErrorNotice';
@@ -10,33 +10,42 @@ const m = messages.importer;
 
 /**
  * Bulk import (docs/specs/M2-exam-prep-mvp.md): paste or upload, Check (nothing saved), then
- * Import. Import stays off until a Check of exactly this text and topic has passed.
+ * Import. Import stays off until a Check of exactly this text and topic has passed. The text is
+ * parsed only on Check and Import, so a paste of thousands of questions costs nothing while typing.
  */
 export function ImportPage() {
   const [text, setText] = useState('');
   const [topic, setTopic] = useState('');
-  const [parseError, setParseError] = useState<string | null>(null);
+  const [inputError, setInputError] = useState<string | null>(null);
   const [checked, setChecked] = useState<{ text: string; topic: string } | null>(null);
   const [result, setResult] = useState<{ report: ImportReport; dryRun: boolean } | null>(null);
   const run = useImport();
-  const ids = { topic: useId(), text: useId(), file: useId() };
+  const ids = { topic: useId(), text: useId(), file: useId(), hint: useId() };
 
+  const busy = run.isPending;
   const upToDate = checked !== null && checked.text === text && checked.topic === topic;
+  // A check report only describes the text it checked; an import report stays until the next run.
+  const shownResult = result && (!result.dryRun || upToDate) ? result : null;
 
   function send(dryRun: boolean) {
-    const parsed = parseImport(text, topic);
-    if (!parsed.ok) {
-      setParseError(parsed.error);
-      setResult(null);
+    if (busy) {
       return;
     }
-    setParseError(null);
+    setResult(null);
+    run.reset();
+    const parsed = parseImport(text, topic);
+    if (!parsed.ok) {
+      setInputError(parsed.error);
+      return;
+    }
+    setInputError(null);
+    const sent = { text, topic };
     run.mutate(
       { input: parsed.input, dryRun },
       {
         onSuccess: (report) => {
           setResult({ report, dryRun });
-          setChecked(dryRun ? { text, topic } : null);
+          setChecked(dryRun ? sent : null);
           if (!dryRun) {
             setText('');
           }
@@ -46,14 +55,23 @@ export function ImportPage() {
   }
 
   async function onFile(event: ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
-    if (file) {
+    const input = event.target;
+    const file = input.files?.[0];
+    // Cleared, so choosing the same file again loads it again.
+    input.value = '';
+    if (!file) {
+      return;
+    }
+    try {
       setText(await file.text());
+      setInputError(null);
+    } catch {
+      setInputError(m.fileError);
     }
   }
 
-  const busy = run.isPending;
   const field = 'rounded-md border-bold border-outline bg-surface px-space-3 py-space-2';
+  const button = 'min-h-11 flex-1 rounded-md border-bold border-outline px-space-4 font-semibold';
   return (
     <div className="mx-auto flex min-h-dvh max-w-md flex-col">
       <header className="flex items-center border-b border-line px-space-3 py-space-2">
@@ -75,6 +93,7 @@ export function ImportPage() {
           <input
             id={ids.topic}
             value={topic}
+            readOnly={busy}
             onChange={(e) => setTopic(e.target.value)}
             aria-describedby={`${ids.topic}-hint`}
             className={field}
@@ -91,8 +110,12 @@ export function ImportPage() {
           <textarea
             id={ids.text}
             value={text}
+            readOnly={busy}
             onChange={(e) => setText(e.target.value)}
             rows={10}
+            spellCheck={false}
+            autoCapitalize="off"
+            autoCorrect="off"
             aria-describedby={`${ids.text}-hint`}
             className={`${field} font-mono type-body-sm`}
           />
@@ -108,47 +131,58 @@ export function ImportPage() {
           <input
             id={ids.file}
             type="file"
+            disabled={busy}
             accept=".json,.md,.txt,application/json,text/plain,text/markdown"
             onChange={(e) => void onFile(e)}
           />
         </div>
 
         <div className="flex gap-space-3">
+          {/* aria-disabled while busy keeps keyboard focus on the button that was pressed. */}
           <button
             type="button"
-            disabled={busy}
+            aria-disabled={busy}
             onClick={() => send(true)}
-            className="min-h-11 flex-1 rounded-md border-bold border-outline px-space-4 font-semibold"
+            className={`${button} aria-disabled:opacity-45`}
           >
             {busy && run.variables?.dryRun ? m.checking : m.check}
           </button>
           <button
             type="button"
-            disabled={busy || !upToDate}
+            disabled={!upToDate}
+            aria-disabled={busy}
+            aria-describedby={upToDate ? undefined : ids.hint}
             onClick={() => send(false)}
-            className="min-h-11 flex-1 rounded-md border-bold border-outline bg-accent px-space-4 font-semibold text-on-accent disabled:opacity-50"
+            className={`${button} bg-accent text-on-accent disabled:opacity-45 aria-disabled:opacity-45`}
           >
             {busy && run.variables?.dryRun === false ? m.importing : m.import}
           </button>
         </div>
         {!upToDate && text.trim() !== '' && !busy && (
-          <p className="text-ink-muted type-body-sm">{m.checkFirst}</p>
+          <p id={ids.hint} className="text-ink-muted type-body-sm">
+            {m.checkFirst}
+          </p>
         )}
 
-        {parseError && (
+        {inputError && (
           <p role="alert" className="rounded-md bg-missed-bg px-space-4 py-space-3">
-            {parseError}
+            {inputError}
           </p>
         )}
         {run.isError && <ErrorNotice error={run.error} />}
-        {result && <Report report={result.report} dryRun={result.dryRun} />}
+        {shownResult && <Report report={shownResult.report} dryRun={shownResult.dryRun} />}
       </main>
     </div>
   );
 }
 
 function Report({ report, dryRun }: { report: ImportReport; dryRun: boolean }) {
+  const heading = useRef<HTMLHeadingElement>(null);
   const titleId = useId();
+  // Focus moves to the new report, so screen readers read it and the keyboard continues from it.
+  useEffect(() => {
+    heading.current?.focus();
+  }, [report]);
   const lines = [
     m.created(report.created),
     report.drafts > 0 && m.drafts(report.drafts),
@@ -158,11 +192,10 @@ function Report({ report, dryRun }: { report: ImportReport; dryRun: boolean }) {
   ].filter((line): line is string => typeof line === 'string');
   return (
     <section
-      role="status"
       aria-labelledby={titleId}
       className="flex flex-col gap-space-2 rounded-md bg-surface-sunken p-space-4"
     >
-      <h2 id={titleId} className="font-semibold">
+      <h2 id={titleId} ref={heading} tabIndex={-1} className="font-semibold">
         {dryRun ? m.checkedTitle : m.doneTitle}
       </h2>
       <ul className="flex flex-col gap-space-1">
@@ -175,7 +208,7 @@ function Report({ report, dryRun }: { report: ImportReport; dryRun: boolean }) {
           <h3 className="font-semibold">{m.problemsTitle(report.problems.length)}</h3>
           <ul className="flex flex-col gap-space-1 type-body-sm">
             {report.problems.map((p) => (
-              <li key={p.index}>{m.problem(p.index, p.reason)}</li>
+              <li key={`${p.index}-${p.reason}`}>{m.problem(p.index, p.reason)}</li>
             ))}
           </ul>
         </>

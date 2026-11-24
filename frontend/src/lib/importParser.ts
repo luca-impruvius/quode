@@ -43,7 +43,7 @@ function parseJson(text: string): ParseResult {
 }
 
 const QUESTION = /^Q\d*[:.]\s*(.*)$/i;
-const OPTION = /^([A-Z])[).]\s+(.*)$/;
+const OPTION = /^([A-Za-z])[).]\s+(.*)$/;
 const ANSWER = /^Answer:\s*(.*)$/i;
 const EXPLANATION = /^Explanation:\s*(.*)$/i;
 
@@ -75,19 +75,29 @@ function parseBlock(block: string): ImportItem | string {
   for (const raw of block.split(/\r?\n/)) {
     const line = raw.trim();
     let match: RegExpMatchArray | null;
-    if (prompt === null && (match = QUESTION.exec(line))) {
+    if ((match = QUESTION.exec(line))) {
+      // A second Q: means a missing blank line: never merge two questions into one.
+      if (prompt !== null) {
+        return m.twoQuestions;
+      }
       prompt = match[1] ?? '';
       part = 'prompt';
     } else if ((match = OPTION.exec(line)) && part !== 'answer' && part !== 'explanation') {
-      if (match[1] !== String.fromCharCode(65 + options.length)) {
+      if ((match[1] ?? '').toUpperCase() !== String.fromCharCode(65 + options.length)) {
         return m.optionOrder;
       }
       options.push(match[2] ?? '');
       part = 'option';
     } else if ((match = ANSWER.exec(line))) {
+      if (answer !== null) {
+        return m.twoQuestions;
+      }
       answer = match[1] ?? '';
       part = 'answer';
     } else if ((match = EXPLANATION.exec(line))) {
+      if (explanation !== null) {
+        return m.twoQuestions;
+      }
       explanation = match[1] ?? '';
       part = 'explanation';
     } else if (part === null) {
@@ -118,8 +128,11 @@ function parseBlock(block: string): ImportItem | string {
     .map((l) => l.toUpperCase());
   const correct = new Set<number>();
   for (const letter of letters) {
-    const index = letter.length === 1 ? letter.charCodeAt(0) - 65 : -1;
-    if (index < 0 || index >= options.length) {
+    if (!/^[A-Z]$/.test(letter)) {
+      return m.answerFormat;
+    }
+    const index = letter.charCodeAt(0) - 65;
+    if (index >= options.length) {
       return m.badAnswer(letter);
     }
     correct.add(index);

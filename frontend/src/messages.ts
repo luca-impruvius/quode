@@ -94,6 +94,9 @@ export const messages = {
     noPrompt: 'it needs a line starting with Q:',
     optionOrder: 'options must go A), B), C), … in order',
     badAnswer: (letter: string) => `the answer ${letter} isn't one of its options`,
+    answerFormat: 'write the answer as option letters, like B or B, D',
+    fileError: "This file can't be read. Try saving it as plain text or JSON.",
+    twoQuestions: 'it holds two questions: add a blank line between them',
   },
   topics: {
     title: 'Topics',

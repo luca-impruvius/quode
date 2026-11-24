@@ -93,6 +93,35 @@ describe('Import', () => {
     expect(fetchMock.mock.calls.some(([u]) => String(u).includes('/imports'))).toBe(false);
   });
 
+  it('shows the server refusal instead of an old report, and keeps Import off', async () => {
+    let refuse = false;
+    mockApi({
+      '/api/me': me(),
+      'POST /api/v1/imports?dryRun=true': () =>
+        refuse
+          ? Response.json(
+              { status: 400, detail: 'An import needs 1 to 2,000 questions.' },
+              { status: 400, headers: { 'Content-Type': 'application/problem+json' } },
+            )
+          : report()(),
+    });
+    const user = userEvent.setup();
+    renderAt('/import');
+
+    await user.type(await screen.findByLabelText(m.text), text);
+    await user.click(screen.getByRole('button', { name: m.check }));
+    expect(await screen.findByText(m.checkedTitle)).toBeInTheDocument();
+
+    refuse = true;
+    await user.type(screen.getByLabelText(m.text), '\n\nQ: Second?');
+    await user.click(screen.getByRole('button', { name: m.check }));
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'An import needs 1 to 2,000 questions.',
+    );
+    expect(screen.queryByText(m.checkedTitle)).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: m.import })).toBeDisabled();
+  });
+
   it('loads a chosen file into the text box', async () => {
     mockApi({ '/api/me': me() });
     const user = userEvent.setup();

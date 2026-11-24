@@ -87,6 +87,57 @@ describe('parseImport', () => {
     });
   });
 
+  it('refuses to merge two questions when a blank line is missing', () => {
+    expect(parseImport('Q: foo\nAnswer: bar\nQ: baz\nAnswer: qux', '')).toEqual({
+      ok: false,
+      error: m.badBlock(1, m.twoQuestions),
+    });
+    expect(parseImport('Q: foo\nA) x\nB) y\nAnswer: A\nAnswer: B', '')).toEqual({
+      ok: false,
+      error: m.badBlock(1, m.twoQuestions),
+    });
+  });
+
+  it('accepts lowercase letters, A. markers, Q1. and Windows line ends', () => {
+    const input = questions(
+      'Q1. Pick one\r\na) GKE\r\nb. Cloud Run\r\nAnswer: b\r\n\r\nQ: Next\r\nA) x\r\nB) y\r\nAnswer: B,A',
+    );
+    expect(input.questions).toEqual([
+      {
+        type: 'SINGLE_CHOICE',
+        prompt: 'Pick one',
+        options: [
+          { text: 'GKE', correct: false },
+          { text: 'Cloud Run', correct: true },
+        ],
+      },
+      {
+        type: 'MULTIPLE_CHOICE',
+        prompt: 'Next',
+        options: [
+          { text: 'x', correct: true },
+          { text: 'y', correct: true },
+        ],
+      },
+    ]);
+  });
+
+  it('leaves an empty Answer: unanswered and asks for letters otherwise', () => {
+    expect(questions('Q: One\nA) x\nB) y\nAnswer:').questions?.[0]).toMatchObject({
+      type: 'SINGLE_CHOICE',
+      options: [
+        { text: 'x', correct: false },
+        { text: 'y', correct: false },
+      ],
+    });
+    for (const answer of ['B and D', 'B.']) {
+      expect(parseImport(`Q: One\nA) x\nB) y\nAnswer: ${answer}`, '')).toEqual({
+        ok: false,
+        error: m.badBlock(1, m.answerFormat),
+      });
+    }
+  });
+
   it('reads JSON as an object or a bare list; the topic field wins over the file', () => {
     const file =
       '{"topic":"Networking","questions":[{"type":"FLASHCARD","prompt":"P","answer":"A"}]}';
