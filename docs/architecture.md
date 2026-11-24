@@ -39,6 +39,7 @@ flowchart LR
 ## 3. Deployment shape
 
 - **One server, separate deployments.** Frontend and backend are separate images (built in GitHub Actions, private GHCR packages, tagged with the commit), deployable independently. The frontend image is Caddy plus the React build: one container is both the edge proxy and the static file server, with the Caddyfile mounted from `deploy/` (ADR-0041).
+- **Every merge deploys itself** (ADR-0042). GitHub Actions builds the images, then runs `deploy/deploy.sh` on the server through a key that can run nothing else. The script checks health, rolls back by itself if the new version is unhealthy, and also handles rollback by hand (`deploy/README.md`).
 - **One origin.** Caddy serves the React app at `/` and forwards `/api/*` to the backend. No CORS; the login cookie is first-party everywhere, including Safari.
 - **Postgres** runs on a private Docker network and is never exposed to the internet; it is published on the host's `127.0.0.1:5432` only, for a database client through an SSH tunnel with the read-only role.
 - **Portability.** Moving hosts = copy the Compose setup, restore a dump, repoint DNS.
@@ -90,7 +91,7 @@ Each module is a top-level package. Its root package holds the public API (servi
 - Firewall: only 22, 80, 443. Automatic security updates for Ubuntu packages (security sources only, no automatic reboot); Docker's packages are upgraded by hand monthly. fail2ban on SSH.
 - Docker publishes ports past ufw, so only Caddy publishes ports on public interfaces (80/443); Postgres publishes only `127.0.0.1:5432` and the backend only `127.0.0.1:8081` (Actuator).
 - Compose services restart automatically; health via `/api/health` (public, status only). All Actuator endpoints (`health`, `info`, `loggers`) are on management port 8081, bound to `MANAGEMENT_SERVER_ADDRESS` (default `127.0.0.1`); in the container it is published on the host's localhost only and reached through an SSH tunnel.
-- Secrets only in the server's `.env` and GitHub Actions secrets.
+- Secrets only in the server's `.env` and the GitHub `production` environment (deploy key, server address, host key). The deploy key is restricted to `deploy.sh` in `authorized_keys` (ADR-0042).
 - Container memory limits: Caddy 256 MB, backend 1280 MB (heap 65% of it, about 830 MB; it restarts on out-of-memory), Postgres 1 GB; about 1.5 GB is left for the system and the nightly dump.
 
 ## 8. Backups & recovery
