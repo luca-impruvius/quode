@@ -616,11 +616,15 @@
               "$ref" : "#/components/schemas/ExportItem"
             }
           },
+          "remaining" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
           "topic" : {
             "type" : [ "string", "null" ]
           }
         },
-        "required" : [ "questions", "topic" ]
+        "required" : [ "questions", "remaining", "topic" ]
       },
       "ExportItem" : {
         "type" : "object",

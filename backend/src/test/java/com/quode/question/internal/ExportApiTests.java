@@ -10,6 +10,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.quode.TestcontainersConfiguration;
+import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -47,7 +48,7 @@ class ExportApiTests {
         {"topic":"Cloud › GCP","questions":[
           {"type":"SINGLE_CHOICE","prompt":"Unanswered GCP?",
            "options":[{"text":"A","correct":false},{"text":"B","correct":false}],
-           "topics":["Networking"]},
+           "topics":["Networking","Exam"]},
           {"type":"FLASHCARD","prompt":"Answered GCP?","answer":"Yes."},
           {"type":"FLASHCARD","prompt":"Unanswered card?","explanation":"Hint.","difficulty":3}]}
         """;
@@ -108,12 +109,14 @@ class ExportApiTests {
         .andExpect(jsonPath("$.questions[0].options[1].text").value("B"))
         .andExpect(jsonPath("$.questions[0].options[1].correct").value(false))
         .andExpect(jsonPath("$.questions[0].topics[0]").value("Cloud › GCP"))
-        .andExpect(jsonPath("$.questions[0].topics[1]").value("Networking"))
+        .andExpect(jsonPath("$.questions[0].topics[1]").value("Exam"))
+        .andExpect(jsonPath("$.questions[0].topics[2]").value("Networking"))
         .andExpect(jsonPath("$.questions[1].prompt").value("Unanswered card?"))
         .andExpect(jsonPath("$.questions[1].explanation").value("Hint."))
         .andExpect(jsonPath("$.questions[1].difficulty").value(3))
         .andExpect(jsonPath("$.questions[1].answer").value(nullValue()))
-        .andExpect(jsonPath("$.questions[2].prompt").value("Net draft?"));
+        .andExpect(jsonPath("$.questions[2].prompt").value("Net draft?"))
+        .andExpect(jsonPath("$.remaining").value(0));
   }
 
   @Test
@@ -148,12 +151,14 @@ class ExportApiTests {
         export(me(), "?topicId=" + topic("GCP"))
             .andReturn()
             .getResponse()
-            .getContentAsString(java.nio.charset.StandardCharsets.UTF_8);
+            .getContentAsString(StandardCharsets.UTF_8);
     // Answer them the way Claude would outside the app: mark B correct, add the card's answer.
     String answered =
         exported
             .replace("{\"text\":\"B\",\"correct\":false}", "{\"text\":\"B\",\"correct\":true}")
-            .replace("\"answer\":null", "\"answer\":\"Filled.\"");
+            .replace(
+                "\"prompt\":\"Unanswered card?\",\"answer\":null",
+                "\"prompt\":\"Unanswered card?\",\"answer\":\"Filled.\"");
 
     importAs(me(), answered)
         .andExpect(status().isOk())
@@ -171,5 +176,31 @@ class ExportApiTests {
                 String.class,
                 idOf("Unanswered card?")))
         .isEqualTo("Filled.");
+    assertThat(
+            jdbc.queryForObject(
+                "select answer_md from question where id = ?",
+                String.class,
+                idOf("Unanswered GCP?")))
+        .isNull();
+  }
+
+  @Test
+  void anExportHoldsAtMostOneImportAndCountsTheRest() throws Exception {
+    UUID gcp = topic("GCP");
+    jdbc.update(
+        "insert into question (owner_id, type, prompt_md, status, primary_topic_id)"
+            + " select ?, 'FLASHCARD', 'Bulk ' || g, 'DRAFT', ? from generate_series(1, 2001) g",
+        me,
+        gcp);
+    jdbc.update(
+        "insert into question_topic (question_id, topic_id, owner_id)"
+            + " select id, primary_topic_id, owner_id from question"
+            + " where owner_id = ? and prompt_md like 'Bulk %'",
+        me);
+
+    export(me(), "")
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.questions.length()").value(ExportService.MAX_QUESTIONS))
+        .andExpect(jsonPath("$.remaining").value(2004 - ExportService.MAX_QUESTIONS));
   }
 }
