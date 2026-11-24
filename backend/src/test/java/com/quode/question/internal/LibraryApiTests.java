@@ -154,6 +154,21 @@ class LibraryApiTests {
   }
 
   @Test
+  void draftsAreListedUnderNeedsAnswerOnly() throws Exception {
+    UUID draft = question(me, "Which GCP service?", null, "FLASHCARD", 2, java, 99);
+    jdbc.update("update question set status = 'DRAFT' where id = ?", draft);
+
+    list("").andExpect(jsonPath("$.totalElements").value(4));
+    list("?status=needs_answer")
+        .andExpect(jsonPath("$.totalElements").value(1))
+        .andExpect(jsonPath("$.items[0].promptMd").value("Which GCP service?"));
+
+    jdbc.update("update question set archived_at = now() where id = ?", draft);
+    list("?status=NEEDS_ANSWER").andExpect(jsonPath("$.totalElements").value(0));
+    list("?status=ARCHIVED").andExpect(jsonPath("$.totalElements").value(2));
+  }
+
+  @Test
   void searchesPromptAndAnswerIgnoringCase() throws Exception {
     list("?q=hashmap").andExpect(jsonPath("$.totalElements").value(1));
     list("?q=CROSS-ORIGIN")

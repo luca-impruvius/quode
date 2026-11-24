@@ -44,12 +44,34 @@ export const messages = {
     topicChip: (name: string | null) => (name === null ? 'Topic' : `Topic: ${name}`),
     typeChip: (name: string | null) => (name === null ? 'Type' : `Type: ${name}`),
     difficultyChip: (label: string | null) => (label === null ? 'Difficulty' : label),
-    statusChip: (status: 'active' | 'archived' | 'flagged') =>
-      ({ active: 'Active', archived: 'Archived', flagged: 'Flagged' })[status],
+    statusChip: (status: 'active' | 'needs_answer' | 'archived' | 'flagged') =>
+      ({
+        active: 'Active',
+        needs_answer: 'Needs answer',
+        archived: 'Archived',
+        flagged: 'Flagged',
+      })[status],
     allTopics: 'All topics',
     anyType: 'Any type',
     anyDifficulty: 'Any difficulty',
-    statuses: { active: 'Active', archived: 'Archived', flagged: 'Flagged' },
+    statuses: {
+      active: 'Active',
+      needs_answer: 'Needs answer',
+      archived: 'Archived',
+      flagged: 'Flagged',
+    },
+    exportHint: (inTopic: boolean) =>
+      `Export every question without an answer${inTopic ? ' in this topic' : ''} (type, difficulty and search don't apply), add the answers outside the app, then bring the file back with Import.`,
+    download: 'Download JSON',
+    copy: 'Copy JSON',
+    exporting: 'Exporting…',
+    copyFailed: "Couldn't copy here. Use Download JSON instead.",
+    allAnswered: 'Every question has its answer.',
+    downloaded: (n: number) => (n === 1 ? 'Downloaded 1 question.' : `Downloaded ${n} questions.`),
+    copied: (n: number) => (n === 1 ? 'Copied 1 question.' : `Copied ${n} questions.`),
+    exportRemaining: (n: number) =>
+      `${n === 1 ? '1 more waits' : `${n} more wait`}: import the answered file, then export again.`,
+    exportFileName: 'quode-needs-answer.json',
     sort: 'Sort',
     sorts: { created: 'Newest', updated: 'Recently edited', difficulty: 'Easiest first' },
     count: (n: number) => (n === 1 ? '1 question' : `${n} questions`),
@@ -80,10 +102,13 @@ export const messages = {
     checkedTitle: 'Check: nothing saved yet',
     doneTitle: 'Imported',
     created: (n: number) => `${n} ready to study`,
-    drafts: (n: number) => `${n} without an answer (saved as drafts)`,
+    drafts: (n: number) =>
+      n === 1
+        ? '1 without an answer (saved as a draft)'
+        : `${n} without an answer (saved as drafts)`,
     filled: (n: number) => `${n} drafts got their answer`,
     skipped: (n: number) => `${n} already in your library (skipped)`,
-    topicsCreated: (n: number) => `${n} new topics`,
+    topicsCreated: (n: number) => (n === 1 ? '1 new topic' : `${n} new topics`),
     problemsTitle: (n: number) => (n === 1 ? '1 question left out' : `${n} questions left out`),
     problem: (index: number, reason: string) => `Question ${index}: ${reason}`,
     toLibrary: 'Open the Library',
