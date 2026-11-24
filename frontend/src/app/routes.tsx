@@ -24,6 +24,10 @@ export const routes: RouteObject[] = [
       },
       { path: 'add', lazy: editor },
       {
+        path: 'import',
+        lazy: () => import('../pages/ImportPage').then((m) => ({ Component: m.ImportPage })),
+      },
+      {
         path: 'questions/:id',
         lazy: () =>
           import('../pages/QuestionDetailPage').then((m) => ({ Component: m.QuestionDetailPage })),

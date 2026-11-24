@@ -118,12 +118,20 @@ export function LibraryPage() {
     <section className="flex flex-col gap-space-3">
       <div className="flex items-center justify-between">
         <h1 className="type-title">{messages.tabs.library}</h1>
-        <Link
-          to="/topics"
-          className="flex min-h-11 items-center rounded-md border-bold border-outline px-space-3 font-semibold"
-        >
-          {messages.topics.title}
-        </Link>
+        <div className="flex gap-space-2">
+          <Link
+            to="/import"
+            className="flex min-h-11 items-center rounded-md border-bold border-outline px-space-3 font-semibold"
+          >
+            {messages.importer.open}
+          </Link>
+          <Link
+            to="/topics"
+            className="flex min-h-11 items-center rounded-md border-bold border-outline px-space-3 font-semibold"
+          >
+            {messages.topics.title}
+          </Link>
+        </div>
       </div>
 
       <label className="relative flex items-center">
