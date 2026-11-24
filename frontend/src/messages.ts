@@ -102,10 +102,13 @@ export const messages = {
     checkedTitle: 'Check: nothing saved yet',
     doneTitle: 'Imported',
     created: (n: number) => `${n} ready to study`,
-    drafts: (n: number) => `${n} without an answer (saved as drafts)`,
+    drafts: (n: number) =>
+      n === 1
+        ? '1 without an answer (saved as a draft)'
+        : `${n} without an answer (saved as drafts)`,
     filled: (n: number) => `${n} drafts got their answer`,
     skipped: (n: number) => `${n} already in your library (skipped)`,
-    topicsCreated: (n: number) => `${n} new topics`,
+    topicsCreated: (n: number) => (n === 1 ? '1 new topic' : `${n} new topics`),
     problemsTitle: (n: number) => (n === 1 ? '1 question left out' : `${n} questions left out`),
     problem: (index: number, reason: string) => `Question ${index}: ${reason}`,
     toLibrary: 'Open the Library',

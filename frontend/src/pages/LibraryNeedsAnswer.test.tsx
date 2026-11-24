@@ -46,7 +46,7 @@ const exported = (remaining: number) => ({
 function backend({
   items = [draft],
   exportAnswer = () => Response.json(exported(3)),
-}: { items?: LibraryItem[]; exportAnswer?: () => Response } = {}) {
+}: { items?: LibraryItem[]; exportAnswer?: () => Response | Promise<Response> } = {}) {
   const requests: URL[] = [];
   vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
     const url = new URL(String(input), 'http://localhost');
@@ -76,7 +76,58 @@ function backend({
 
 afterEach(() => {
   vi.restoreAllMocks();
-  vi.useRealTimers();
+  vi.unstubAllGlobals();
+});
+
+// Safari's way: ClipboardItem takes a promise, so the write can start inside the click.
+class FakeClipboardItem {
+  readonly items: Record<string, Promise<Blob>>;
+
+  constructor(items: Record<string, Promise<Blob>>) {
+    this.items = items;
+  }
+}
+
+describe('Library: Needs answer, copying where ClipboardItem exists (Safari)', () => {
+  it('starts the clipboard write before the export arrives', async () => {
+    let answer: (response: Response) => void = () => undefined;
+    backend({ exportAnswer: () => new Promise<Response>((resolve) => (answer = resolve)) });
+    const user = userEvent.setup();
+    vi.stubGlobal('ClipboardItem', FakeClipboardItem);
+    const written: FakeClipboardItem[] = [];
+    const write = vi.spyOn(navigator.clipboard, 'write').mockImplementation(async (items) => {
+      written.push(...(items as unknown as FakeClipboardItem[]));
+      await written[0]?.items['text/plain'];
+    });
+    renderAt('/library?status=needs_answer');
+
+    await user.click(await screen.findByRole('button', { name: l.copy }));
+    expect(write).toHaveBeenCalledOnce();
+
+    answer(Response.json(exported(0)));
+    expect(await screen.findByText(l.copied(1))).toBeInTheDocument();
+    const blob = await written[0]?.items['text/plain'];
+    expect(JSON.parse((await blob?.text()) ?? '')).toEqual(exported(0));
+  });
+
+  it("shows the server's message, not a copy failure, when the export fails", async () => {
+    backend({
+      exportAnswer: () =>
+        Response.json(
+          { status: 404, detail: 'Topic not found.' },
+          { status: 404, headers: { 'Content-Type': 'application/problem+json' } },
+        ),
+    });
+    const user = userEvent.setup();
+    vi.stubGlobal('ClipboardItem', FakeClipboardItem);
+    vi.spyOn(navigator.clipboard, 'write').mockImplementation(async (items) => {
+      await (items as unknown as FakeClipboardItem[])[0]?.items['text/plain'];
+    });
+    renderAt('/library?status=needs_answer&topicId=coll');
+
+    await user.click(await screen.findByRole('button', { name: l.copy }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('Topic not found.');
+  });
 });
 
 describe('Library: Needs answer', () => {

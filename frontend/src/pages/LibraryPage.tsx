@@ -1,5 +1,5 @@
 import { ChevronDown, Search } from 'lucide-react';
-import { useCallback, useEffect, useId, useMemo, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import {
   exportDrafts,
@@ -376,11 +376,10 @@ const toJson = (file: unknown) => JSON.stringify(file, null, 2);
  */
 function copyExport(file: Promise<unknown>): Promise<void> {
   if (typeof ClipboardItem !== 'undefined' && navigator.clipboard?.write) {
-    return navigator.clipboard.write([
-      new ClipboardItem({
-        'text/plain': file.then((f) => new Blob([toJson(f)], { type: 'text/plain' })),
-      }),
-    ]);
+    const blob = file.then((f) => new Blob([toJson(f)], { type: 'text/plain' }));
+    // The browser may refuse before reading the item; the caller handles the export's own error.
+    blob.catch(() => undefined);
+    return navigator.clipboard.write([new ClipboardItem({ 'text/plain': blob })]);
   }
   return file.then((f) => navigator.clipboard.writeText(toJson(f)));
 }
@@ -389,13 +388,16 @@ function copyExport(file: Promise<unknown>): Promise<void> {
 function ExportDrafts({ topicId }: { topicId: string | undefined }) {
   const hintId = useId();
   const [busy, setBusy] = useState<'download' | 'copy' | null>(null);
+  const running = useRef(false);
   const [done, setDone] = useState<string | null>(null);
   const [error, setError] = useState<unknown>(null);
 
   async function run(how: 'download' | 'copy') {
-    if (busy) {
+    // A ref, not the state: two quick clicks before the next render must not start two exports.
+    if (running.current) {
       return;
     }
+    running.current = true;
     setBusy(how);
     setDone(null);
     setError(null);
@@ -430,15 +432,13 @@ function ExportDrafts({ topicId }: { topicId: string | undefined }) {
       setError(e);
     } finally {
       setBusy(null);
+      running.current = false;
     }
   }
 
   const button = 'min-h-11 rounded-md border-bold border-outline px-space-4 font-semibold';
   return (
-    <section
-      aria-describedby={hintId}
-      className="flex flex-col gap-space-2 rounded-md bg-surface-sunken p-space-4"
-    >
+    <section className="flex flex-col gap-space-2 rounded-md bg-surface-sunken p-space-4">
       <p id={hintId} className="type-body-sm">
         {l.exportHint(topicId !== undefined)}
       </p>
@@ -446,6 +446,7 @@ function ExportDrafts({ topicId }: { topicId: string | undefined }) {
         <button
           type="button"
           aria-disabled={busy !== null}
+          aria-describedby={hintId}
           onClick={() => void run('download')}
           className={button}
         >
@@ -454,6 +455,7 @@ function ExportDrafts({ topicId }: { topicId: string | undefined }) {
         <button
           type="button"
           aria-disabled={busy !== null}
+          aria-describedby={hintId}
           onClick={() => void run('copy')}
           className={button}
         >
@@ -464,7 +466,7 @@ function ExportDrafts({ topicId }: { topicId: string | undefined }) {
         {done}
       </p>
       {error instanceof CopyFailed ? (
-        <p role="alert" className="rounded-md bg-missed-bg px-space-4 py-space-3">
+        <p role="alert" className="rounded-md bg-missed-bg px-space-4 py-space-3 text-ink">
           {l.copyFailed}
         </p>
       ) : (
