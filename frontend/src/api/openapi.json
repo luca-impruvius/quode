@@ -1288,8 +1288,8 @@
             "format" : "int32"
           },
           "current" : {
-            "$ref" : "#/components/schemas/QuestionCard",
-            "type" : [ "object", "null" ]
+            "type" : [ "object", "null" ],
+            "$ref" : "#/components/schemas/QuestionCard"
           },
           "finishedAt" : {
             "type" : [ "string", "null" ],
