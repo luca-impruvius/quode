@@ -5,7 +5,7 @@
 
 ## Context
 
-M0-10 deploys by hand: run the Images workflow, edit `QUODE_TAG` on the server, `pull`, `up -d`. M0-11 makes every merge to `main` deploy itself, with a health check and one-command rollback. Since ADR-0039, approving a PR already approves its deploy. The server's `deploy` user is in the `docker` group, which is root-equivalent, so whatever reaches the server from GitHub must be able to do as little as possible.
+M0-10 deploys by hand: run the Images workflow, edit `QUODE_TAG` on the server, `pull`, `up -d`. M0-11 makes every merge to `main` deploy itself, with a health check and one-command rollback. The merge is the deploy approval: Luca's yes for `review:careful` PRs (ADR-0039), checks passing for the rest (ADR-0043). The automatic deploy after a merge is the only production change Claude starts without asking; a manual deploy or rollback needs Luca's explicit yes. The server's `deploy` user is in the `docker` group, which is root-equivalent, so whatever reaches the server from GitHub must be able to do as little as possible.
 
 ## Options considered
 

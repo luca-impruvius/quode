@@ -97,11 +97,13 @@ Docs-only merges don't deploy. The backend is unavailable for about 10 to 20 sec
 2. On the server, `~/quode/failed-deploy.log` holds the failed version's backend log. `~/quode/deploy.sh status` shows the current and previous tags, and `~/quode/deploy.log` keeps every deploy's messages.
 3. A message saying the rollback is unhealthy too means the site is down: follow `docs/runbooks/production-debugging.md`.
 
-**Rollback** (safe because destructive migrations take two releases), either way:
-- **GitHub:** Actions → **Images & deploy** → Run workflow on `main`, with **tag** set to the full commit SHA to go back to. It skips the build. The previous tag is in `deploy.sh status`, and each run's tag is in the Actions history.
+**Rollback** (safe because destructive migrations take two releases). A manual deploy or rollback is a production change: Luca starts it, or Claude does with his explicit yes (ADR-0042). Either way:
+- **GitHub:** Actions → **Images & deploy** → Run workflow on `main`, with **tag** set to the full 40-character commit SHA to go back to. It skips the build. The previous tag is in `deploy.sh status`, and each run's tag is in the Actions history. Check that the run actually ran: a merge landing meanwhile can cancel a queued run.
 - **Server:** `~/quode/deploy.sh deploy <full-commit-sha>`.
 
 Roll forward the same way, with the newer SHA.
+
+Both ways pull the tag from GHCR first, so they fail ("nothing changed") if cleanup has trimmed it, GHCR is down or the registry token has expired. The previous tag in `deploy.sh status` is always kept on the server, so it can still be started by hand: in `~/quode`, set `QUODE_TAG=<full-commit-sha>` in `.env`, then `docker compose up -d`, and check `docker compose ps` and `https://quode.app/api/health`. To rehearse a rollback, use that previous tag.
 
 **Copy these by hand.** The deploy key can't copy files, so when `compose.yml`, the `Caddyfile`, `initdb/` or `deploy.sh` change, copy them before the merge, or right after:
 - for example `scp deploy/compose.yml quode-prod:quode/`;
