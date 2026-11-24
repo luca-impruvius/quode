@@ -165,6 +165,7 @@ class LibraryApiTests {
 
     jdbc.update("update question set archived_at = now() where id = ?", draft);
     list("?status=NEEDS_ANSWER").andExpect(jsonPath("$.totalElements").value(0));
+    list("?status=ARCHIVED").andExpect(jsonPath("$.totalElements").value(2));
   }
 
   @Test

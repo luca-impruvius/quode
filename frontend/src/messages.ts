@@ -60,14 +60,17 @@ export const messages = {
       archived: 'Archived',
       flagged: 'Flagged',
     },
-    exportHint:
-      'Download these questions, add their answers outside the app, then bring the file back with Import.',
-    download: 'Download',
-    copy: 'Copy',
+    exportHint: (inTopic: boolean) =>
+      `Export every question without an answer${inTopic ? ' in this topic' : ''} (type, difficulty and search don't apply), add the answers outside the app, then bring the file back with Import.`,
+    download: 'Download JSON',
+    copy: 'Copy JSON',
     exporting: 'Exporting…',
+    copyFailed: "Couldn't copy here. Use Download JSON instead.",
+    allAnswered: 'Every question has its answer.',
     downloaded: (n: number) => (n === 1 ? 'Downloaded 1 question.' : `Downloaded ${n} questions.`),
     copied: (n: number) => (n === 1 ? 'Copied 1 question.' : `Copied ${n} questions.`),
-    exportRemaining: (n: number) => `${n} more wait: import the answered file, then export again.`,
+    exportRemaining: (n: number) =>
+      `${n === 1 ? '1 more waits' : `${n} more wait`}: import the answered file, then export again.`,
     exportFileName: 'quode-needs-answer.json',
     sort: 'Sort',
     sorts: { created: 'Newest', updated: 'Recently edited', difficulty: 'Easiest first' },
