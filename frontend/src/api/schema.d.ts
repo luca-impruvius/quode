@@ -251,8 +251,7 @@ export interface components {
             /** Format: int32 */
             difficulty?: number;
             explanation?: string | null;
-            /** Format: uuid */
-            id?: string;
+            id?: string | null;
             options?: components["schemas"]["ImportOption"][];
             prompt?: string | null;
             sourceUrl?: string | null;
