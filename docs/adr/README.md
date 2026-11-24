@@ -47,6 +47,7 @@ One file per decision. Accepted ADRs are never edited; a changed decision gets a
 | [0041](0041-production-container-layout.md) | Production container layout | Accepted |
 | [0042](0042-continuous-deployment-over-ssh.md) | Continuous deployment over SSH with a forced-command key | Accepted |
 | [0043](0043-owner-checks-results-claude-merges-when-checks-pass.md) | Owner checks results; Claude merges when checks pass | Accepted |
+| [0044](0044-one-pr-per-feature.md) | One PR per feature | Accepted |
 
 ## Template
 

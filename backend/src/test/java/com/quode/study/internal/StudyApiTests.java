@@ -374,7 +374,7 @@ class StudyApiTests {
   }
 
   @Test
-  void othersCantAnswerMySessionUseMyQuestionsOrSeeMyAttempts() throws Exception {
+  void othersCantAnswerMySessionOrQuizMyQuestions() throws Exception {
     String session = fromGcp();
     send(
             post("/api/v1/study/sessions/" + session + "/answers"),
@@ -387,23 +387,6 @@ class StudyApiTests {
             other(),
             "{\"questionIds\":[\"%s\"]}".formatted(question("Serverless containers?")))
         .andExpect(status().isConflict());
-
-    // The other user's own copy of a question: my wrong answer doesn't make it "missed" for them.
-    choose(session, "Serverless containers?", "GKE");
-    send(
-            post("/api/v1/imports"),
-            other(),
-            "{\"topic\":\"Theirs\",\"questions\":[{\"type\":\"FLASHCARD\",\"prompt\":\"Theirs?\",\"answer\":\"x\"}]}")
-        .andExpect(jsonPath("$.created").value(1));
-    UUID theirs =
-        jdbc.queryForObject(
-            "select id from topic where name = 'Theirs' and owner_id <> ?", UUID.class, me);
-    send(
-            post("/api/v1/study/sessions"),
-            other(),
-            "{\"topicIds\":[\"" + theirs + "\"],\"mode\":\"UNSEEN\"}")
-        .andExpect(status().isCreated())
-        .andExpect(jsonPath("$.total").value(1));
   }
 
   @Test

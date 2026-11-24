@@ -112,7 +112,7 @@ Production stack locally (optional, to test `deploy/` changes): build the images
 - **Pick work from the board.** Every task is a GitHub issue; its body lists what it depends on, and `review:careful` marks work where the owner reads the whole diff (see `CLAUDE.md`). Assign it to yourself before starting.
 - **Branch** from an up-to-date `main`: `feat/<issue>-short-name`, `fix/…`, `chore/…`, `docs/…`.
 - **Commits and PR titles** follow Conventional Commits, for example `feat(review): …`. Scopes are module names, `frontend`, `infra`, `deps` (`deps-dev` from Dependabot) or `adr`.
-- **Small PRs** (under about 400 lines), using the PR template, with `Closes #<issue>`.
+- **One PR per feature** (up to about 800 lines of code, tests and generated API files excluded; ADR-0044), using the PR template, with `Closes #<issue>`.
 - **Tests first** from the acceptance criteria. CI (`.github/workflows/ci.yml`: backend, frontend, gitleaks, PR title) must be green; the owner reviews, and Claude squash-merges once the owner approves (ADR-0039).
 - **Decisions:** if something in `docs/` stops being true, update it in the same PR or add an ADR.
 - **New dependency?** State its license in the PR. Anything that isn't OSI open source must be discussed first.

@@ -7,6 +7,7 @@ import io.swagger.v3.oas.models.media.MediaType;
 import io.swagger.v3.oas.models.media.Schema;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -87,7 +88,7 @@ class OpenApiConfig {
             return property;
           }
           Schema ref = new JsonSchema().$ref(property.get$ref());
-          Schema nothing = new JsonSchema().types(new java.util.LinkedHashSet<>(List.of("null")));
+          Schema nothing = new JsonSchema().types(new LinkedHashSet<>(List.of("null")));
           return new JsonSchema().anyOf(List.of(ref, nothing));
         });
   }
