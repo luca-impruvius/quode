@@ -1,6 +1,6 @@
 # ADR-0039: Claude merges approved PRs
 
-- **Status:** Accepted
+- **Status:** Partially superseded by ADR-0043 (ordinary tasks)
 - **Date:** 2026-10-30
 - **Supersedes:** the "Claude never merges" part of ADR-0038
 
