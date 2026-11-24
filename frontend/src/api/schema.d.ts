@@ -255,6 +255,8 @@ export interface components {
         };
         ExportFile: {
             questions: components["schemas"]["ExportItem"][];
+            /** Format: int32 */
+            remaining: number;
             topic: string | null;
         };
         ExportItem: {

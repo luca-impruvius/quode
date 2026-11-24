@@ -24,6 +24,8 @@ class ExportService {
     this.topics = topics;
   }
 
+  static final int MAX_QUESTIONS = ImportService.MAX_QUESTIONS;
+
   /** {@code topicId}: only questions with a topic in its subtree, like the Library filter. */
   @Transactional(readOnly = true)
   ExportFile export(UUID ownerId, QuestionStatus status, UUID topicId) {
@@ -38,10 +40,13 @@ class ExportService {
         questions.findForExport(ownerId, status).stream()
             .filter(q -> subtree == null || q.getTopicIds().stream().anyMatch(subtree::contains))
             .toList();
+    // One export is at most one import: filled and imported, the next export gives the rest.
+    List<Question> shown = found.subList(0, Math.min(found.size(), MAX_QUESTIONS));
     Set<UUID> topicIds = new HashSet<>();
-    found.forEach(q -> topicIds.addAll(q.getTopicIds()));
+    shown.forEach(q -> topicIds.addAll(q.getTopicIds()));
     Map<UUID, TopicRef> paths = topics.findOwned(ownerId, topicIds);
-    return new ExportFile(null, found.stream().map(q -> item(q, paths)).toList());
+    return new ExportFile(
+        null, shown.stream().map(q -> item(q, paths)).toList(), found.size() - shown.size());
   }
 
   private static ExportFile.ExportItem item(Question q, Map<UUID, TopicRef> paths) {
