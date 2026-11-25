@@ -16,8 +16,10 @@ record LibraryQuery(
     int page,
     int size) {
 
+  /** ACTIVE: ready to study. NEEDS_ANSWER: drafts without their answer yet (M2). */
   enum Status {
     ACTIVE,
+    NEEDS_ANSWER,
     ARCHIVED,
     FLAGGED
   }

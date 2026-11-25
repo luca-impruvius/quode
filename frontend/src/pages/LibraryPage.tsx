@@ -1,7 +1,8 @@
 import { ChevronDown, Search } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import {
+  exportDrafts,
   useLibrary,
   type LibraryFilters,
   type LibraryItem,
@@ -10,13 +11,15 @@ import {
 } from '../api/library';
 import type { QuestionType } from '../api/questions';
 import { topicPaths, useTopics } from '../api/topics';
+import { useDesktop } from '../app/useDesktop';
 import { ErrorNotice } from '../components/ErrorNotice';
 import { Sheet } from '../components/Sheet';
 import { messages } from '../messages';
+import { QuestionPanel } from './QuestionDetailPage';
 
 const l = messages.library;
 const types: QuestionType[] = ['FLASHCARD', 'SINGLE_CHOICE', 'MULTIPLE_CHOICE', 'OPEN_TEXT'];
-const statuses: LibraryStatus[] = ['active', 'archived', 'flagged'];
+const statuses: LibraryStatus[] = ['active', 'needs_answer', 'archived', 'flagged'];
 const sorts: LibrarySort[] = ['created', 'updated', 'difficulty'];
 
 const pick = <T extends string>(value: string | null, allowed: readonly T[], fallback: T): T =>
@@ -34,6 +37,13 @@ function readFilters(params: URLSearchParams): LibraryFilters {
     status: pick(params.get('status'), statuses, 'active'),
     sort: pick(params.get('sort'), sorts, 'created'),
   };
+}
+
+// The current Library URL with this question selected (desktop's side-by-side view).
+function withSelected(params: URLSearchParams, id: string): string {
+  const next = new URLSearchParams(params);
+  next.set('selected', id);
+  return `/library?${next.toString()}`;
 }
 
 // The list shows text, not rendered Markdown: emphasis marks and link targets go.
@@ -56,6 +66,9 @@ export function LibraryPage() {
   const [text, setText] = useState(filters.q ?? '');
   const [shownQ, setShownQ] = useState(filters.q);
   const [open, setOpen] = useState<Open>(null);
+  // Desktop: the list and the selected question side by side (?selected= in the URL).
+  const desktop = useDesktop();
+  const selectedId = params.get('selected') ?? undefined;
 
   // The URL's search changed without typing (Library tab, back/forward): show it in the box. Adjusting
   // state during render is React's documented pattern for this; trimming differences are typing.
@@ -115,177 +128,241 @@ export function LibraryPage() {
     }`;
 
   return (
-    <section className="flex flex-col gap-space-3">
-      <div className="flex items-center justify-between">
-        <h1 className="type-title">{messages.tabs.library}</h1>
-        <Link
-          to="/topics"
-          className="flex min-h-11 items-center rounded-md border-bold border-outline px-space-3 font-semibold"
-        >
-          {messages.topics.title}
-        </Link>
-      </div>
+    <div className="lg:grid lg:grid-cols-2 lg:items-start lg:gap-space-6">
+      <section className="flex flex-col gap-space-3">
+        <div className="flex items-center justify-between">
+          <h1 className="type-title">{messages.tabs.library}</h1>
+          <div className="flex gap-space-2">
+            <Link
+              to="/import"
+              className="flex min-h-11 items-center rounded-md border-bold border-outline px-space-3 font-semibold"
+            >
+              {messages.importer.open}
+            </Link>
+            <Link
+              to="/topics"
+              className="flex min-h-11 items-center rounded-md border-bold border-outline px-space-3 font-semibold"
+            >
+              {messages.topics.title}
+            </Link>
+          </div>
+        </div>
 
-      <label className="relative flex items-center">
-        <span className="sr-only">{l.search}</span>
-        <Search aria-hidden="true" size={18} strokeWidth={2} className="absolute left-space-3" />
-        <input
-          type="search"
-          value={text}
-          onChange={(event) => setText(event.target.value)}
-          placeholder={l.search}
-          className="h-12 w-full rounded-md border-2 border-outline bg-surface pr-space-3 pl-10"
-        />
-      </label>
-
-      <div className="flex flex-wrap gap-space-2">
-        <button
-          type="button"
-          className={chip(filters.topicId !== undefined)}
-          onClick={() => setOpen('topic')}
-        >
-          {l.topicChip(topicName)}
-          <ChevronDown aria-hidden="true" size={16} strokeWidth={2} />
-        </button>
-        <button
-          type="button"
-          className={chip(filters.type !== undefined)}
-          onClick={() => setOpen('type')}
-        >
-          {l.typeChip(filters.type ? messages.questionTypeNames[filters.type] : null)}
-          <ChevronDown aria-hidden="true" size={16} strokeWidth={2} />
-        </button>
-        <button
-          type="button"
-          className={chip(filters.difficulty !== undefined)}
-          onClick={() => setOpen('difficulty')}
-        >
-          {l.difficultyChip(
-            filters.difficulty
-              ? (messages.editor.difficulties[filters.difficulty - 1] ?? null)
-              : null,
-          )}
-          <ChevronDown aria-hidden="true" size={16} strokeWidth={2} />
-        </button>
-        <button
-          type="button"
-          className={chip(filters.status !== 'active')}
-          onClick={() => setOpen('status')}
-        >
-          {l.statusChip(filters.status)}
-          <ChevronDown aria-hidden="true" size={16} strokeWidth={2} />
-        </button>
-      </div>
-
-      <div className="flex items-center justify-between gap-space-2 type-body-sm">
-        <span className="text-ink-muted" aria-live="polite">
-          {total === undefined
-            ? ''
-            : topicName !== null
-              ? l.countInTopic(total, topicName)
-              : l.count(total)}
-        </span>
-        <label className="flex items-center gap-space-1 font-semibold">
-          <select
-            aria-label={l.sort}
-            value={filters.sort}
-            onChange={(event) =>
-              update('sort', event.target.value === 'created' ? undefined : event.target.value)
-            }
-            className="min-h-11 rounded-md bg-transparent"
-          >
-            {sorts.map((sort) => (
-              <option key={sort} value={sort}>
-                {l.sorts[sort]}
-              </option>
-            ))}
-          </select>
+        <label className="relative flex items-center">
+          <span className="sr-only">{l.search}</span>
+          <Search aria-hidden="true" size={18} strokeWidth={2} className="absolute left-space-3" />
+          <input
+            type="search"
+            value={text}
+            onChange={(event) => setText(event.target.value)}
+            placeholder={l.search}
+            className="h-12 w-full rounded-md border-2 border-outline bg-surface pr-space-3 pl-10"
+          />
         </label>
-      </div>
 
-      {library.isError && <ErrorNotice error={library.error} />}
-      {library.isPending && (
-        <p role="status" className="text-ink-muted">
-          {messages.loading}
-        </p>
-      )}
-      {library.isSuccess && items.length === 0 && (
-        <p className="py-space-5 text-ink-muted">{filtered ? l.noMatches : l.noQuestions}</p>
-      )}
-      {items.length > 0 && (
-        <ul aria-label={l.results} className="flex flex-col">
-          {items.map((question) => (
-            <Row key={question.id} question={question} />
-          ))}
-        </ul>
-      )}
-      {library.hasNextPage && (
-        <button
-          type="button"
-          disabled={library.isFetchingNextPage}
-          onClick={() => void library.fetchNextPage()}
-          className="h-12 rounded-md border-bold border-outline font-semibold disabled:opacity-45"
-        >
-          {l.loadMore}
-        </button>
-      )}
+        <div className="flex flex-wrap gap-space-2">
+          <button
+            type="button"
+            className={chip(filters.topicId !== undefined)}
+            onClick={() => setOpen('topic')}
+          >
+            {l.topicChip(topicName)}
+            <ChevronDown aria-hidden="true" size={16} strokeWidth={2} />
+          </button>
+          <button
+            type="button"
+            className={chip(filters.type !== undefined)}
+            onClick={() => setOpen('type')}
+          >
+            {l.typeChip(filters.type ? messages.questionTypeNames[filters.type] : null)}
+            <ChevronDown aria-hidden="true" size={16} strokeWidth={2} />
+          </button>
+          <button
+            type="button"
+            className={chip(filters.difficulty !== undefined)}
+            onClick={() => setOpen('difficulty')}
+          >
+            {l.difficultyChip(
+              filters.difficulty
+                ? (messages.editor.difficulties[filters.difficulty - 1] ?? null)
+                : null,
+            )}
+            <ChevronDown aria-hidden="true" size={16} strokeWidth={2} />
+          </button>
+          <button
+            type="button"
+            className={chip(filters.status !== 'active')}
+            onClick={() => setOpen('status')}
+          >
+            {l.statusChip(filters.status)}
+            <ChevronDown aria-hidden="true" size={16} strokeWidth={2} />
+          </button>
+        </div>
 
-      {open === 'topic' && (
-        <Choices
-          title={l.topic}
-          options={[
-            { value: '', label: l.allTopics },
-            ...(topics.data ?? []).map((t) => ({ value: t.id, label: paths.get(t.id) ?? t.name })),
-          ]}
-          value={filters.topicId ?? ''}
-          onChoose={(value) => update('topicId', value)}
-          onClose={() => setOpen(null)}
-        />
+        <div className="flex items-center justify-between gap-space-2 type-body-sm">
+          <span className="text-ink-muted" aria-live="polite">
+            {total === undefined
+              ? ''
+              : topicName !== null
+                ? l.countInTopic(total, topicName)
+                : l.count(total)}
+          </span>
+          <label className="flex items-center gap-space-1 font-semibold">
+            <select
+              aria-label={l.sort}
+              value={filters.sort}
+              onChange={(event) =>
+                update('sort', event.target.value === 'created' ? undefined : event.target.value)
+              }
+              className="min-h-11 rounded-md bg-transparent"
+            >
+              {sorts.map((sort) => (
+                <option key={sort} value={sort}>
+                  {l.sorts[sort]}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+
+        {library.isError && <ErrorNotice error={library.error} />}
+        {library.isPending && (
+          <p role="status" className="text-ink-muted">
+            {messages.loading}
+          </p>
+        )}
+        {library.isSuccess && items.length === 0 && (
+          <p className="py-space-5 text-ink-muted">
+            {filters.status === 'needs_answer' && !filters.q && !filters.type && !filters.difficulty
+              ? l.allAnswered
+              : filtered
+                ? l.noMatches
+                : l.noQuestions}
+          </p>
+        )}
+        {/* The quiz takes the topic only, so the link shows only when the list is that topic. */}
+        {filters.topicId &&
+          filters.status === 'active' &&
+          !filters.q &&
+          !filters.type &&
+          !filters.difficulty &&
+          items.length > 0 && (
+            <Link
+              to={`/quizzes?topicId=${filters.topicId}`}
+              className="flex min-h-11 items-center justify-center rounded-md border-bold border-outline font-semibold"
+            >
+              {messages.quizzes.quizTopic}
+            </Link>
+          )}
+        {filters.status === 'needs_answer' && items.length > 0 && (
+          <ExportDrafts key={filters.topicId ?? 'all'} topicId={filters.topicId} />
+        )}
+        {items.length > 0 && (
+          <ul aria-label={l.results} className="flex flex-col">
+            {items.map((question) => (
+              <Row
+                key={question.id}
+                question={question}
+                to={desktop ? withSelected(params, question.id) : `/questions/${question.id}`}
+                selected={desktop && selectedId === question.id}
+              />
+            ))}
+          </ul>
+        )}
+        {library.hasNextPage && (
+          <button
+            type="button"
+            disabled={library.isFetchingNextPage}
+            onClick={() => void library.fetchNextPage()}
+            className="h-12 rounded-md border-bold border-outline font-semibold disabled:opacity-45"
+          >
+            {l.loadMore}
+          </button>
+        )}
+
+        {open === 'topic' && (
+          <Choices
+            title={l.topic}
+            options={[
+              { value: '', label: l.allTopics },
+              ...(topics.data ?? []).map((t) => ({
+                value: t.id,
+                label: paths.get(t.id) ?? t.name,
+              })),
+            ]}
+            value={filters.topicId ?? ''}
+            onChoose={(value) => update('topicId', value)}
+            onClose={() => setOpen(null)}
+          />
+        )}
+        {open === 'type' && (
+          <Choices
+            title={l.type}
+            options={[
+              { value: '', label: l.anyType },
+              ...types.map((t) => ({ value: t, label: messages.questionTypeNames[t] })),
+            ]}
+            value={filters.type ?? ''}
+            onChoose={(value) => update('type', value)}
+            onClose={() => setOpen(null)}
+          />
+        )}
+        {open === 'difficulty' && (
+          <Choices
+            title={l.difficulty}
+            options={[
+              { value: '', label: l.anyDifficulty },
+              ...messages.editor.difficulties.map((label, i) => ({ value: String(i + 1), label })),
+            ]}
+            value={filters.difficulty ? String(filters.difficulty) : ''}
+            onChoose={(value) => update('difficulty', value)}
+            onClose={() => setOpen(null)}
+          />
+        )}
+        {open === 'status' && (
+          <Choices
+            title={l.status}
+            options={statuses.map((s) => ({ value: s, label: l.statuses[s] }))}
+            value={filters.status}
+            onChoose={(value) => update('status', value === 'active' ? undefined : value)}
+            onClose={() => setOpen(null)}
+          />
+        )}
+      </section>
+      {desktop && (
+        <aside className="sticky top-space-5 max-h-[calc(100dvh-2.5rem)] overflow-y-auto rounded-md border border-line p-space-4">
+          {selectedId ? (
+            <QuestionPanel key={selectedId} id={selectedId} />
+          ) : (
+            <p className="text-ink-muted">{messages.question.pick}</p>
+          )}
+        </aside>
       )}
-      {open === 'type' && (
-        <Choices
-          title={l.type}
-          options={[
-            { value: '', label: l.anyType },
-            ...types.map((t) => ({ value: t, label: messages.questionTypeNames[t] })),
-          ]}
-          value={filters.type ?? ''}
-          onChoose={(value) => update('type', value)}
-          onClose={() => setOpen(null)}
-        />
-      )}
-      {open === 'difficulty' && (
-        <Choices
-          title={l.difficulty}
-          options={[
-            { value: '', label: l.anyDifficulty },
-            ...messages.editor.difficulties.map((label, i) => ({ value: String(i + 1), label })),
-          ]}
-          value={filters.difficulty ? String(filters.difficulty) : ''}
-          onChoose={(value) => update('difficulty', value)}
-          onClose={() => setOpen(null)}
-        />
-      )}
-      {open === 'status' && (
-        <Choices
-          title={l.status}
-          options={statuses.map((s) => ({ value: s, label: l.statuses[s] }))}
-          value={filters.status}
-          onChoose={(value) => update('status', value === 'active' ? undefined : value)}
-          onClose={() => setOpen(null)}
-        />
-      )}
-    </section>
+    </div>
   );
 }
 
-function Row({ question: q }: { question: LibraryItem }) {
+function Row({
+  question: q,
+  to,
+  selected,
+}: {
+  question: LibraryItem;
+  to: string;
+  selected: boolean;
+}) {
   const meta = [q.primaryTopic.name, messages.questionTypeNames[q.type]]
     .filter(Boolean)
     .join(' · ');
   return (
     <li className="border-b border-line">
-      <Link to={`/questions/${q.id}`} className="flex flex-col gap-space-1 py-space-3">
+      <Link
+        to={to}
+        // On desktop a row only changes the selection: no history entry per question viewed.
+        replace={to.startsWith('/library?')}
+        aria-current={selected ? 'true' : undefined}
+        className={`flex flex-col gap-space-1 py-space-3 ${selected ? 'lg:-mx-space-2 lg:rounded-md lg:bg-surface-sunken lg:px-space-2' : ''}`}
+      >
         <span className="line-clamp-2 font-semibold">{plainText(q.promptMd)}</span>
         <span className="flex flex-wrap items-center gap-space-2 type-body-sm text-ink-muted">
           {meta}
@@ -348,4 +425,118 @@ function Choices({
       </div>
     </Sheet>
   );
+}
+
+const toJson = (file: unknown) => JSON.stringify(file, null, 2);
+
+/**
+ * Copies the export. Safari only allows a clipboard write inside the click itself, so where it
+ * exists the write starts at once with the file still loading (ClipboardItem with a promise).
+ */
+function copyExport(file: Promise<unknown>): Promise<void> {
+  if (typeof ClipboardItem !== 'undefined' && navigator.clipboard?.write) {
+    const blob = file.then((f) => new Blob([toJson(f)], { type: 'text/plain' }));
+    // The browser may refuse before reading the item; the caller handles the export's own error.
+    blob.catch(() => undefined);
+    return navigator.clipboard.write([new ClipboardItem({ 'text/plain': blob })]);
+  }
+  return file.then((f) => navigator.clipboard.writeText(toJson(f)));
+}
+
+/** Export of the Needs-answer list (M2): download or copy the import JSON with ids. */
+function ExportDrafts({ topicId }: { topicId: string | undefined }) {
+  const hintId = useId();
+  const [busy, setBusy] = useState<'download' | 'copy' | null>(null);
+  const running = useRef(false);
+  const [done, setDone] = useState<string | null>(null);
+  const [error, setError] = useState<unknown>(null);
+
+  async function run(how: 'download' | 'copy') {
+    // A ref, not the state: two quick clicks before the next render must not start two exports.
+    if (running.current) {
+      return;
+    }
+    running.current = true;
+    setBusy(how);
+    setDone(null);
+    setError(null);
+    const file = exportDrafts(topicId);
+    try {
+      if (how === 'copy') {
+        try {
+          await copyExport(file);
+        } catch (e) {
+          // A failed export is the server's error; anything else is the clipboard refusing.
+          await file;
+          throw new CopyFailed(e);
+        }
+      } else {
+        const url = URL.createObjectURL(
+          new Blob([toJson(await file)], { type: 'application/json' }),
+        );
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = l.exportFileName;
+        link.click();
+        // Safari may cancel a download whose blob URL goes away in the same moment.
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+      }
+      const { questions, remaining } = await file;
+      const parts = [how === 'copy' ? l.copied(questions.length) : l.downloaded(questions.length)];
+      if (remaining > 0) {
+        parts.push(l.exportRemaining(remaining));
+      }
+      setDone(parts.join(' '));
+    } catch (e) {
+      setError(e);
+    } finally {
+      setBusy(null);
+      running.current = false;
+    }
+  }
+
+  const button = 'min-h-11 rounded-md border-bold border-outline px-space-4 font-semibold';
+  return (
+    <section className="flex flex-col gap-space-2 rounded-md bg-surface-sunken p-space-4">
+      <p id={hintId} className="type-body-sm">
+        {l.exportHint(topicId !== undefined)}
+      </p>
+      <div className="flex flex-wrap gap-space-2">
+        <button
+          type="button"
+          aria-disabled={busy !== null}
+          aria-describedby={hintId}
+          onClick={() => void run('download')}
+          className={button}
+        >
+          {busy === 'download' ? l.exporting : l.download}
+        </button>
+        <button
+          type="button"
+          aria-disabled={busy !== null}
+          aria-describedby={hintId}
+          onClick={() => void run('copy')}
+          className={button}
+        >
+          {busy === 'copy' ? l.exporting : l.copy}
+        </button>
+      </div>
+      <p role="status" className="type-body-sm">
+        {done}
+      </p>
+      {error instanceof CopyFailed ? (
+        <p role="alert" className="rounded-md bg-missed-bg px-space-4 py-space-3 text-ink">
+          {l.copyFailed}
+        </p>
+      ) : (
+        error !== null && <ErrorNotice error={error} />
+      )}
+    </section>
+  );
+}
+
+class CopyFailed extends Error {
+  constructor(cause: unknown) {
+    super('Copy failed', { cause });
+  }
 }

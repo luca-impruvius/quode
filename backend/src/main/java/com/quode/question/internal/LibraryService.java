@@ -49,7 +49,8 @@ class LibraryService {
     StringBuilder where = new StringBuilder("q.owner_id = :owner");
 
     switch (query.status()) {
-      case ACTIVE -> where.append(" and q.archived_at is null");
+      case ACTIVE -> where.append(" and q.archived_at is null and q.status = 'ACTIVE'");
+      case NEEDS_ANSWER -> where.append(" and q.archived_at is null and q.status = 'DRAFT'");
       case ARCHIVED -> where.append(" and q.archived_at is not null");
       case FLAGGED -> where.append(" and q.flagged_at is not null and q.archived_at is null");
     }

@@ -128,6 +128,15 @@ class QuestionTopicUsageTests {
   }
 
   @Test
+  void countsSkipDraftsLikeTheLibrarysActiveList() throws Exception {
+    question(collections);
+    String draft = question(collections);
+    jdbc.update("update question set status = 'DRAFT' where id = ?::uuid", draft);
+
+    assertThat(counts()).containsEntry("Collections", 1).containsEntry("Java", 1);
+  }
+
+  @Test
   void aTopicUsedOnlyByAnArchivedQuestionCantBeDeleted() throws Exception {
     String id = question(web);
     mvc.perform(

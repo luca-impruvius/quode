@@ -41,7 +41,16 @@ updates:
         update-types: [minor, patch]
 
   - package-ecosystem: docker-compose
-    directory: /
+    directories: [/, /deploy]
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: chore
+      include: scope
+
+  # Base images of the production Dockerfiles (Temurin, Node, Caddy).
+  - package-ecosystem: docker
+    directories: [/backend, /frontend]
     schedule:
       interval: weekly
     commit-message:

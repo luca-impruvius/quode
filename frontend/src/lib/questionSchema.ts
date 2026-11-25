@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from './zod';
 import type { QuestionInput, QuestionType } from '../api/questions';
 
 // The backend's rules and messages (QuestionRules.java), for instant feedback. The backend checks

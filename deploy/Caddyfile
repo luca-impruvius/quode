@@ -1,0 +1,42 @@
+# Edge proxy and static file server (M0-10, ADR-0041). Mounted into the frontend image by compose.yml.
+# QUODE_DOMAIN is quode.app on the server and localhost for a local run (Caddy's internal CA then).
+
+{$QUODE_DOMAIN} {
+	encode zstd gzip
+
+	# Single origin (ADR-0020): the API keeps its /api prefix (the backend's context path).
+	handle /api/* {
+		reverse_proxy backend:8080
+	}
+
+	# Vite puts a content hash in every asset name, so an asset never changes under the same URL.
+	# A missing one (an old tab after a deploy) is a plain 404, never the app shell.
+	handle /assets/* {
+		root * /srv
+		@found file
+		header @found Cache-Control "public, max-age=31536000, immutable"
+		file_server
+	}
+
+	# Everything else: the app shell, client-side routes and unhashed files. Always revalidated, so
+	# a deploy reaches open tabs. (Headers apply before try_files, so this can't match on the path.)
+	handle {
+		root * /srv
+		header Cache-Control "no-cache"
+		try_files {path} /index.html
+		file_server
+	}
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Permissions-Policy "camera=(), microphone=(), geolocation=()"
+		Content-Security-Policy "default-src 'self'; img-src 'self' data:; style-src 'self'; script-src 'self'; connect-src 'self'; font-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+		-Server
+	}
+}
+
+www.{$QUODE_DOMAIN} {
+	redir https://{$QUODE_DOMAIN}{uri} 308
+}

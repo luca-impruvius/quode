@@ -103,6 +103,8 @@ npm run generate:api   # regenerate src/api/schema.d.ts from src/api/openapi.jso
 
 The Tailwind theme is generated from `design-system/tokens.json` before each of these; never edit `src/styles/theme.generated.css`.
 
+Production stack locally (optional, to test `deploy/` changes): build the images from the repository root with `docker build -f backend/Dockerfile -t local/quode-backend:dev .` and `docker build -f frontend/Dockerfile -t local/quode-frontend:dev .`. Then copy `deploy/` to a scratch folder and add a `.env` with `QUODE_DOMAIN=localhost`, `QUODE_REGISTRY=local`, `QUODE_TAG=dev` and dummy values for the rest. Run `docker compose up -d` there, and `https://localhost` serves the app with a certificate from Caddy's local CA, which browsers warn about. Google sign-in doesn't work there (no matching OAuth client), and if port 5432 is taken, override the postgres port in a `compose.override.yml` with `ports: !override`.
+
 ---
 
 ## 5. How we work
@@ -110,7 +112,7 @@ The Tailwind theme is generated from `design-system/tokens.json` before each of 
 - **Pick work from the board.** Every task is a GitHub issue; its body lists what it depends on, and `review:careful` marks work where the owner reads the whole diff (see `CLAUDE.md`). Assign it to yourself before starting.
 - **Branch** from an up-to-date `main`: `feat/<issue>-short-name`, `fix/…`, `chore/…`, `docs/…`.
 - **Commits and PR titles** follow Conventional Commits, for example `feat(review): …`. Scopes are module names, `frontend`, `infra`, `deps` (`deps-dev` from Dependabot) or `adr`.
-- **Small PRs** (under about 400 lines), using the PR template, with `Closes #<issue>`.
+- **One PR per feature** (up to about 800 lines of code, tests and generated API files excluded; ADR-0044), using the PR template, with `Closes #<issue>`.
 - **Tests first** from the acceptance criteria. CI (`.github/workflows/ci.yml`: backend, frontend, gitleaks, PR title) must be green; the owner reviews, and Claude squash-merges once the owner approves (ADR-0039).
 - **Decisions:** if something in `docs/` stops being true, update it in the same PR or add an ADR.
 - **New dependency?** State its license in the PR. Anything that isn't OSI open source must be discussed first.

@@ -23,13 +23,42 @@ function hostOf(url: string): string {
   }
 }
 
+/** The Library's right-hand panel on desktop: the selected question, with Edit. */
+export function QuestionPanel({ id }: { id: string }) {
+  const question = useQuestion(id);
+  return (
+    <section aria-label={d.panel} className="flex flex-col gap-space-4">
+      {/* Focus stays on the list; this tells screen readers what the panel now shows. */}
+      <p role="status" className="sr-only">
+        {question.isPending
+          ? messages.loading
+          : question.data
+            ? d.showing(question.data.promptMd)
+            : ''}
+      </p>
+      {question.isError && <ErrorNotice error={question.error} />}
+      {question.data && (
+        <>
+          <Link
+            to={`/questions/${question.data.id}/edit`}
+            className="flex min-h-11 items-center self-end rounded-md border-bold border-outline px-space-4 font-semibold"
+          >
+            {d.edit}
+          </Link>
+          <Details question={question.data} />
+        </>
+      )}
+    </section>
+  );
+}
+
 /** One question, read-only, per the QuestionDetail wireframe (no review controls in M1). */
 export function QuestionDetailPage() {
   const { id } = useParams();
   const question = useQuestion(id);
 
   return (
-    <div className="mx-auto flex min-h-dvh max-w-md flex-col">
+    <div className="mx-auto flex min-h-dvh max-w-md flex-col lg:max-w-3xl">
       <header className="flex items-center justify-between border-b border-line px-space-3 py-space-2">
         <Link
           to="/library"
