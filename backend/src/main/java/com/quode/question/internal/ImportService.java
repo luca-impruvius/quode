@@ -1,5 +1,6 @@
 package com.quode.question.internal;
 
+import com.quode.question.QuestionCreated;
 import com.quode.question.internal.ImportInput.ImportItem;
 import com.quode.question.internal.ImportReport.ImportProblem;
 import com.quode.question.internal.QuestionInput.OptionInput;
@@ -16,6 +17,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.regex.Pattern;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -47,10 +49,13 @@ class ImportService {
 
   private final QuestionRepository questions;
   private final TopicPaths topicPaths;
+  private final ApplicationEventPublisher events;
 
-  ImportService(QuestionRepository questions, TopicPaths topicPaths) {
+  ImportService(
+      QuestionRepository questions, TopicPaths topicPaths, ApplicationEventPublisher events) {
     this.questions = questions;
     this.topicPaths = topicPaths;
+    this.events = events;
   }
 
   @Transactional
@@ -68,6 +73,9 @@ class ImportService {
       problem.ifPresent(reason -> run.problems.add(new ImportProblem(position, reason)));
     }
     questions.flush();
+    // After the flush, so the rows exist for the review module's enrolment (a dry run rolls it
+    // back).
+    run.saved.forEach(q -> events.publishEvent(new QuestionCreated(ownerId, q.getId())));
     if (dryRun) {
       TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
     }
@@ -98,6 +106,7 @@ class ImportService {
     private final Set<String> seenPrompts = new HashSet<>();
     private final Map<UUID, Question> toFill = new HashMap<>();
     private final List<ImportProblem> problems = new ArrayList<>();
+    private final List<Question> saved = new ArrayList<>();
     private int created;
     private int filled;
     private int drafts;
@@ -192,7 +201,7 @@ class ImportService {
       } else {
         created++;
       }
-      questions.save(question);
+      saved.add(questions.save(question));
       seenPrompts.add(normalize(item.prompt()));
       return Optional.empty();
     }

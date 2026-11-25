@@ -12,8 +12,10 @@ final class StudyDtos {
   private StudyDtos() {}
 
   /**
-   * Start a quick quiz: from topics (with their sub-topics), or from given questions (Retry
-   * missed). {@code count} null means all; {@code mode} ALL, UNSEEN or MISSED (default ALL).
+   * Start a quick quiz (kind ADHOC or none): from topics (with their sub-topics), or from given
+   * questions (Retry missed). {@code count} null means all; {@code mode} ALL, UNSEEN or MISSED
+   * (default ALL). Or start today's review (kind REVIEW) with {@code extra} NONE (default),
+   * KEEP_GOING or LEARN_MORE and nothing else.
    */
   record StartSession(
       @Schema(types = {"string", "null"}) String kind,
@@ -21,7 +23,8 @@ final class StudyDtos {
       List<UUID> questionIds,
       Integer count,
       @Schema(types = {"string", "null"}) String mode,
-      Boolean shuffle) {}
+      Boolean shuffle,
+      @Schema(types = {"string", "null"}) String extra) {}
 
   /**
    * A question to answer. Choice questions come without their answer (graded by the server);

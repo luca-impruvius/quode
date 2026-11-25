@@ -84,7 +84,7 @@ All under `/api/v1`, signed in, CSRF token on writes, errors as Problem Details.
 
 | Method | Path | Body / query | Success | Errors |
 |---|---|---|---|---|
-| GET | `/review/today` | — | 200 `{due, newWaiting, doneToday, newToday, nextDueAt, sessionId}` (`sessionId` of today's unfinished review, or null) | 401 |
+| GET | `/review/today` | — | 200 `{due, newWaiting, moreDue, moreNew, doneToday, newToday, nextDueAt, sessionId}`: `due` and `newWaiting` are what a review started now would ask, within today's limits ("N to review · M new"); `moreDue` and `moreNew` wait beyond them (Keep going, Learn more); `nextDueAt` is the next due time after today; `sessionId` is today's unfinished review, or null | 401 |
 | POST | `/study/sessions` | `{kind:"REVIEW", extra:"NONE\|KEEP_GOING\|LEARN_MORE"}` | 201 a new session, or 200 today's unfinished one (the quiz session view) | 400 bad body, 409 nothing to review |
 | GET | `/questions/{id}/review` | — | 200 `{enrolled, learnNext, dueAt, isNew}` | 404 unknown or another user's question |
 | PUT | `/questions/{id}/review` | `{enrolled, learnNext}` | 200 as GET | 400, 404 |

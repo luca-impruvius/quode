@@ -297,6 +297,7 @@ class StudyApiTests {
         List.of(
             "{}",
             "{\"kind\":\"REVIEW\",\"topicIds\":[\"" + gcp + "\"]}",
+            "{\"topicIds\":[\"" + gcp + "\"],\"extra\":\"LEARN_MORE\"}",
             "{\"topicIds\":[\"" + gcp + "\"],\"count\":0}",
             "{\"topicIds\":[\"" + gcp + "\"],\"mode\":\"SOMETIMES\"}",
             "{\"topicIds\":[\"" + gcp + "\"],\"questionIds\":[\"" + UUID.randomUUID() + "\"]}")) {
@@ -345,6 +346,13 @@ class StudyApiTests {
     choose(session, "Serverless containers?", "GKE");
     grade(session, "What is IAM?", "GOT_IT").andExpect(status().isConflict());
 
+    // answeredAt is the stored attempt's own time, so the event and the row agree.
+    java.time.Instant answeredAt =
+        jdbc.queryForObject(
+                "select answered_at from attempt where session_id = ?::uuid",
+                java.sql.Timestamp.class,
+                session)
+            .toInstant();
     assertThat(events.stream(AttemptRecorded.class))
         .containsExactly(
             new AttemptRecorded(
@@ -352,7 +360,8 @@ class StudyApiTests {
                 UUID.fromString(session),
                 "ADHOC",
                 question("Serverless containers?"),
-                "WRONG"));
+                "WRONG",
+                answeredAt));
   }
 
   @Test

@@ -5,6 +5,8 @@ import com.quode.question.QuestionCatalog.StudyQuestion;
 import com.quode.shared.ConflictException;
 import com.quode.shared.NotFoundException;
 import com.quode.study.AttemptRecorded;
+import com.quode.study.ReviewQueueSource;
+import com.quode.study.StudySessions;
 import com.quode.study.internal.StudyDtos.AnswerInput;
 import com.quode.study.internal.StudyDtos.AnswerResult;
 import com.quode.study.internal.StudyDtos.CardOption;
@@ -25,6 +27,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.random.RandomGenerator;
@@ -38,8 +41,9 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 /**
- * Quick quizzes (docs/specs/M2-exam-prep-mvp.md): an ADHOC session snapshots its question order,
- * takes one answer per question in that order, and can be resumed. Every method is per owner.
+ * Study sessions: quick quizzes (ADHOC, docs/specs/M2-exam-prep-mvp.md) and daily reviews (REVIEW,
+ * docs/specs/M3-daily-review.md). A session snapshots its question order, takes one answer per
+ * question in that order, and can be resumed. Every method is per owner.
  */
 @Service
 class StudyService {
@@ -58,6 +62,10 @@ class StudyService {
   static final String CHOICE_NEEDS_OPTIONS = "Choose your options; choice questions are graded.";
   static final String UNKNOWN_OPTION = "One of the chosen options isn't part of this question.";
   static final String NEEDS_GRADE = "Grade yourself: GOT_IT, PARTIAL or MISSED.";
+  static final String BAD_REVIEW =
+      "Start a review with extra NONE, KEEP_GOING or LEARN_MORE, and no topics, questions, count,"
+          + " mode or shuffle.";
+  static final String NOTHING_TO_REVIEW = "Nothing to review right now.";
 
   enum Mode {
     ALL,
@@ -65,28 +73,43 @@ class StudyService {
     MISSED
   }
 
+  /** A started session; {@code created} false when today's unfinished review was returned. */
+  record Started(SessionView session, boolean created) {}
+
   private record Session(
       UUID id, String kind, List<UUID> order, int currentIndex, Instant finishedAt) {}
 
   private final NamedParameterJdbcTemplate jdbc;
   private final QuestionCatalog catalog;
   private final ApplicationEventPublisher events;
+  private final ReviewQueueSource reviewQueue;
+  private final StudySessions sessions;
   private final RandomGenerator random;
 
   StudyService(
-      NamedParameterJdbcTemplate jdbc, QuestionCatalog catalog, ApplicationEventPublisher events) {
+      NamedParameterJdbcTemplate jdbc,
+      QuestionCatalog catalog,
+      ApplicationEventPublisher events,
+      ReviewQueueSource reviewQueue,
+      StudySessions sessions) {
     this.jdbc = jdbc;
     this.catalog = catalog;
     this.events = events;
+    this.reviewQueue = reviewQueue;
+    this.sessions = sessions;
     this.random = RandomGenerator.getDefault();
   }
 
   @Transactional
-  SessionView start(UUID ownerId, StartSession input) {
+  Started start(UUID ownerId, StartSession input) {
+    if ("REVIEW".equalsIgnoreCase(input.kind())) {
+      return startReview(ownerId, input);
+    }
     Mode mode = parse(input.mode() == null ? "ALL" : input.mode());
     boolean fromQuestions = input.questionIds() != null && !input.questionIds().isEmpty();
     boolean fromTopics = input.topicIds() != null && !input.topicIds().isEmpty();
     if ((input.kind() != null && !"ADHOC".equalsIgnoreCase(input.kind()))
+        || input.extra() != null
         || mode == null
         || fromQuestions == fromTopics
         || (input.count() != null && (input.count() < 1 || input.count() > MAX_QUESTIONS))
@@ -111,25 +134,67 @@ class StudyService {
     if (order.isEmpty()) {
       throw new ConflictException(NONE_MATCH);
     }
+    return new Started(view(ownerId, find(ownerId, insert(ownerId, "ADHOC", order), false)), true);
+  }
+
+  // Today's unfinished review comes back, whatever extra asks for: finish it first (the spec's
+  // Resume). An unfinished one from an earlier day is left behind.
+  private Started startReview(UUID ownerId, StartSession input) {
+    ReviewQueueSource.Extra extra = parseExtra(input.extra());
+    if (extra == null
+        || (input.topicIds() != null && !input.topicIds().isEmpty())
+        || (input.questionIds() != null && !input.questionIds().isEmpty())
+        || input.count() != null
+        || input.mode() != null
+        || input.shuffle() != null) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, BAD_REVIEW);
+    }
+    // One review start at a time per owner: a double tap must not build two sessions.
+    jdbc.getJdbcTemplate()
+        .query(
+            "select pg_advisory_xact_lock(hashtextextended(?, 0))", rs -> {}, "review:" + ownerId);
+    Optional<UUID> open = sessions.unfinishedReview(ownerId, reviewQueue.startOfToday(ownerId));
+    if (open.isPresent()) {
+      return new Started(view(ownerId, find(ownerId, open.get(), false)), false);
+    }
+    List<UUID> order = reviewQueue.next(ownerId, extra);
+    if (order.isEmpty()) {
+      throw new ConflictException(NOTHING_TO_REVIEW);
+    }
+    return new Started(view(ownerId, find(ownerId, insert(ownerId, "REVIEW", order), false)), true);
+  }
+
+  private static ReviewQueueSource.Extra parseExtra(String extra) {
+    if (extra == null) {
+      return ReviewQueueSource.Extra.NONE;
+    }
+    for (ReviewQueueSource.Extra e : ReviewQueueSource.Extra.values()) {
+      if (e.name().equalsIgnoreCase(extra)) {
+        return e;
+      }
+    }
+    return null;
+  }
+
+  private UUID insert(UUID ownerId, String kind, List<UUID> order) {
     // A real uuid[] (named parameters would expand an array into a list of values).
-    UUID id =
-        jdbc.getJdbcTemplate()
-            .execute(
-                (ConnectionCallback<UUID>)
-                    con -> {
-                      try (PreparedStatement ps =
-                          con.prepareStatement(
-                              "insert into study_session (owner_id, kind, question_order)"
-                                  + " values (?, 'ADHOC', ?) returning id")) {
-                        ps.setObject(1, ownerId);
-                        ps.setArray(2, con.createArrayOf("uuid", order.toArray()));
-                        try (ResultSet rs = ps.executeQuery()) {
-                          rs.next();
-                          return rs.getObject(1, UUID.class);
-                        }
-                      }
-                    });
-    return view(ownerId, find(ownerId, id, false));
+    return jdbc.getJdbcTemplate()
+        .execute(
+            (ConnectionCallback<UUID>)
+                con -> {
+                  try (PreparedStatement ps =
+                      con.prepareStatement(
+                          "insert into study_session (owner_id, kind, question_order)"
+                              + " values (?, ?, ?) returning id")) {
+                    ps.setObject(1, ownerId);
+                    ps.setString(2, kind);
+                    ps.setArray(3, con.createArrayOf("uuid", order.toArray()));
+                    try (ResultSet rs = ps.executeQuery()) {
+                      rs.next();
+                      return rs.getObject(1, UUID.class);
+                    }
+                  }
+                });
   }
 
   @Transactional(readOnly = true)
@@ -154,20 +219,24 @@ class StudyService {
       throw new NotFoundException(NOT_FOUND);
     }
     Graded graded = grade(question, input);
-    jdbc.update(
-        "insert into attempt (session_id, owner_id, question_id, outcome, given_answer, graded_by)"
-            + " values (:session, :owner, :question, :outcome, :given, :by)",
-        new MapSqlParameterSource("session", id)
-            .addValue("owner", ownerId)
-            .addValue("question", question.id())
-            .addValue("outcome", graded.outcome())
-            .addValue("given", graded.given())
-            .addValue("by", graded.by()));
+    Timestamp answeredAt =
+        jdbc.queryForObject(
+            "insert into attempt (session_id, owner_id, question_id, outcome, given_answer,"
+                + " graded_by) values (:session, :owner, :question, :outcome, :given, :by)"
+                + " returning answered_at",
+            new MapSqlParameterSource("session", id)
+                .addValue("owner", ownerId)
+                .addValue("question", question.id())
+                .addValue("outcome", graded.outcome())
+                .addValue("given", graded.given())
+                .addValue("by", graded.by()),
+            Timestamp.class);
     jdbc.update(
         "update study_session set current_index = current_index + 1 where id = :id",
         new MapSqlParameterSource("id", id));
     events.publishEvent(
-        new AttemptRecorded(ownerId, id, session.kind(), question.id(), graded.outcome()));
+        new AttemptRecorded(
+            ownerId, id, session.kind(), question.id(), graded.outcome(), answeredAt.toInstant()));
     List<UUID> correct =
         question.options().stream()
             .filter(StudyQuestion.Option::correct)
