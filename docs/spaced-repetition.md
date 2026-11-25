@@ -1,6 +1,6 @@
 # Spaced repetition
 
-Living document. Proposed algorithm, validated during M2.
+Living document. Implemented in M3 ([spec](specs/M3-daily-review.md)).
 
 ## Why it's in the MVP
 
@@ -18,6 +18,7 @@ Defaults for a new question: ease 2.5, interval 0, reps 0, lapses 0.
 | Partial | unchanged | max(1, interval × 1.2) | −0.15 | unchanged |
 | Got it | +1 | 1st: 1 day · 2nd: 3 days · then interval × ease | +0.05 | unchanged |
 
+- The ease changes first; "interval × ease" uses the new, clamped ease.
 - Ease clamped to [1.3, 3.0]. Intervals rounded to whole days.
 - `due_at` = start of (today + interval) in the user's time zone, stored in UTC.
 - Later option: ±5% random fuzz so questions added together don't stay clumped.

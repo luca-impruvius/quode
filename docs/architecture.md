@@ -79,10 +79,10 @@ Each module is a top-level package. Its root package holds the public API (servi
 | `taxonomy` | topic tree, descendant queries | user |
 | `question` | question, answer_option, question_topic | taxonomy, user |
 | `quiz` | quiz, quiz_question, filter evaluation | question |
-| `study` | study_session, attempt, grading | question (`QuestionCatalog`), user; later quiz and review (queue only) |
-| `review` | review_state, scheduler, daily queue | question; listens to `AttemptRecorded` |
+| `study` | study_session, attempt, grading; declares the `ReviewQueueSource` port | question (`QuestionCatalog`), user; later quiz |
+| `review` | review_state, scheduler, daily queue, study limits | study (implements `ReviewQueueSource`, listens to `AttemptRecorded`), question (`QuestionCatalog`, listens to `QuestionCreated`), user |
 
-`study` publishes `AttemptRecorded`; `review` applies the asymmetric quiz rule (ADR-0012). Modulith's event publication registry keeps the event if the listener fails.
+`study` publishes `AttemptRecorded`; `review` applies the asymmetric quiz rule (ADR-0012). Dependencies run one way (`review` → `study`, never back), so `study` reaches the queue through the `ReviewQueueSource` port that `review` implements. Listeners are synchronous, in the publisher's transaction (M3): a failing listener rolls the answer back rather than losing it. There is no event publication registry yet.
 
 ## 7. Server baseline
 

@@ -31,16 +31,16 @@ Rejected: strict hierarchy only (one-home paralysis), free tags only (duplicates
 
 | Entity | Purpose | Key fields |
 |---|---|---|
-| `app_user` | Owner of everything; created on the first allowed Google login (no seed row) | id (UUIDv7), email (lowercased, unique ignoring case), display_name, google_sub, time_zone (default Europe/Bucharest), created_at, updated_at |
+| `app_user` | Owner of everything; created on the first allowed Google login (no seed row) | id (UUIDv7), email (lowercased, unique ignoring case), display_name, google_sub, time_zone (default Europe/Bucharest), new_per_day (default 5), reviews_per_day (default 30), created_at, updated_at |
 | `topic` | Node in the topic tree | id, owner_id, parent_id, name (trimmed, 1–60 characters, unique among siblings ignoring case) |
-| `question` | A unit of knowledge | id, owner_id, type, prompt_md, answer_md, explanation_md, difficulty, status, source_url, primary_topic_id, flagged_at, flag_note, archived_at, version, created_at, updated_at; `learn_next` comes with the review milestone ([spec](specs/M1-questions.md)) |
+| `question` | A unit of knowledge | id, owner_id, type, prompt_md, answer_md, explanation_md, difficulty, status, source_url, primary_topic_id, flagged_at, flag_note, archived_at, version, created_at, updated_at |
 | `answer_option` | Choices for choice questions | id, question_id, text_md, is_correct, position |
 | `question_topic` | Many-to-many link | question_id, topic_id, owner_id (the primary topic is `question.primary_topic_id`, which must be one of these) |
 | `quiz` | Fixed list or saved filter | id, owner_id, name, description, kind (FIXED / DYNAMIC), filter_json, created_at |
 | `quiz_question` | Questions in a fixed quiz | quiz_id, question_id, position |
 | `study_session` | One run of a review or quiz | id, owner_id, kind (REVIEW / QUIZ / ADHOC), question_order, current_index, started_at, finished_at; `quiz_id` comes with saved quizzes (additive) |
 | `attempt` | One answer to one question | id, session_id, owner_id, question_id, outcome (CORRECT / PARTIAL / WRONG), given_answer, graded_by (SELF / AUTO / AI), answered_at |
-| `review_state` | Spaced-repetition schedule per user + question | owner_id, question_id, due_at, interval_days, ease, reps, lapses, last_reviewed_at |
+| `review_state` | Spaced-repetition schedule per user + question ([M3](specs/M3-daily-review.md)) | owner_id, question_id (key), enrolled_at, introduced_at, last_reviewed_at, due_at (null while new), interval_days, ease, reps, lapses, learn_next |
 
 Question types: `FLASHCARD` (self-graded), `SINGLE_CHOICE` (auto), `MULTIPLE_CHOICE` (auto, all-or-nothing), `OPEN_TEXT` (self-graded; AI in Phase 2). Status: `DRAFT` or `ACTIVE`.
 
