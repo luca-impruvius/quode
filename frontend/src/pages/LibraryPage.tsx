@@ -227,6 +227,20 @@ export function LibraryPage() {
               : l.noQuestions}
         </p>
       )}
+      {/* The quiz takes the topic only, so the link shows only when the list is that topic. */}
+      {filters.topicId &&
+        filters.status === 'active' &&
+        !filters.q &&
+        !filters.type &&
+        !filters.difficulty &&
+        items.length > 0 && (
+          <Link
+            to={`/quizzes?topicId=${filters.topicId}`}
+            className="flex min-h-11 items-center justify-center rounded-md border-bold border-outline font-semibold"
+          >
+            {messages.quizzes.quizTopic}
+          </Link>
+        )}
       {filters.status === 'needs_answer' && items.length > 0 && (
         <ExportDrafts key={filters.topicId ?? 'all'} topicId={filters.topicId} />
       )}

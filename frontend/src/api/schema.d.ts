@@ -364,6 +364,7 @@ export interface components {
             answered: number;
             /** Format: int32 */
             correct: number;
+            missed: components["schemas"]["MissedQuestion"][];
             missedQuestionIds: string[];
             /** Format: int32 */
             partial: number;
@@ -446,6 +447,11 @@ export interface components {
             email: string;
             name: string;
             timeZone: string;
+        };
+        MissedQuestion: {
+            /** Format: uuid */
+            id: string;
+            promptMd: string;
         };
         MoveTopic: {
             /** Format: uuid */
