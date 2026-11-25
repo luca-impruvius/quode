@@ -2,7 +2,7 @@
 
 - **Status:** Accepted (Luca, 2026-11-25, in the working session: "forget about review careful the project old idea was to do a co-work with AI, right now is mostly claude only")
 - **Date:** 2026-11-25
-- **Supersedes:** the `review:careful` rules of ADR-0038 and ADR-0043
+- **Supersedes:** the `review:careful` rules of ADR-0038 and ADR-0043, and the remaining approval step of ADR-0039
 
 ## Context
 
@@ -27,5 +27,5 @@ The `review:careful` label came from the original plan of working side by side w
 
 ## Consequences
 
-- Infrastructure, CI and backup work lands like any other PR once checks pass; the reviewer agent and CI are the only code review.
-- Work that needs the server, for example setting up backups (#13), still pauses at the step that touches it, not at the merge.
+- Authentication, security, infrastructure, CI and backup work lands like any other PR once checks pass; the reviewer agent and CI are the only code review.
+- `/next-task` skips work that needs the server, for example setting up backups (#13). When Luca asks for it, the repository part merges like any other PR and the server step waits for his yes.

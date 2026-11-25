@@ -43,7 +43,7 @@ Tell Luca: the PR link, what to look at first, which candidates were skipped and
 ## 7. Merge (when checks pass, ADR-0043 and ADR-0045)
 No per-PR approval is needed. Several PRs: one at a time, in dependency order.
 1. Bring the branch up to date with `main` (`git merge origin/main`), resolve conflicts, rerun the full build, commit and push. If resolving conflicts changes behaviour beyond the two sides combined, run the `reviewer` agent again.
-2. Check: required CI green once CI exists; no open Blocking or Should-fix item.
+2. Check: required CI green; no open Blocking or Should-fix item.
 3. `gh pr merge <n> --squash --delete-branch --match-head-commit <sha you pushed>`. Never `--admin` or `--auto`.
 4. `git switch main && git pull --ff-only origin main`, run the full build, confirm the issue is closed as completed and the card is Done (set it if not).
 5. Report each merge commit and the build result.

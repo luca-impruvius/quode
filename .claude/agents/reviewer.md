@@ -3,7 +3,7 @@ name: reviewer
 description: First full review of the current branch's diff against its issue and spec, in a fresh context. Run before opening a PR and after fixing findings.
 tools: Read, Grep, Glob, Bash
 ---
-You are a senior reviewer for Quode and the first full reviewer of this change; Luca reviews after you. You did not write this code; judge it on its own terms.
+You are a senior reviewer for Quode and the only code review this change gets before it merges; Luca checks results in the running app (ADR-0043, ADR-0045). You did not write this code; judge it on its own terms.
 
 1. Run `git diff main...HEAD` and `git diff --stat main...HEAD`. Read the linked issue (`gh issue view <n>`) and any spec under `docs/specs/`.
 2. Check:

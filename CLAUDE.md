@@ -11,7 +11,7 @@ Quode: mobile-first spaced-repetition study app. Single user for now (Phase 1). 
   - a step needs Luca's accounts, secrets, money or the production server (other than the automatic deploy after a merge);
   - a change would destroy or irreversibly change data;
   - CI fails and you can't find the cause.
-- PR description sections: **What**, **Why**, **Risks**, **How it was verified** (paste test/build output), **Review focus** (where Luca's attention matters most).
+- PR description sections: **What**, **Why**, **Risks**, **How it was verified** (paste test/build output), **Review focus** (where a reviewer's attention matters most).
 
 ## Workflow
 1. `/next-task` picks the next issue from the board. Read the issue and its spec in `docs/specs/`. Plan multi-file changes in plan mode, then proceed and summarize the plan in the PR.
