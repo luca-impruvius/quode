@@ -22,8 +22,8 @@ Board: GitHub Project 3 (`--owner luca-impruvius`), repo `luca-impruvius/quode`.
 
 ## 3. Implement
 1. Read the issue, its spec in `docs/specs/` and only the docs it needs. If something is ambiguous or needs a new decision, stop and ask (propose an ADR for decisions).
-2. Plan multi-file changes in plan mode. On `review:careful` issues, wait for Luca's approval of the plan; otherwise proceed and summarize the plan in the PR.
-3. Tests first from the acceptance criteria, then the code. `review:careful` issues: the smallest possible diff.
+2. Plan multi-file changes in plan mode, then proceed and summarize the plan in the PR.
+3. Tests first from the acceptance criteria, then the code.
 4. Full build, with paths from the repo root: `cd backend && ./gradlew build`; when `frontend/` changed, run `npm run lint`, `npm test` and `npm run build` from `frontend/`. Fix failures; never skip or disable tests.
 5. Update living docs, `docs/onboarding.md` and ADRs as the change requires.
 
@@ -40,9 +40,9 @@ Board: GitHub Project 3 (`--owner luca-impruvius`), repo `luca-impruvius/quode`.
 ## 6. Report
 Tell Luca: the PR link, what to look at first, which candidates were skipped and exactly what each needs from him, and which issue comes next.
 
-## 7. Merge (only after Luca approves)
-Luca's approval names the PR or clearly covers it ("merge #21"). A broad approval ("you can merge the PRs") covers only PRs Luca has reviewed that are open when he gives it; if it doesn't name the numbers, list them back and wait for his confirmation before the first merge. Several PRs: one at a time, in dependency order.
-1. Bring the branch up to date with `main` (`git merge origin/main`), resolve conflicts, rerun the full build, commit and push. If resolving conflicts changes behaviour beyond the two sides combined, stop and ask Luca to approve again.
+## 7. Merge (when checks pass, ADR-0043 and ADR-0045)
+No per-PR approval is needed. Several PRs: one at a time, in dependency order.
+1. Bring the branch up to date with `main` (`git merge origin/main`), resolve conflicts, rerun the full build, commit and push. If resolving conflicts changes behaviour beyond the two sides combined, run the `reviewer` agent again.
 2. Check: required CI green once CI exists; no open Blocking or Should-fix item.
 3. `gh pr merge <n> --squash --delete-branch --match-head-commit <sha you pushed>`. Never `--admin` or `--auto`.
 4. `git switch main && git pull --ff-only origin main`, run the full build, confirm the issue is closed as completed and the card is Done (set it if not).

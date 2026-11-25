@@ -163,4 +163,4 @@ About two days. M3-01 first, then M3-02 and M3-03 (both need M3-01's API).
 - **Frontend tests:** Today states, the review flow, settings, the question controls.
 
 ## Open points for Luca
-- **Backups (#13, deferred):** your real questions and your review history would then live only on the server. Backups should run before you rely on the schedule. I suggest doing #13 right after M3-01, before your real import. It's `review:careful` and needs your yes.
+- **Backups (#13, deferred):** your real questions and your review history would then live only on the server. Backups should run before you rely on the schedule. I suggest doing #13 right after M3-01, before your real import. Setting it up touches the production server, so that step needs your yes (ADR-0045).
