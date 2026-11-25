@@ -41,13 +41,14 @@ One file per decision. Accepted ADRs are never edited; a changed decision gets a
 | [0035](0035-design-system-first-hi-fi-screens-just-in-time.md) | Design system first, hi-fi screens just in time | Accepted |
 | [0036](0036-backups-on-cloudflare-r2.md) | Backups on Cloudflare R2 | Accepted |
 | [0037](0037-flyway-community-instead-of-liquibase.md) | Flyway Community instead of Liquibase | Accepted |
-| [0038](0038-ai-implements-owner-reviews.md) | AI implements, owner reviews | Partially superseded by ADR-0039 |
-| [0039](0039-claude-merges-approved-prs.md) | Claude merges approved PRs | Partially superseded by ADR-0043 |
+| [0038](0038-ai-implements-owner-reviews.md) | AI implements, owner reviews | Partially superseded by ADR-0039, ADR-0043 and ADR-0045 |
+| [0039](0039-claude-merges-approved-prs.md) | Claude merges approved PRs | Partially superseded by ADR-0043 and ADR-0045 (approval step) |
 | [0040](0040-freakhosting-vps-and-the-quode-app-domain.md) | FreakHosting VPS in Frankfurt and the quode.app domain | Accepted |
 | [0041](0041-production-container-layout.md) | Production container layout | Accepted |
-| [0042](0042-continuous-deployment-over-ssh.md) | Continuous deployment over SSH with a forced-command key | Accepted |
-| [0043](0043-owner-checks-results-claude-merges-when-checks-pass.md) | Owner checks results; Claude merges when checks pass | Accepted |
+| [0042](0042-continuous-deployment-over-ssh.md) | Continuous deployment over SSH with a forced-command key | Accepted; merge approval per ADR-0043 and ADR-0045 |
+| [0043](0043-owner-checks-results-claude-merges-when-checks-pass.md) | Owner checks results; Claude merges when checks pass | Accepted; `review:careful` rules superseded by ADR-0045 |
 | [0044](0044-one-pr-per-feature.md) | One PR per feature | Accepted |
+| [0045](0045-no-review-careful-tier.md) | No review:careful tier | Accepted |
 
 ## Template
 

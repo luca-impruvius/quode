@@ -40,7 +40,7 @@ Start at [docs/README.md](docs/README.md). Every non-obvious decision is recorde
 
 ## How this project is built
 
-Implemented by Claude Code under explicit rules: the owner approves each milestone plan, every change goes through a pull request with tests, an automated review and the owner's review, and Claude merges only after the owner approves (ADR-0039). See [docs/conventions.md](docs/conventions.md).
+Implemented by Claude Code under explicit rules: the owner approves each milestone plan and checks the results in the running app; every change goes through a pull request with tests, CI and an automated review, and Claude merges when they pass (ADR-0043, ADR-0045). See [docs/conventions.md](docs/conventions.md).
 
 ## License
 

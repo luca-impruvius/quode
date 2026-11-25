@@ -9,16 +9,6 @@ body:
       description: What this task achieves, in one or two sentences.
     validations:
       required: true
-  - type: dropdown
-    id: review
-    attributes:
-      label: Review
-      description: Careful for security, data, CI, infrastructure or backups; also add the review:careful label.
-      options:
-        - Standard
-        - Careful (owner reads the whole diff)
-    validations:
-      required: true
   - type: textarea
     id: criteria
     attributes:
