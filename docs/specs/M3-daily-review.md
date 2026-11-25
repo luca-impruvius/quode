@@ -55,7 +55,7 @@ Domain rules 3, 5, 6, 7 and 8 already describe this ([domain.md](../domain.md) Â
   - due reviews first, most overdue first, up to what's left of the review limit (default 30) after today's reviews;
   - then new questions, "Learn next" ones first and then by enrolment time (oldest first), up to what's left of the new limit (default 5) after today's introductions;
   - new questions are mixed into the session.
-- **Counting today:** "reviews done today" counts states with `last_reviewed_at` today, and "new today" counts states with `introduced_at` today. Both are set only by review answers, never by quizzes. So a second session the same day doesn't hand out 5 more, and quiz practice doesn't use up the review limit. A changed limit applies to today's remaining count at once. After Learn more, "new today" can pass the limit; the remaining count then shows 0, never a negative number.
+- **Counting today:** "new today" counts states with `introduced_at` today. "Reviews done today" counts states with `last_reviewed_at` today that were introduced before today (`introduced_at` before today), so a question introduced today counts only as new, even if answered again in Keep going (two budgets, ADR-0011). Both are set only by review answers, never by quizzes. So a second session the same day doesn't hand out 5 more, and quiz practice doesn't use up the review limit. A changed limit applies to today's remaining count at once. After Learn more, "new today" can pass the limit; the remaining count then shows 0, never a negative number.
 - **Backlog protection:** while more than twice the review limit is waiting, no new questions are added (ADR-0011).
 - **Resume:** the queue is snapshotted into a `study_session` of kind `REVIEW`, the same mechanism as the quiz, so it resumes where it was (ADR-0002, rule 8).
   - Starting a review while one from today is unfinished returns that one, whatever `extra` asks for: finish it first, then Keep going or Learn more.
@@ -102,7 +102,7 @@ The existing answer, get and finish endpoints serve review sessions unchanged. T
 
     The key is `(owner_id, question_id)`, a composite key like `question_topic` has, rather than a UUID (ADR-0006). It has a partial index on `(owner_id, due_at) where due_at is not null`.
   - a backfill that enrols every existing question as new, with `enrolled_at` set to the question's `created_at`;
-  - `app_user.new_per_day` (default 5) and `app_user.reviews_per_day` (default 30), with check constraints for the bounds above.
+  - `app_user.new_per_day` (default 5) and `app_user.reviews_per_day` (default 30), with check constraints for the bounds above. A comment in the migration says these columns belong to `user` (`StudyLimits`).
 - `learn_next` lives on `review_state` (it's about scheduling), not on `question` as domain.md first sketched. domain.md is updated with this spec.
 - `AttemptRecorded` gains `Instant answeredAt` (additive).
 
@@ -152,7 +152,7 @@ About two days. M3-01 first, then M3-02 and M3-03 (both need M3-01's API).
 - **Unit tests:** the scheduler for every grade and edge (ease bounds, the first and second Got it, rounding, the ease-then-interval order), and day boundaries in Europe/Bucharest across midnight and daylight-saving changes.
 - **API tests:**
   - the "due" boundary: `due_at` at the start of tomorrow is not due today;
-  - the queue: order, limits counted across sessions in one day, quiz answers not counting toward them, backlog protection, Learn next first, drafts and archived left out, Keep going and Learn more, nothing to review (409), returning today's unfinished session, leaving yesterday's behind;
+  - the queue: order, limits counted across sessions in one day, quiz answers not counting toward them, a question introduced today counting only as new, backlog protection, Learn next first, drafts and archived left out, Keep going and Learn more, nothing to review (409), returning today's unfinished session, leaving yesterday's behind;
   - enrolment on create and import, and the backfill;
   - the quiz rule (ADR-0012), including new questions staying new;
   - an answer after Remove from review changing nothing;
