@@ -7,6 +7,7 @@ import { useMe } from '../app/useMe';
 import { applyTheme, readTheme, saveTheme, type Theme } from '../app/theme';
 import { ErrorNotice } from '../components/ErrorNotice';
 import { messages } from '../messages';
+import { DailyLimits } from './DailyLimits';
 
 const themes: { value: Theme; label: string }[] = [
   { value: 'system', label: messages.me.themeSystem },
@@ -78,6 +79,7 @@ export function MePage() {
             ))}
           </div>
         </div>
+        <DailyLimits />
         <Link to="/library?status=archived" className={row}>
           <span>{messages.me.archived}</span>
           <ChevronRight aria-hidden="true" size={20} strokeWidth={2} />

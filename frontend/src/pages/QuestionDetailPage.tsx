@@ -8,7 +8,10 @@ import {
   useRefreshOnConflict,
   type QuestionView,
 } from '../api/questions';
+import { useQuestionReview, useSaveQuestionReview, type QuestionReview } from '../api/review';
+import { useMe } from '../app/useMe';
 import { ErrorNotice } from '../components/ErrorNotice';
+import { daysFromToday } from '../lib/days';
 import { Markdown } from '../components/Markdown';
 import { Sheet } from '../components/Sheet';
 import { messages } from '../messages';
@@ -52,7 +55,7 @@ export function QuestionPanel({ id }: { id: string }) {
   );
 }
 
-/** One question, read-only, per the QuestionDetail wireframe (no review controls in M1). */
+/** One question, read-only, per the QuestionDetail wireframe, with its review controls (M3). */
 export function QuestionDetailPage() {
   const { id } = useParams();
   const question = useQuestion(id);
@@ -211,7 +214,10 @@ function Details({ question: q }: { question: QuestionView }) {
         <Fact label={d.type} value={messages.questionTypeNames[q.type]} />
         <Fact label={d.difficulty} value={d.difficultyValue(q.difficulty)} />
         <Fact label={d.status} value={archived ? d.archived : d.active} />
+        <NextReview id={q.id} />
       </dl>
+
+      <ReviewControls id={q.id} />
 
       {q.sourceUrl && (
         <p className="type-body-sm">
@@ -309,9 +315,85 @@ function FlagSheet({ question: q, onClose }: { question: QuestionView; onClose: 
   );
 }
 
-function Fact({ label, value }: { label: string; value: string }) {
+/** "Next review: in 3 days", "New", or "Not in review", under Status. */
+function NextReview({ id }: { id: string }) {
+  const review = useQuestionReview(id);
+  const me = useMe();
   return (
-    <div className="rounded-md bg-surface-sunken p-space-3">
+    <Fact
+      label={d.nextReview}
+      value={review.data ? nextReviewText(review.data, me.data?.timeZone) : '…'}
+      wide
+    />
+  );
+}
+
+function nextReviewText(review: QuestionReview, timeZone: string | undefined): string {
+  if (!review.enrolled) {
+    return d.notInReview;
+  }
+  if (review.isNew || review.dueAt === null) {
+    return d.isNew;
+  }
+  return d.nextReviewIn(daysFromToday(review.dueAt, timeZone));
+}
+
+/** Learn next (new questions only) and Remove from review / Add to review. */
+function ReviewControls({ id }: { id: string }) {
+  const review = useQuestionReview(id);
+  const save = useSaveQuestionReview(id);
+  const r = review.data;
+
+  return (
+    <section aria-label={d.review} className="flex flex-col gap-space-3">
+      {review.isError && <ErrorNotice error={review.error} />}
+      {r?.enrolled && r.isNew && (
+        <div className="flex min-h-13 items-center justify-between gap-space-3">
+          <div className="flex flex-col">
+            <span id={`${id}-learn-next`} className="font-semibold">
+              {d.learnNext}
+            </span>
+            <span id={`${id}-learn-next-hint`} className="type-body-sm text-ink-muted">
+              {d.learnNextHint}
+            </span>
+          </div>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={r.learnNext}
+            aria-labelledby={`${id}-learn-next`}
+            aria-describedby={`${id}-learn-next-hint`}
+            disabled={save.isPending}
+            onClick={() => save.mutate({ enrolled: true, learnNext: !r.learnNext })}
+            className="relative h-8 w-14 shrink-0 rounded-pill border-bold border-outline bg-surface-sunken transition-colors aria-checked:bg-accent disabled:opacity-45"
+          >
+            <span
+              aria-hidden="true"
+              className={`absolute top-1/2 size-5 -translate-y-1/2 rounded-pill border-bold border-outline bg-surface transition-[left] ${
+                r.learnNext ? 'left-7' : 'left-1'
+              }`}
+            />
+          </button>
+        </div>
+      )}
+      {save.isError && <ErrorNotice error={save.error} />}
+      {r && (
+        <button
+          type="button"
+          disabled={save.isPending}
+          onClick={() => save.mutate({ enrolled: !r.enrolled, learnNext: false })}
+          className="h-12 rounded-md border-bold border-outline font-semibold disabled:opacity-45"
+        >
+          {r.enrolled ? d.removeFromReview : d.addToReview}
+        </button>
+      )}
+    </section>
+  );
+}
+
+function Fact({ label, value, wide = false }: { label: string; value: string; wide?: boolean }) {
+  return (
+    <div className={`rounded-md bg-surface-sunken p-space-3 ${wide ? 'col-span-3' : ''}`}>
       <dt className="text-ink-muted">{label}</dt>
       <dd className="font-semibold">{value}</dd>
     </div>

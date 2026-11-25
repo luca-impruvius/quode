@@ -55,6 +55,111 @@ afterEach(() => {
   localStorage.clear();
 });
 
+const enrolledReview = { enrolled: true, learnNext: false, dueAt: null, isNew: true };
+const removedReview = { enrolled: false, learnNext: false, dueAt: null, isNew: false };
+
+const finishedWithMissed = {
+  total: 3,
+  answered: 3,
+  correct: 0,
+  partial: 1,
+  wrong: 2,
+  missedQuestionIds: ['q1', 'q2', 'q3'],
+  missed: [
+    { id: 'q1', promptMd: 'Which runs containers serverless?' },
+    { id: 'q2', promptMd: 'What is IAM?' },
+    { id: 'q3', promptMd: 'What is a VPC?' },
+  ],
+};
+
+describe('Quiz results: Add missed to review', () => {
+  it('adds only the missed questions that are out of review', async () => {
+    const enrolled: Record<string, boolean> = { q1: true, q2: false, q3: false };
+    const fetchMock = mockApi({
+      '/api/me': me(),
+      '/api/v1/study/sessions/s1': json(view({ total: 3, answered: 3, current: null })),
+      'POST /api/v1/study/sessions/s1/finish': json(finishedWithMissed),
+      ...Object.fromEntries(
+        ['q1', 'q2', 'q3'].flatMap((id) => [
+          [
+            `/api/v1/questions/${id}/review`,
+            () => Response.json(enrolled[id] ? enrolledReview : removedReview),
+          ],
+          [
+            `PUT /api/v1/questions/${id}/review`,
+            () => {
+              enrolled[id] = true;
+              return Response.json(enrolledReview);
+            },
+          ],
+        ]),
+      ),
+      '/api/v1/review/today': json({}),
+    });
+    const user = userEvent.setup();
+    renderAt('/quiz/s1');
+
+    await user.click(await screen.findByRole('button', { name: m.addMissed(2) }));
+
+    expect(await screen.findByText(m.addedMissed(2))).toBeInTheDocument();
+    const puts = fetchMock.mock.calls
+      .filter(([, init]) => init?.method === 'PUT')
+      .map(([url, init]) => [String(url), JSON.parse(String(init?.body)) as unknown]);
+    expect(puts).toEqual(
+      expect.arrayContaining([
+        ['/api/v1/questions/q2/review', { enrolled: true, learnNext: false }],
+        ['/api/v1/questions/q3/review', { enrolled: true, learnNext: false }],
+      ]),
+    );
+    expect(puts).toHaveLength(2);
+    expect(screen.queryByRole('button', { name: /to review/ })).not.toBeInTheDocument();
+  });
+
+  it('offers nothing when every missed question is in review', async () => {
+    const fetchMock = mockApi({
+      '/api/me': me(),
+      '/api/v1/study/sessions/s1': json(view({ total: 3, answered: 3, current: null })),
+      'POST /api/v1/study/sessions/s1/finish': json(finishedWithMissed),
+      '/api/v1/questions/q1/review': json(enrolledReview),
+      '/api/v1/questions/q2/review': json(enrolledReview),
+      '/api/v1/questions/q3/review': json(enrolledReview),
+    });
+    renderAt('/quiz/s1');
+
+    expect(await screen.findByRole('button', { name: m.retryMissed(3) })).toBeInTheDocument();
+    await waitFor(() =>
+      expect(fetchMock.mock.calls.filter(([url]) => String(url).endsWith('/review'))).toHaveLength(
+        3,
+      ),
+    );
+    // Let the answers land before checking that the button stays away.
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(screen.queryByRole('button', { name: /to review/ })).not.toBeInTheDocument();
+  });
+
+  it('shows the reference when adding fails, and stays usable', async () => {
+    mockApi({
+      '/api/me': me(),
+      '/api/v1/study/sessions/s1': json(view({ total: 3, answered: 3, current: null })),
+      'POST /api/v1/study/sessions/s1/finish': json(finishedWithMissed),
+      '/api/v1/questions/q1/review': json(removedReview),
+      '/api/v1/questions/q2/review': json(enrolledReview),
+      '/api/v1/questions/q3/review': json(enrolledReview),
+      'PUT /api/v1/questions/q1/review': json(
+        { status: 500, traceId: 'abcdef0123456789abcdef0123456789' },
+        500,
+      ),
+    });
+    const user = userEvent.setup();
+    renderAt('/quiz/s1');
+
+    await user.click(await screen.findByRole('button', { name: m.addMissed(1) }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(messages.errors.reference('abcdef'));
+    expect(screen.getByRole('button', { name: m.addMissed(1) })).toBeInTheDocument();
+  });
+});
+
 describe('Quiz', () => {
   it('grades a choice at once, shows the right answer, then reveals and self-grades a card', async () => {
     const fetchMock = mockApi({
@@ -193,6 +298,7 @@ describe('Quiz', () => {
         missedQuestionIds: ['q2'],
         missed: [{ id: 'q2', promptMd: 'What is IAM?' }],
       }),
+      '/api/v1/questions/q2/review': json(enrolledReview),
       'POST /api/v1/study/sessions': json(view({ id: 's2', total: 1, current: card }), 201),
       '/api/v1/study/sessions/s2': json(view({ id: 's2', total: 1, current: card })),
     });
