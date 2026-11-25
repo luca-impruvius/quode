@@ -1,17 +1,17 @@
 ---
 name: next-task
-description: Take the next unblocked issue from the Quode board and carry it to an open PR (assign, branch, tests first, build, reviewer agent, PR, card to In review). Step 7, the merge, runs only on a later message where Luca approves the PR. Use when Luca says "run /next-task" or asks for the next task.
+description: Take the next unblocked issue from the Quode board and carry it to a merged PR (assign, branch, tests first, build, reviewer agent, PR, card to In review, merge when checks pass per ADR-0043 and ADR-0045). Use when Luca says "run /next-task" or asks for the next task.
 ---
 # Next task
 
-Board: GitHub Project 3 (`--owner luca-impruvius`), repo `luca-impruvius/quode`. You implement; Luca reviews. Merge only after Luca approves the PR in the session (step 7).
+Board: GitHub Project 3 (`--owner luca-impruvius`), repo `luca-impruvius/quode`. You implement and merge when checks pass (step 7); Luca checks results on quode.app.
 
 ## 1. Pick the issue
 1. List the board: `gh project item-list 3 --owner luca-impruvius --format json`.
 2. Candidates: cards with Status `Todo`, ordered by milestone, then by task number (M0-03 before M0-04).
 3. Take the first candidate where:
    - its dependencies are done. Read them from the `**Depends on:**` line or the `### Depends on` section of the issue body. Task codes (`M0-03`) map to issues by title; `#12` is an issue number; "all M0 tasks" means every other issue in that milestone; `—` means none. Done = closed as completed (`gh issue view <n> --json state,stateReason` → `CLOSED` / `COMPLETED`), not closed as not planned;
-   - nothing in it needs Luca: his accounts, secrets, money, or the production server.
+   - nothing in it needs Luca: his accounts, secrets, money, the production server, or a change that destroys or irreversibly changes data.
 4. If a candidate needs something only Luca can do, note exactly what (for example "OAuth client secret in `.env`", "SSH access to the VPS") and move to the next candidate.
 5. If no candidate qualifies, stop and report why, per issue.
 

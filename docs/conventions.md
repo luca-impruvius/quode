@@ -39,7 +39,7 @@ docs(adr): ADR-0037 ...
 - Only the PR title is enforced (squash-merge makes it the commit message).
 - Commits Claude Code helped write keep its `Co-Authored-By` line.
 
-## 5. Task loop with Claude Code (ADR-0023, ADR-0038)
+## 5. Task loop with Claude Code (ADR-0023, ADR-0043, ADR-0045)
 
 The `/next-task` skill runs all seven steps.
 
