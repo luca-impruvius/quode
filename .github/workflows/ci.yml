@@ -75,6 +75,17 @@ jobs:
       - run: npm test
       - run: npm run build
 
+  # The server's backup scripts (M0-12): ShellCheck (preinstalled on the runner) and stub tests.
+  backup-scripts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - run: shellcheck deploy/backup/*.sh
+      - run: deploy/backup/test.sh
+
   gitleaks:
     runs-on: ubuntu-latest
     timeout-minutes: 10

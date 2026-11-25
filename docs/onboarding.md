@@ -113,7 +113,7 @@ Production stack locally (optional, to test `deploy/` changes): build the images
 - **Branch** from an up-to-date `main`: `feat/<issue>-short-name`, `fix/…`, `chore/…`, `docs/…`.
 - **Commits and PR titles** follow Conventional Commits, for example `feat(review): …`. Scopes are module names, `frontend`, `infra`, `deps` (`deps-dev` from Dependabot) or `adr`.
 - **One PR per feature** (up to about 800 lines of code, tests and generated API files excluded; ADR-0044), using the PR template, with `Closes #<issue>`.
-- **Tests first** from the acceptance criteria. CI (`.github/workflows/ci.yml`: backend, frontend, gitleaks, PR title) must be green and the `reviewer` agent clean; then Claude squash-merges (ADR-0043, ADR-0045).
+- **Tests first** from the acceptance criteria. CI (`.github/workflows/ci.yml`: backend, frontend, backup scripts, gitleaks, PR title) must be green and the `reviewer` agent clean; then Claude squash-merges (ADR-0043, ADR-0045).
 - **Decisions:** if something in `docs/` stops being true, update it in the same PR or add an ADR.
 - **New dependency?** State its license in the PR. Anything that isn't OSI open source must be discussed first.
 - **Database migrations** (Flyway): never edit a migration that is already merged. Add a new one.
