@@ -174,16 +174,25 @@ function Card({ card, feedback, busy, error, last, onChoose, onGrade, onNext }: 
       if (event.ctrlKey || event.metaKey || event.altKey) {
         return;
       }
+      const key = event.key.toLowerCase();
+      // A held key repeats: one press is one action, never "submit, then grade Got it".
+      if (event.repeat) {
+        if (key === 'enter' || /^[1-3]$/.test(key)) {
+          event.preventDefault();
+        }
+        return;
+      }
       const target = event.target as HTMLElement | null;
       const tag = target?.tagName;
       const typing =
         tag === 'TEXTAREA' ||
         tag === 'SELECT' ||
         (tag === 'INPUT' && !['radio', 'checkbox'].includes((target as HTMLInputElement).type));
-      if (typing || tag === 'BUTTON' || tag === 'A') {
+      // After a reveal, focus is on a grade button; the digits still grade from there.
+      const gradeKey = !choice && revealed && /^[1-3]$/.test(key);
+      if (typing || ((tag === 'BUTTON' || tag === 'A') && !gradeKey)) {
         return;
       }
-      const key = event.key.toLowerCase();
       if (choice && !answered && /^[a-f]$/.test(key)) {
         const option = card.options[key.charCodeAt(0) - 97];
         if (option) {

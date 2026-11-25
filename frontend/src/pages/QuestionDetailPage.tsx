@@ -28,7 +28,14 @@ export function QuestionPanel({ id }: { id: string }) {
   const question = useQuestion(id);
   return (
     <section aria-label={d.panel} className="flex flex-col gap-space-4">
-      {question.isPending && <p className="text-ink-muted">{messages.loading}</p>}
+      {/* Focus stays on the list; this tells screen readers what the panel now shows. */}
+      <p role="status" className="sr-only">
+        {question.isPending
+          ? messages.loading
+          : question.data
+            ? d.showing(question.data.promptMd)
+            : ''}
+      </p>
       {question.isError && <ErrorNotice error={question.error} />}
       {question.data && (
         <>

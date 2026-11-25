@@ -358,6 +358,8 @@ function Row({
     <li className="border-b border-line">
       <Link
         to={to}
+        // On desktop a row only changes the selection: no history entry per question viewed.
+        replace={to.startsWith('/library?')}
         aria-current={selected ? 'true' : undefined}
         className={`flex flex-col gap-space-1 py-space-3 ${selected ? 'lg:-mx-space-2 lg:rounded-md lg:bg-surface-sunken lg:px-space-2' : ''}`}
       >

@@ -249,6 +249,7 @@ export const messages = {
     back: 'Library',
     panel: 'Selected question',
     pick: 'Choose a question to see it here.',
+    showing: (prompt: string) => `Showing: ${prompt}`,
     edit: 'Edit',
     primary: 'primary',
     answer: 'Answer',

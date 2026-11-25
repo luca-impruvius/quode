@@ -1,7 +1,10 @@
 import { useSyncExternalStore } from 'react';
 
-/** The desktop layout starts at 1024 px wide (docs/specs/M2-exam-prep-mvp.md), Tailwind's `lg`. */
-const DESKTOP = '(min-width: 1024px)';
+/**
+ * The desktop layout starts at 1024 px wide (docs/specs/M2-exam-prep-mvp.md). Written in rem like
+ * Tailwind's `lg` (64rem), so code and CSS switch at the same width even with a larger font.
+ */
+export const DESKTOP = '(min-width: 64rem)';
 
 function subscribe(onChange: () => void) {
   if (typeof window.matchMedia !== 'function') {
