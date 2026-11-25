@@ -167,6 +167,8 @@ describe('Quiz', () => {
 
     expect(await screen.findByText(m.score(2, 2))).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Retry/ })).not.toBeInTheDocument();
+    // Nothing partly or missed: no breakdown line at all.
+    expect(screen.queryByText(/partly|missed/)).not.toBeInTheDocument();
     // Another quiz stays the one to continue.
     expect(localStorage.getItem('quode.quiz.current')).toBe('other');
   });
