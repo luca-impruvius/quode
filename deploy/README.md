@@ -162,7 +162,8 @@ Every night at 02:30 UTC, `backup/backup.sh` dumps the database (`pg_dump`, cust
 ### Restoring production from a dump
 
 This replaces production data: only with Luca's explicit yes. On the server in `~/quode` (after a lost server, first rebuild it with `docs/runbooks/server-setup.md`, start the stack from "First deployment" and fill in `.env` with the `R2_*` lines):
-1. **Get the dump and prove it restores:** `backup/restore-test.sh --keep ~/latest.dump` downloads the newest one (or pass a file: `backup/restore-test.sh --keep ~/latest.dump <file.dump>`), restores it into a throwaway container and keeps a copy only if that worked.
+`quode` below is `DB_USER` from `.env`.
+1. **Get the dump and prove it restores:** `backup/restore-test.sh --keep ~/latest.dump` downloads the newest one (or pass a file: `backup/restore-test.sh --keep ~/latest.dump <file.dump>`), restores it into a throwaway container and keeps a copy only if that worked. For an older dump (when the newest already holds the bad data), download it from the R2 dashboard or take the monthly laptop copy, `scp` it to the server and pass it as the file.
 2. **Keep a copy of what's there now:** `docker compose exec -T postgres pg_dump -U quode -d quode --format=custom > ~/before-restore.dump`.
 3. **Stop the app:** `docker compose stop caddy backend`.
 4. **Put the dump inside the container:** `docker compose cp ~/latest.dump postgres:/tmp/latest.dump` (pg_restore needs a file, not a pipe).

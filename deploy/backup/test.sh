@@ -69,6 +69,11 @@ expect() {
 SCRIPT=backup.sh
 run "a good backup" 0
 expect "it starts the check" 'hc.example/ping/backup/start' yes
+expect "it dumps compressed" 'pg_dump .*--format=custom --compress=9' yes
+grep -q 'QUODE_BACKUP_MAX_BYTES:-524288000' "$here/backup.sh" || {
+  echo "FAIL the default size limit is not 500 MB"
+  failures=$((failures + 1))
+}
 expect "it uploads the dump" 'docker run .*rclone.* copyto /dump/quode-.*\.dump r2:quode-backups/quode-.*\.dump --s3-no-check-bucket' yes
 expect "it pings success with the size" 'curl .*uploaded quode-.*\(100 bytes\) https://hc.example/ping/backup$' yes
 expect "it never puts a secret in arguments" 'stub-secret|stub-key' no

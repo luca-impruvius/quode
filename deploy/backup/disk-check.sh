@@ -20,6 +20,11 @@ if [ -z "$url" ]; then
 fi
 
 used=$(df --output=pcent / | tail -n 1 | tr -dc '0-9')
+if [ -z "$used" ]; then
+  log "error: can't read the disk use from df"
+  curl -fsS -m 10 --retry 5 -o /dev/null --data-raw "disk-check can't read df's output" "$url/fail"
+  exit 1
+fi
 if [ "$used" -lt "$LIMIT_PERCENT" ]; then
   log "disk ${used}% used"
   curl -fsS -m 10 --retry 5 -o /dev/null --data-raw "disk ${used}% used" "$url"

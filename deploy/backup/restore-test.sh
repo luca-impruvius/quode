@@ -2,7 +2,7 @@
 # Restore test (M0-12, docs/architecture.md §8): restores a dump into a throwaway postgres:18
 # container and prints what it holds. Never touches the production database.
 # Run on the server from ~/quode:
-#   backup/restore-test.sh [--keep <path>] [file.dump]
+#   backup/restore-test.sh [--keep <path>] [file.dump]   (absolute or ~/ paths)
 #   no file: downloads the newest dump from R2 first.
 #   --keep <path>: once the dump has restored, keeps a copy there (for restoring production).
 set -euo pipefail
@@ -46,7 +46,10 @@ else
   RCLONE_CONFIG_R2_ACCESS_KEY_ID=$(env_value R2_ACCESS_KEY_ID)
   RCLONE_CONFIG_R2_SECRET_ACCESS_KEY=$(env_value R2_SECRET_ACCESS_KEY)
   bucket=$(env_value R2_BUCKET)
-  [ -n "$bucket" ] && [ -n "$RCLONE_CONFIG_R2_ENDPOINT" ] || die "R2 settings are missing in .env"
+  if [ -z "$bucket" ] || [ -z "$RCLONE_CONFIG_R2_ENDPOINT" ] ||
+    [ -z "$RCLONE_CONFIG_R2_ACCESS_KEY_ID" ] || [ -z "$RCLONE_CONFIG_R2_SECRET_ACCESS_KEY" ]; then
+    die "R2 settings are missing in .env"
+  fi
   rclone() {
     docker run --rm -v "$workdir:/dump" \
       -e RCLONE_CONFIG_R2_TYPE -e RCLONE_CONFIG_R2_PROVIDER -e RCLONE_CONFIG_R2_ENDPOINT \
@@ -63,7 +66,8 @@ fi
 log "starting a scratch postgres:18"
 # A container left behind by a killed run would block the name.
 docker rm -f "$SCRATCH" >/dev/null 2>&1 || true
-docker run -d --name "$SCRATCH" -e POSTGRES_PASSWORD=scratch -e POSTGRES_DB=quode \
+# Capped: it shares a 4 GB server with production.
+docker run -d --name "$SCRATCH" --memory 512m -e POSTGRES_PASSWORD=scratch -e POSTGRES_DB=quode \
   -v "$workdir:/dump:ro" postgres:18 >/dev/null
 # Over TCP: the image's temporary init server listens only on the socket, so this waits for the
 # real server.

@@ -105,7 +105,7 @@ Each module is a top-level package. Its root package holds the public API (servi
 
 ## 9. CI/CD
 
-- **Pull request:** backend build + unit, Modulith and Testcontainers tests; frontend lint, type-check, tests, build; gitleaks; PR-title check.
+- **Pull request:** backend build + unit, Modulith and Testcontainers tests; frontend lint, type-check, tests, build; backup scripts (ShellCheck and stub tests), gitleaks; PR-title check.
 - **Merge to main:** build both images, tag with the git commit, push to GitHub Container Registry, SSH into the VPS, `docker compose pull && docker compose up -d`, then a health check.
 - Flyway runs on backend startup.
 
