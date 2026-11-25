@@ -1,5 +1,6 @@
 package com.quode.question.internal;
 
+import com.quode.question.QuestionCreated;
 import com.quode.shared.ConflictException;
 import com.quode.shared.NotFoundException;
 import com.quode.taxonomy.TopicLookup;
@@ -10,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.hibernate.exception.ConstraintViolationException;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
@@ -31,10 +33,13 @@ class QuestionService {
 
   private final QuestionRepository questions;
   private final TopicLookup topics;
+  private final ApplicationEventPublisher events;
 
-  QuestionService(QuestionRepository questions, TopicLookup topics) {
+  QuestionService(
+      QuestionRepository questions, TopicLookup topics, ApplicationEventPublisher events) {
     this.questions = questions;
     this.topics = topics;
+    this.events = events;
   }
 
   @Transactional
@@ -42,7 +47,9 @@ class QuestionService {
     requireValid(ownerId, input);
     Question question = new Question(ownerId);
     question.apply(input);
-    return view(save(question));
+    Question saved = save(question);
+    events.publishEvent(new QuestionCreated(ownerId, saved.getId()));
+    return view(saved);
   }
 
   @Transactional(readOnly = true)

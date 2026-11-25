@@ -52,6 +52,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/me/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getSettings"];
+        put: operations["saveSettings"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/questions": {
         parameters: {
             query?: never;
@@ -132,6 +148,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/questions/{id}/review": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getQuestionReview"];
+        put: operations["saveQuestionReview"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/questions/{id}/unarchive": {
         parameters: {
             query?: never;
@@ -158,6 +190,22 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["unflag"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/review/today": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getReviewToday"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -493,6 +541,13 @@ export interface components {
             /** Format: int64 */
             version?: number;
         };
+        QuestionReview: {
+            /** Format: date-time */
+            dueAt: string | null;
+            enrolled: boolean;
+            isNew: boolean;
+            learnNext: boolean;
+        };
         QuestionView: {
             answerMd: string | null;
             /** Format: date-time */
@@ -523,6 +578,28 @@ export interface components {
         RenameTopic: {
             name?: string;
         };
+        ReviewControls: {
+            enrolled?: boolean;
+            learnNext?: boolean;
+        };
+        ReviewToday: {
+            /** Format: int32 */
+            doneToday: number;
+            /** Format: int32 */
+            due: number;
+            /** Format: int32 */
+            moreDue: number;
+            /** Format: int32 */
+            moreNew: number;
+            /** Format: int32 */
+            newToday: number;
+            /** Format: int32 */
+            newWaiting: number;
+            /** Format: date-time */
+            nextDueAt: string | null;
+            /** Format: uuid */
+            sessionId: string | null;
+        };
         SessionView: {
             /** Format: int32 */
             answered: number;
@@ -537,9 +614,23 @@ export interface components {
             /** Format: int32 */
             total: number;
         };
+        Settings: {
+            /** Format: int32 */
+            newPerDay: number;
+            /** Format: int32 */
+            reviewsPerDay: number;
+        };
+        SettingsInput: {
+            /** Format: int32 */
+            newPerDay?: number;
+            /** Format: int32 */
+            reviewsPerDay?: number;
+        };
         StartSession: {
             /** Format: int32 */
             count?: number;
+            /** @enum {string|null} */
+            extra?: "NONE" | "KEEP_GOING" | "LEARN_MORE" | null;
             kind?: string | null;
             mode?: string | null;
             questionIds?: string[];
@@ -641,6 +732,50 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ImportReport"];
+                };
+            };
+        };
+    };
+    getSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Settings"];
+                };
+            };
+        };
+    };
+    saveSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SettingsInput"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Settings"];
                 };
             };
         };
@@ -821,6 +956,54 @@ export interface operations {
             };
         };
     };
+    getQuestionReview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QuestionReview"];
+                };
+            };
+        };
+    };
+    saveQuestionReview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReviewControls"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QuestionReview"];
+                };
+            };
+        };
+    };
     unarchive: {
         parameters: {
             query?: never;
@@ -873,6 +1056,26 @@ export interface operations {
             };
         };
     };
+    getReviewToday: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReviewToday"];
+                };
+            };
+        };
+    };
     startSession: {
         parameters: {
             query?: never;
@@ -886,6 +1089,15 @@ export interface operations {
             };
         };
         responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionView"];
+                };
+            };
             /** @description Created */
             201: {
                 headers: {

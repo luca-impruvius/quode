@@ -75,6 +75,50 @@
         "tags" : [ "import-controller" ]
       }
     },
+    "/v1/me/settings" : {
+      "get" : {
+        "operationId" : "getSettings",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Settings"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "settings-controller" ]
+      },
+      "put" : {
+        "operationId" : "saveSettings",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/SettingsInput"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Settings"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "settings-controller" ]
+      }
+    },
     "/v1/questions" : {
       "get" : {
         "operationId" : "list_1",
@@ -356,6 +400,68 @@
         "tags" : [ "question-controller" ]
       }
     },
+    "/v1/questions/{id}/review" : {
+      "get" : {
+        "operationId" : "getQuestionReview",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/QuestionReview"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "review-controller" ]
+      },
+      "put" : {
+        "operationId" : "saveQuestionReview",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ReviewControls"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/QuestionReview"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "review-controller" ]
+      }
+    },
     "/v1/questions/{id}/unarchive" : {
       "post" : {
         "operationId" : "unarchive",
@@ -430,6 +536,24 @@
         "tags" : [ "question-controller" ]
       }
     },
+    "/v1/review/today" : {
+      "get" : {
+        "operationId" : "getReviewToday",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ReviewToday"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "review-controller" ]
+      }
+    },
     "/v1/study/sessions" : {
       "post" : {
         "operationId" : "startSession",
@@ -444,6 +568,16 @@
           "required" : true
         },
         "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SessionView"
+                }
+              }
+            },
+            "description" : "OK"
+          },
           "201" : {
             "content" : {
               "application/json" : {
@@ -1224,6 +1358,25 @@
           }
         }
       },
+      "QuestionReview" : {
+        "type" : "object",
+        "properties" : {
+          "dueAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time"
+          },
+          "enrolled" : {
+            "type" : "boolean"
+          },
+          "isNew" : {
+            "type" : "boolean"
+          },
+          "learnNext" : {
+            "type" : "boolean"
+          }
+        },
+        "required" : [ "dueAt", "enrolled", "isNew", "learnNext" ]
+      },
       "QuestionView" : {
         "type" : "object",
         "properties" : {
@@ -1301,6 +1454,55 @@
           }
         }
       },
+      "ReviewControls" : {
+        "type" : "object",
+        "properties" : {
+          "enrolled" : {
+            "type" : "boolean"
+          },
+          "learnNext" : {
+            "type" : "boolean"
+          }
+        }
+      },
+      "ReviewToday" : {
+        "type" : "object",
+        "properties" : {
+          "doneToday" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "due" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "moreDue" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "moreNew" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "newToday" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "newWaiting" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "nextDueAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time"
+          },
+          "sessionId" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid"
+          }
+        },
+        "required" : [ "doneToday", "due", "moreDue", "moreNew", "newToday", "newWaiting", "nextDueAt", "sessionId" ]
+      },
       "SessionView" : {
         "type" : "object",
         "properties" : {
@@ -1337,12 +1539,43 @@
         },
         "required" : [ "answered", "correct", "current", "finishedAt", "id", "kind", "total" ]
       },
+      "Settings" : {
+        "type" : "object",
+        "properties" : {
+          "newPerDay" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "reviewsPerDay" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        },
+        "required" : [ "newPerDay", "reviewsPerDay" ]
+      },
+      "SettingsInput" : {
+        "type" : "object",
+        "properties" : {
+          "newPerDay" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "reviewsPerDay" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }
+      },
       "StartSession" : {
         "type" : "object",
         "properties" : {
           "count" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "extra" : {
+            "type" : [ "string", "null" ],
+            "enum" : [ "NONE", "KEEP_GOING", "LEARN_MORE" ]
           },
           "kind" : {
             "type" : [ "string", "null" ]
