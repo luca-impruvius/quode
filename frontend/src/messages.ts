@@ -122,7 +122,11 @@ export const messages = {
     chooseAll: 'Choose all that apply',
     doneTitle: 'Quiz done',
     score: (correct: number, total: number) => `${correct} of ${total} right`,
-    breakdown: (partial: number, wrong: number) => `${partial} partly, ${wrong} missed`,
+    // Only the parts that happened: "1 missed", not "0 partly, 1 missed".
+    breakdown: (partial: number, wrong: number) =>
+      [partial > 0 ? `${partial} partly` : '', wrong > 0 ? `${wrong} missed` : '']
+        .filter((part) => part !== '')
+        .join(', '),
     missedTitle: 'To practise again',
     retryMissed: (n: number) => (n === 1 ? 'Retry the missed one' : `Retry ${n} missed`),
     backToQuizzes: 'Back to quizzes',
