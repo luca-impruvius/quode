@@ -17,6 +17,9 @@ describe('daysFromToday', () => {
   });
 
   it('falls back to the browser’s zone for an unknown one', () => {
-    expect(() => daysFromToday('2026-11-27T00:00:00Z', 'Not/AZone', now)).not.toThrow();
+    expect(daysFromToday('2026-11-27T12:00:00Z', 'Not/AZone', now)).toBe(
+      daysFromToday('2026-11-27T12:00:00Z', undefined, now),
+    );
+    expect(Number.isFinite(daysFromToday('2026-11-27T12:00:00Z', 'Not/AZone', now))).toBe(true);
   });
 });

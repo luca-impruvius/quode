@@ -33,8 +33,8 @@ interface Feedback {
 
 /**
  * One quick quiz (docs/specs/M2-exam-prep-mvp.md), or a review (kind REVIEW,
- * docs/specs/M3-daily-review.md): the same card, titled Review, leading back to Today. Progress lives on the server, so reopening this
- * URL resumes at the same question. Choice questions are graded at once; flashcard and open ones
+ * docs/specs/M3-daily-review.md): the same card, titled Review, leading back to Today. Progress
+ * lives on the server, so reopening this URL resumes at the same question. Choice questions are graded at once; flashcard and open ones
  * reveal their answer, then you grade yourself. After the last answer come the results.
  */
 export function QuizPage() {
@@ -477,17 +477,24 @@ function ReviewDone({ id }: { id: string }) {
   if (!finish.data) {
     return <p className="text-ink-muted">{messages.loading}</p>;
   }
-  const nextDueAt = today.data?.nextDueAt ?? null;
+  const t = today.data;
+  const nextDueAt = t?.nextDueAt ?? null;
+  // Keep going / Learn more still have questions today: say so rather than "due tomorrow".
+  const moreToday = t !== undefined && t.due + t.newWaiting + t.moreDue + t.moreNew > 0;
   return (
     <section className="flex flex-col gap-space-4">
       <h1 ref={heading} tabIndex={-1} className="type-title">
         {r.doneTitle}
       </h1>
       <p className="type-display">{r.reviewed(finish.data.answered)}</p>
-      {nextDueAt !== null && (
-        <p className="text-ink-muted">
-          {messages.today.nextDue(daysFromToday(nextDueAt, me.data?.timeZone))}
-        </p>
+      {moreToday ? (
+        <p className="text-ink-muted">{r.moreToday}</p>
+      ) : (
+        nextDueAt !== null && (
+          <p className="text-ink-muted">
+            {messages.today.nextDue(daysFromToday(nextDueAt, me.data?.timeZone))}
+          </p>
+        )
       )}
       {back}
     </section>

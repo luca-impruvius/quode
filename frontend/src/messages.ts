@@ -34,6 +34,7 @@ export const messages = {
     back: 'Today',
     doneTitle: 'Review done',
     reviewed: (n: number) => (n === 1 ? '1 question reviewed' : `${n} questions reviewed`),
+    moreToday: 'More are waiting today: Keep going or Learn more on Today.',
     backToToday: 'Back to Today',
   },
   tabs: {

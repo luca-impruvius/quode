@@ -189,6 +189,32 @@ describe('Today', () => {
     expect(await screen.findByRole('heading', { name: t.allDone })).toBeInTheDocument();
   });
 
+  it('offers only Continue while a Keep going review is unfinished', async () => {
+    mockApi({
+      '/api/me': me(),
+      '/api/v1/review/today': json(today({ sessionId: 'r2', doneToday: 30, moreDue: 4 })),
+    });
+    renderAt('/');
+
+    expect(await screen.findByRole('link', { name: new RegExp(t.continue) })).toBeInTheDocument();
+    expect(screen.queryByText(t.counts(0, 0))).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: t.allDone })).not.toBeInTheDocument();
+  });
+
+  it('shows the error when a review fails to start', async () => {
+    mockApi({
+      '/api/me': me(),
+      '/api/v1/review/today': json(today({ due: 1 })),
+      'POST /api/v1/study/sessions': problem(500, 'Boom'),
+    });
+    const user = userEvent.setup();
+    renderAt('/');
+
+    await user.click(await screen.findByRole('button', { name: t.start }));
+    expect(await screen.findByRole('alert')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: t.start })).toBeInTheDocument();
+  });
+
   it('shows an error when today can’t be read', async () => {
     mockApi({
       '/api/me': me(),
@@ -245,5 +271,44 @@ describe('Review session', () => {
       '/',
     );
     localStorage.clear();
+  });
+
+  it('points to Today when more are waiting after the review', async () => {
+    mockApi({
+      '/api/me': me(),
+      '/api/v1/study/sessions/r1': json(review({ answered: 3, current: null })),
+      'POST /api/v1/study/sessions/r1/finish': json({
+        total: 3,
+        answered: 3,
+        correct: 3,
+        partial: 0,
+        wrong: 0,
+        missedQuestionIds: [],
+        missed: [],
+      }),
+      '/api/v1/review/today': json(
+        today({ doneToday: 30, moreDue: 5, nextDueAt: '2026-11-25T22:00:00Z' }),
+      ),
+    });
+    renderAt('/quiz/r1');
+
+    expect(await screen.findByText(messages.review.moreToday)).toBeInTheDocument();
+    expect(screen.queryByText(/Next ones due/)).not.toBeInTheDocument();
+  });
+
+  it('shows the error and the way back when finishing fails', async () => {
+    mockApi({
+      '/api/me': me(),
+      '/api/v1/study/sessions/r1': json(review({ answered: 3, current: null })),
+      'POST /api/v1/study/sessions/r1/finish': problem(500, 'Boom'),
+      '/api/v1/review/today': json(today({})),
+    });
+    renderAt('/quiz/r1');
+
+    expect(await screen.findByRole('alert')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: messages.review.backToToday })).toHaveAttribute(
+      'href',
+      '/',
+    );
   });
 });

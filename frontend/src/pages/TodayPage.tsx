@@ -1,4 +1,4 @@
-import { useNavigate, Link } from 'react-router';
+import { Link, useNavigate } from 'react-router';
 import duckMarkUrl from '../../../design-system/logos/duck-mark.svg';
 import { ApiError } from '../api/client';
 import { useReviewToday, useStartReview, type ReviewExtra, type ReviewToday } from '../api/review';
@@ -55,7 +55,8 @@ function Queue({ today, timeZone }: { today: ReviewToday; timeZone: string | und
   if (today.sessionId !== null || waiting) {
     return (
       <div className="flex flex-col gap-space-4">
-        <p className="type-display">{m.counts(today.due, today.newWaiting)}</p>
+        {/* During Keep going / Learn more both counts are 0 (past today's limits): no "0 · 0". */}
+        {waiting && <p className="type-display">{m.counts(today.due, today.newWaiting)}</p>}
         {today.sessionId !== null ? (
           <Link to={`/quiz/${today.sessionId}`} className={`${primary} flex-col`}>
             <span>{m.continue}</span>
@@ -83,7 +84,7 @@ function Queue({ today, timeZone }: { today: ReviewToday; timeZone: string | und
     return <p className="text-ink-muted">{m.nothingYet}</p>;
   }
 
-  const extra =
+  const secondary =
     'flex min-h-12 flex-col items-start rounded-md border-bold border-outline p-space-3';
   return (
     <div className="flex flex-col gap-space-4">
@@ -96,7 +97,7 @@ function Queue({ today, timeZone }: { today: ReviewToday; timeZone: string | und
           type="button"
           aria-disabled={start.isPending}
           onClick={() => onStart('KEEP_GOING')}
-          className={extra}
+          className={secondary}
         >
           <span className="font-semibold">{m.keepGoing}</span>
           <span className="text-ink-muted type-body-sm">{m.keepGoingHint(today.moreDue)}</span>
@@ -107,7 +108,7 @@ function Queue({ today, timeZone }: { today: ReviewToday; timeZone: string | und
           type="button"
           aria-disabled={start.isPending}
           onClick={() => onStart('LEARN_MORE')}
-          className={extra}
+          className={secondary}
         >
           <span className="font-semibold">{m.learnMore}</span>
           <span className="text-ink-muted type-body-sm">{m.learnMoreHint(today.moreNew)}</span>

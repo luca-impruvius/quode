@@ -9,13 +9,17 @@ export function daysFromToday(iso: string, timeZone: string | undefined, now = n
   } catch {
     format = dayFormat(undefined);
   }
-  // en-CA writes dates as YYYY-MM-DD, which Date.parse reads as midnight UTC.
-  const day = (date: Date) => Date.parse(format.format(date));
+  // The calendar date's parts, whatever order the locale writes them in, as midnight UTC.
+  const day = (date: Date) => {
+    const part = (type: string) =>
+      Number(format.formatToParts(date).find((p) => p.type === type)?.value);
+    return Date.UTC(part('year'), part('month') - 1, part('day'));
+  };
   return Math.round((day(new Date(iso)) - day(now)) / 86_400_000);
 }
 
 function dayFormat(timeZone: string | undefined) {
-  return new Intl.DateTimeFormat('en-CA', {
+  return new Intl.DateTimeFormat('en-US', {
     timeZone,
     year: 'numeric',
     month: '2-digit',
