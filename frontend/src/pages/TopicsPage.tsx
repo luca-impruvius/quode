@@ -106,7 +106,7 @@ export function TopicsPage() {
   const close = () => setOpen(null);
 
   return (
-    <div className="mx-auto flex min-h-dvh max-w-md flex-col">
+    <div className="mx-auto flex min-h-dvh max-w-md flex-col lg:max-w-3xl">
       <header className="flex items-center justify-between border-b border-line px-space-3 py-space-2">
         <Link
           to="/library"

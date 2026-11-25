@@ -73,7 +73,7 @@ function Quiz({ id }: { id: string }) {
   const position = data ? Math.min(data.answered + (feedback ? 0 : 1), data.total) : 0;
 
   return (
-    <div className="mx-auto flex min-h-dvh max-w-md flex-col">
+    <div className="mx-auto flex min-h-dvh max-w-md flex-col lg:max-w-2xl">
       <header className="flex items-center justify-between border-b border-line px-space-3 py-space-2">
         <Link
           to="/quizzes"
@@ -166,6 +166,58 @@ function Card({ card, feedback, busy, error, last, onChoose, onGrade, onNext }: 
         : [optionId],
     );
   }
+
+  // Keyboard (desktop, docs/specs/M2-exam-prep-mvp.md): A–F choose, Enter checks, reveals or goes
+  // on, 1/2/3 grade. Keys aimed at a button, link or text field keep their own meaning.
+  useEffect(() => {
+    function onKey(event: KeyboardEvent) {
+      if (event.ctrlKey || event.metaKey || event.altKey) {
+        return;
+      }
+      const key = event.key.toLowerCase();
+      // A held key repeats: one press is one action, never "submit, then grade Got it".
+      if (event.repeat) {
+        if (key === 'enter' || /^[1-3]$/.test(key)) {
+          event.preventDefault();
+        }
+        return;
+      }
+      const target = event.target as HTMLElement | null;
+      const tag = target?.tagName;
+      const typing =
+        tag === 'TEXTAREA' ||
+        tag === 'SELECT' ||
+        (tag === 'INPUT' && !['radio', 'checkbox'].includes((target as HTMLInputElement).type));
+      // After a reveal, focus is on a grade button; the digits still grade from there.
+      const gradeKey = !choice && revealed && /^[1-3]$/.test(key);
+      if (typing || tag === 'A' || (tag === 'BUTTON' && !gradeKey)) {
+        return;
+      }
+      if (choice && !answered && /^[a-f]$/.test(key)) {
+        const option = card.options[key.charCodeAt(0) - 97];
+        if (option) {
+          event.preventDefault();
+          toggle(option.id);
+        }
+      } else if (key === 'enter') {
+        if (choice && !answered && chosen.length > 0 && !busy) {
+          event.preventDefault();
+          onChoose(chosen);
+        } else if (answered) {
+          event.preventDefault();
+          onNext();
+        } else if (!choice && !revealed) {
+          event.preventDefault();
+          setRevealed(true);
+        }
+      } else if (!choice && revealed && !busy && ['1', '2', '3'].includes(key)) {
+        event.preventDefault();
+        onGrade(grades[Number(key) - 1] ?? 'MISSED');
+      }
+    }
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  });
 
   const correct = new Set(feedback?.result.correctOptionIds ?? []);
   const button = 'min-h-12 rounded-md border-bold border-outline px-space-4 font-semibold';
@@ -295,6 +347,9 @@ function Card({ card, feedback, busy, error, last, onChoose, onGrade, onNext }: 
         </button>
       )}
       {error !== null && <ErrorNotice error={error} />}
+      <p className="hidden text-ink-muted type-body-sm lg:block">
+        {choice ? m.keysChoice : m.keysCard}
+      </p>
     </article>
   );
 }

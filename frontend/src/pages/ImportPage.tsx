@@ -75,7 +75,7 @@ export function ImportPage() {
   const field = 'rounded-md border-bold border-outline bg-surface px-space-3 py-space-2';
   const button = 'min-h-11 flex-1 rounded-md border-bold border-outline px-space-4 font-semibold';
   return (
-    <div className="mx-auto flex min-h-dvh max-w-md flex-col">
+    <div className="mx-auto flex min-h-dvh max-w-md flex-col lg:max-w-3xl">
       <header className="flex items-center border-b border-line px-space-3 py-space-2">
         <Link
           to="/library"
