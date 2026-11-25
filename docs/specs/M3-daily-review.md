@@ -28,12 +28,12 @@ Each day, Today shows a short list of questions to review: the ones due again, p
   - notifications.
 
 ## Behaviour
-Domain rules 3, 5, 6, 7 and 8 already describe this ([domain.md](../domain.md) ยง4). This spec adds no new rule; it implements them.
+Domain rules 3, 5, 6, 7 and 8 already describe this ([domain.md](../domain.md) ยง4). The one refinement, that a quiz leaves a new question new, is written into rule 5 and spaced-repetition.md.
 
 ### Terms
 - **New:** an enrolled question never answered in a review: `last_reviewed_at IS NULL`. Its `due_at` is null, so it's never "due".
 - **Scheduled:** answered in a review at least once. It has a `due_at`.
-- **Due:** scheduled, with `due_at` at or before the start of tomorrow in the user's time zone.
+- **Due:** scheduled, with `due_at` strictly before the start of tomorrow in the user's time zone, i.e. due today or earlier. A question with `due_at` equal to the start of tomorrow is due tomorrow, not today.
 - **Review session:** `study_session.kind = REVIEW`. **Quiz:** any other kind (the M2 quick quiz is `ADHOC`; saved quizzes will be `QUIZ`).
 
 ### Enrolment
@@ -47,7 +47,7 @@ Domain rules 3, 5, 6, 7 and 8 already describe this ([domain.md](../domain.md) ย
 - Review answers always update the schedule. The first review answer of a new question sets `introduced_at`.
 - Choice questions in a review are graded automatically: right counts as Got it, wrong as Missed. Flashcard and open questions are self-graded.
 - `due_at` is the start of the due day in the user's time zone (`app_user.time_zone`), stored in UTC.
-- "Today" comes from an injected `Clock`, applied to the answer's own time (`AttemptRecorded.answeredAt`), not to when the event is handled.
+- "Today" comes from an injected `Clock`, applied to the answer's own time (`AttemptRecorded.answeredAt`), not to when the event is handled. `answeredAt` is the stored `attempt.answered_at` (`returning answered_at`), so the event and the attempt row agree.
 - An answer for a question whose `review_state` was removed mid-session changes nothing. It never re-creates the state.
 
 ### Today's queue
@@ -55,17 +55,17 @@ Domain rules 3, 5, 6, 7 and 8 already describe this ([domain.md](../domain.md) ย
   - due reviews first, most overdue first, up to what's left of the review limit (default 30) after today's reviews;
   - then new questions, "Learn next" ones first and then by enrolment time (oldest first), up to what's left of the new limit (default 5) after today's introductions;
   - new questions are mixed into the session.
-- **Counting today:** "reviews done today" counts states with `last_reviewed_at` today, and "new today" counts states with `introduced_at` today. So a second session the same day doesn't hand out 5 more. A changed limit applies to today's remaining count at once.
+- **Counting today:** "reviews done today" counts states with `last_reviewed_at` today, and "new today" counts states with `introduced_at` today. Both are set only by review answers, never by quizzes. So a second session the same day doesn't hand out 5 more, and quiz practice doesn't use up the review limit. A changed limit applies to today's remaining count at once. After Learn more, "new today" can pass the limit; the remaining count then shows 0, never a negative number.
 - **Backlog protection:** while more than twice the review limit is waiting, no new questions are added (ADR-0011).
 - **Resume:** the queue is snapshotted into a `study_session` of kind `REVIEW`, the same mechanism as the quiz, so it resumes where it was (ADR-0002, rule 8).
-  - Starting a review while one from today is unfinished returns that one.
+  - Starting a review while one from today is unfinished returns that one, whatever `extra` asks for: finish it first, then Keep going or Learn more.
   - An unfinished review from an earlier day is left behind. Its answers already count, and a fresh queue is built.
 - **Keep going:** a new session with the next due reviews past the limit, up to one more review limit's worth.
 - **Learn more:** a new session with 5 more new questions, regardless of the limit and of backlog protection, since it's an explicit choice.
 - **Nothing to review:** starting with nothing to review is refused (409), because a session needs at least one question (V6).
 
 ### Quizzes and the schedule (ADR-0012)
-- A quiz answer of Missed or Partial updates the schedule of a **scheduled** question. Got it updates it only when the question is due.
+- A quiz answer of Missed or Partial updates the schedule of a **scheduled** question. Got it updates it only when the question is due. A quiz update changes `due_at`, `interval_days`, `ease`, `reps` and `lapses`, never `last_reviewed_at` or `introduced_at`.
 - A quiz leaves a **new** question new: it hasn't started its schedule, so it neither counts against today's new limit nor gets a date.
 - A quiz never creates a `review_state`.
 - The quiz end screen gets **Add missed to review** for missed questions that aren't enrolled. Since everything of the user's own is enrolled at creation, it only shows for questions removed from review earlier.
@@ -88,7 +88,7 @@ All under `/api/v1`, signed in, CSRF token on writes, errors as Problem Details.
 | POST | `/study/sessions` | `{kind:"REVIEW", extra:"NONE\|KEEP_GOING\|LEARN_MORE"}` | 201 a new session, or 200 today's unfinished one (the quiz session view) | 400 bad body, 409 nothing to review |
 | GET | `/questions/{id}/review` | โ€” | 200 `{enrolled, learnNext, dueAt, isNew}` | 404 unknown or another user's question |
 | PUT | `/questions/{id}/review` | `{enrolled, learnNext}` | 200 as GET | 400, 404 |
-| GET / PUT | `/me/settings` | `{newPerDay, reviewsPerDay}` | 200 the settings | 400 out of bounds |
+| GET / PUT | `/me/settings` | `{newPerDay, reviewsPerDay}` | 200 the settings (served by `user`) | 400 out of bounds |
 
 The existing answer, get and finish endpoints serve review sessions unchanged. The `/questions/{id}/review` endpoints are served by the `review` module (see Module boundaries).
 
@@ -107,9 +107,11 @@ The existing answer, get and finish endpoints serve review sessions unchanged. T
 - `AttemptRecorded` gains `Instant answeredAt` (additive).
 
 ## Module boundaries
-- `review` (empty until now) owns `review_state`, the scheduler, the queue, the settings and the `/review` and `/questions/{id}/review` endpoints.
+- `review` (empty until now) owns `review_state`, the scheduler, the queue and the `/review` and `/questions/{id}/review` endpoints.
+- `user` owns the daily limits: they are columns of its `app_user`, it serves `/me/settings`, and it exposes a public `StudyLimits` read API that `review` uses. `review` never touches `app_user` directly.
+- `study` exposes a public read, `StudySessions.unfinishedReview(ownerId, since)`, which `review` uses for `GET /review/today`'s `sessionId`.
 - **Dependencies run one way, with no cycles (Modulith `verify()`):**
-  - `review` depends on `study`, `question` and `user`;
+  - `review` depends on `study` (`ReviewQueueSource`, `StudySessions`, `AttemptRecorded`), `question` (`QuestionCatalog`, `QuestionCreated`) and `user` (`StudyLimits`, the time zone);
   - `study` doesn't depend on `review`.
 - **How the queue reaches study:** `study` declares a port in its root package, `ReviewQueueSource`, which returns today's question ids for a REVIEW session. `review` implements it.
 - **Events:**
@@ -149,7 +151,8 @@ About two days. M3-01 first, then M3-02 and M3-03 (both need M3-01's API).
 ## Verification
 - **Unit tests:** the scheduler for every grade and edge (ease bounds, the first and second Got it, rounding, the ease-then-interval order), and day boundaries in Europe/Bucharest across midnight and daylight-saving changes.
 - **API tests:**
-  - the queue: order, limits counted across sessions in one day, backlog protection, Learn next first, drafts and archived left out, Keep going and Learn more, nothing to review (409), returning today's unfinished session, leaving yesterday's behind;
+  - the "due" boundary: `due_at` at the start of tomorrow is not due today;
+  - the queue: order, limits counted across sessions in one day, quiz answers not counting toward them, backlog protection, Learn next first, drafts and archived left out, Keep going and Learn more, nothing to review (409), returning today's unfinished session, leaving yesterday's behind;
   - enrolment on create and import, and the backfill;
   - the quiz rule (ADR-0012), including new questions staying new;
   - an answer after Remove from review changing nothing;

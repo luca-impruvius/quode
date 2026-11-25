@@ -40,7 +40,7 @@ Limits are per-user settings (ADR-0011).
 | Missed / Partial | Updates schedule | Updates schedule |
 | Got it | Updates schedule | Stored only |
 
-Questions without a `review_state` are never scheduled by a quiz. The end-of-quiz screen offers to add missed ones.
+Questions without a `review_state` are never scheduled by a quiz, and neither are new ones (enrolled but never reviewed): a quiz leaves them new. Quiz updates never set `last_reviewed_at`, so they don't count toward the daily review limit. The end-of-quiz screen offers to add missed ones.
 
 ## Testing
 

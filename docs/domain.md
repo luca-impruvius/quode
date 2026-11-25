@@ -69,7 +69,7 @@ erDiagram
 2. `SINGLE_CHOICE`: exactly one correct option. `MULTIPLE_CHOICE`: at least two options, at least one correct.
 3. Archived and draft questions never appear in reviews or quizzes.
 4. A question with attempts is never hard-deleted; it is archived.
-5. Review attempts always update `review_state`. Quiz attempts update it on Missed/Partial, or on Got it only when the question is due.
+5. Review attempts always update `review_state`. Quiz attempts update the `review_state` of a scheduled question on Missed/Partial, or on Got it only when the question is due; a new (never reviewed) question stays new.
 6. `review_state` is keyed by user + question, independent of ownership, so users can study questions they don't own without importing them.
 7. A question enters daily review only if it has a `review_state`. Own questions get one on creation (unless opted out); others only when explicitly added.
 8. A study session snapshots its question order; editing a quiz doesn't change a session in progress.
