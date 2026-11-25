@@ -273,7 +273,7 @@ describe('Review session', () => {
     localStorage.clear();
   });
 
-  it('points to Today when more are waiting after the review', async () => {
+  it('points to Keep going when more reviews are due after the review', async () => {
     mockApi({
       '/api/me': me(),
       '/api/v1/study/sessions/r1': json(review({ answered: 3, current: null })),
@@ -293,7 +293,31 @@ describe('Review session', () => {
     renderAt('/quiz/r1');
 
     expect(await screen.findByText(messages.review.moreToday)).toBeInTheDocument();
-    expect(screen.queryByText(/Next ones due/)).not.toBeInTheDocument();
+    // When the next ones are due always shows too.
+    expect(screen.getByText(/Next ones due/)).toBeInTheDocument();
+  });
+
+  it('still says when the next ones are due while only new questions wait', async () => {
+    mockApi({
+      '/api/me': me(),
+      '/api/v1/study/sessions/r1': json(review({ answered: 3, current: null })),
+      'POST /api/v1/study/sessions/r1/finish': json({
+        total: 3,
+        answered: 3,
+        correct: 3,
+        partial: 0,
+        wrong: 0,
+        missedQuestionIds: [],
+        missed: [],
+      }),
+      '/api/v1/review/today': json(
+        today({ newToday: 5, moreNew: 40, nextDueAt: '2026-11-25T22:00:00Z' }),
+      ),
+    });
+    renderAt('/quiz/r1');
+
+    expect(await screen.findByText(/Next ones due/)).toBeInTheDocument();
+    expect(screen.queryByText(messages.review.moreToday)).not.toBeInTheDocument();
   });
 
   it('shows the error and the way back when finishing fails', async () => {
