@@ -9,8 +9,7 @@ The production stack (M0-10, ADR-0041) and its automatic deploys (M0-11, ADR-004
 | `.env.example` | Every setting the stack needs. The real `.env` exists only on the server |
 | `initdb/` | Runs once, on an empty database volume: creates the read-only role |
 | `deploy.sh` | Deploys one image tag, checks health, rolls back if unhealthy; run by GitHub Actions and by hand |
-
-Backups (`backup/`) come in M0-12.
+| `backup/` | Nightly backup to R2, the daily disk check, the restore test and their crontab (M0-12) |
 
 ## On the server
 
@@ -20,6 +19,8 @@ Everything lives in `/home/deploy/quode/`, as the `deploy` user:
 /home/deploy/quode/
 ├── compose.yml, Caddyfile, initdb/   copied from this folder
 ├── deploy.sh                         copied from this folder, chmod 755
+├── backup/                           copied from this folder (backup.sh, disk-check.sh, restore-test.sh, crontab)
+├── backup.log                        written by the backup cron jobs
 ├── .env                              chmod 600, from .env.example and the password manager
 └── .previous-tag, .deploy.lock       written by deploy.sh
 ```
@@ -128,6 +129,42 @@ The private key goes only to GitHub; it never passes through chat or the reposit
 5. **Store the private key in the password manager,** then delete it from the laptop if you like. GitHub keeps its copy.
 6. **Old images and cleanup:** images published before M0-11 carry a provenance attestation, which makes each one several package versions. When cleanup trims them by age, the oldest of them may stop being pullable. Images from M0-11 on are one version each.
 7. **GHCR cleanup permission:** if the first **cleanup** job fails with a permission error, open each package (Profile → Packages → `quode-backend` / `quode-frontend`) → Package settings → Manage Actions access, and give the `quode` repository the **Admin** role.
+
+## Backups and alerts (M0-12)
+
+Every night at 02:30 UTC, `backup/backup.sh` dumps the database (`pg_dump`, custom format, compressed), checks that `pg_restore` can read it and uploads it to the R2 bucket (EU jurisdiction, ADR-0036), where a lifecycle rule deletes dumps after 14 days. A dump over 500 MB is not uploaded: the script alerts instead (free-tier guard). Every morning at 07:00 UTC, `backup/disk-check.sh` checks the disk. Both ping healthchecks.io, which emails when a ping fails or doesn't arrive. UptimeRobot checks `https://quode.app/api/health` every 5 minutes and emails when it's down.
+
+### Setting up (once; the owner's accounts)
+
+1. **R2 bucket.** Cloudflare → R2 → Create bucket `quode-backups`, location **European Union** (jurisdiction). Settings → Object lifecycle rules → delete objects 14 days after upload. In Billing, add a budget alert at $1.
+2. **R2 token.** R2 → Manage API tokens → Create token: **Object Read & Write**, applied to `quode-backups` only, no expiry or a long one. Save the Access Key ID, Secret Access Key and the EU endpoint (`https://<account-id>.eu.r2.cloudflarestorage.com`) in the password manager.
+3. **healthchecks.io.** Create two checks with email alerts: **quode backup** (period 1 day, grace 2 hours) and **quode disk** (period 1 day, grace 2 hours). Copy their ping URLs.
+4. **UptimeRobot.** New HTTP(s) monitor for `https://quode.app/api/health`, every 5 minutes, alerting your email.
+5. **Server.** Copy the folder and fill in `.env` (the owner types the secrets):
+   - `scp -r deploy/backup quode-prod:quode/` and `ssh quode-prod chmod 755 quode/backup/backup.sh quode/backup/disk-check.sh quode/backup/restore-test.sh`;
+   - add the `R2_*` and `HC_*` lines from `.env.example` to `~/quode/.env`, then run the key-name check from step 2 of the first deployment;
+   - `crontab -l` should print nothing (or keep what it prints), then `crontab ~/quode/backup/crontab`.
+6. **First run and restore test**, on the server in `~/quode`:
+   - `backup/backup.sh`: it ends with `done: quode-<time>.dump`, the dump is in the bucket and the backup check is green;
+   - `backup/restore-test.sh`: it downloads the newest dump into a throwaway container, restores it and prints the latest migration and the row counts; compare them with production;
+   - `backup/disk-check.sh`: the disk check turns green.
+7. **Test the alerts once:** on healthchecks.io, use the check's ⋯ → "Ping now" with `/fail` (or `curl -fsS -m 10 <ping-url>/fail` on the server), and pause/resume the UptimeRobot monitor; each should send an email.
+
+### Running
+
+- **Log:** `~/quode/backup.log`.
+- **A backup alert:** read the log's last lines; the failure reason is also in the check's log on healthchecks.io. Run `backup/backup.sh` by hand once it's fixed.
+- **A disk alert:** `df -h /`, `docker system df`; `docker image prune -a` removes images no container uses (the previous tag is pulled again if needed).
+- **Monthly:** copy the newest dump to the laptop (a copy outside Cloudflare, ADR-0036), for example `rclone` or the R2 dashboard's download.
+- **Restore test:** again after every Postgres major upgrade (`docs/architecture.md` §8).
+
+### Restoring production from a dump
+
+This replaces production data: only with Luca's explicit yes. On the server in `~/quode`, with the dump at `~/latest.dump`:
+1. `docker compose stop backend caddy`.
+2. `docker compose exec -T postgres dropdb -U quode quode && docker compose exec -T postgres createdb -U quode quode`.
+3. `docker compose exec -T postgres pg_restore -U quode -d quode --no-owner --exit-on-error < ~/latest.dump`.
+4. `docker compose up -d`, then check `https://quode.app/api/health` and sign in. The dump carries the read-only role's grants (the role itself lives on the server), so `quode_readonly` works as before.
 
 ## Day to day
 

@@ -101,6 +101,7 @@ Each module is a top-level package. Its root package holds the public API (servi
 - Monthly: copy the latest dump to the laptop (a copy outside Cloudflare).
 - Provider snapshots are not part of the plan: the R2 dumps are the backup (ADR-0040).
 - Restore test in M0 and after every Postgres upgrade. Target: a lost server is rebuilt in under one hour.
+- Scripts in `deploy/backup/`, run by the deploy user's cron; the upload uses the `rclone/rclone` image (MIT). healthchecks.io alerts on a failed or missing backup and on disk use of 80% or more; UptimeRobot checks `/api/health` every 5 minutes. Setup and restore: `deploy/README.md`.
 
 ## 9. CI/CD
 
