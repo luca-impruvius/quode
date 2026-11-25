@@ -3,7 +3,8 @@
 create table review_state (
     owner_id         uuid         not null references app_user (id),
     -- On question(id), not (id, owner_id): rule 6 may later let users review others' questions.
-    question_id      uuid         not null references question (id),
+    -- The schedule is derived data: it goes with the question (rule 4 keeps answered ones).
+    question_id      uuid         not null references question (id) on delete cascade,
     -- Orders the new questions (oldest first, after "Learn next" ones).
     enrolled_at      timestamptz  not null default now(),
     -- The first review answer; "new today" counts these.

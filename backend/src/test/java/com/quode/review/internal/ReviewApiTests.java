@@ -181,8 +181,10 @@ class ReviewApiTests {
     return JsonPath.read(json, "$.id");
   }
 
+  // The database's now(): what answered_at and started_at get in this test's transaction.
   private ReviewDays today() {
-    return ReviewDays.of(Instant.now(), BUCHAREST);
+    return ReviewDays.of(
+        jdbc.queryForObject("select now()", Timestamp.class).toInstant(), BUCHAREST);
   }
 
   /** Makes a question scheduled (reviewed before today), due at {@code dueAt}. */
@@ -247,20 +249,6 @@ class ReviewApiTests {
     assertThat(state("Typed in?")).isNotNull().containsEntry("due_at", null);
   }
 
-  @Test
-  void aDryRunImportEnrolsNothing() throws Exception {
-    send(
-            post("/api/v1/imports?dryRun=true"),
-            me(),
-            "{\"topic\":\"Cloud\",\"questions\":[{\"type\":\"FLASHCARD\",\"prompt\":\"Dry?\","
-                + "\"answer\":\"x\"}]}")
-        .andExpect(status().isOk());
-    assertThat(
-            jdbc.queryForObject(
-                "select count(*) from review_state where owner_id = ?", Integer.class, me))
-        .isEqualTo(11);
-  }
-
   // --- today and the queue ---
 
   @Test
@@ -287,12 +275,21 @@ class ReviewApiTests {
     send(put("/api/v1/me/settings"), me(), "{\"newPerDay\":7,\"reviewsPerDay\":30}")
         .andExpect(status().isOk());
     read("/review/today", me()).andExpect(jsonPath("$.newWaiting").value(5));
+  }
 
-    // After Learn more, today's new count passes the limit; what's left never goes negative.
-    limits(1, 30);
+  @Test
+  void learnMorePassesTheNewLimitAndWhatIsLeftNeverGoesNegative() throws Exception {
+    limits(2, 30);
+    answerAll(newReview("NONE"), "GOT_IT");
+
+    String more = newReview("LEARN_MORE");
+    assertThat(order(more)).containsExactly("Q3?", "Q4?", "Q5?", "Q6?", "Q7?");
+    answerAll(more, "GOT_IT");
+
     read("/review/today", me())
-        .andExpect(jsonPath("$.newToday").value(2))
-        .andExpect(jsonPath("$.newWaiting").value(0));
+        .andExpect(jsonPath("$.newToday").value(7))
+        .andExpect(jsonPath("$.newWaiting").value(0))
+        .andExpect(jsonPath("$.moreNew").value(2));
   }
 
   @Test
@@ -402,20 +399,21 @@ class ReviewApiTests {
   @Test
   void theReviewLimitCountsReviewsDoneTodayAndKeepGoingContinuesPastIt() throws Exception {
     limits(0, 2);
-    dueDaysAgo("Q1?", 1);
-    dueDaysAgo("Q2?", 2);
-    dueDaysAgo("Q3?", 3);
+    for (int i = 1; i <= 5; i++) {
+      dueDaysAgo("Q" + i + "?", i);
+    }
 
     String first = newReview("NONE");
-    assertThat(order(first)).containsExactly("Q3?", "Q2?");
+    assertThat(order(first)).containsExactly("Q5?", "Q4?");
     answerAll(first, "GOT_IT");
 
     read("/review/today", me())
         .andExpect(jsonPath("$.doneToday").value(2))
         .andExpect(jsonPath("$.due").value(0))
-        .andExpect(jsonPath("$.moreDue").value(1));
+        .andExpect(jsonPath("$.moreDue").value(3));
     startReview("NONE").andExpect(status().isConflict());
-    assertThat(order(newReview("KEEP_GOING"))).containsExactly("Q1?");
+    // Up to one more review limit's worth, most overdue first.
+    assertThat(order(newReview("KEEP_GOING"))).containsExactly("Q3?", "Q2?");
   }
 
   @Test
@@ -520,12 +518,25 @@ class ReviewApiTests {
     scheduled("Q1?", today().startOfToday().plusSeconds(86_400L * 5));
     Object reviewed = state("Q1?").get("last_reviewed_at");
 
-    answer(quiz("Q1?"), "Q1?", "MISSED");
+    answer(quiz("Q1?"), "Q1?", "MISSED").andExpect(status().isOk());
 
     Map<String, Object> after = state("Q1?");
     assertThat(((Timestamp) after.get("due_at")).toInstant()).isEqualTo(today().dueAt(1));
     assertThat(after).containsEntry("lapses", 1).containsEntry("last_reviewed_at", reviewed);
     read("/review/today", me()).andExpect(jsonPath("$.doneToday").value(0));
+  }
+
+  @Test
+  void aPartialQuizAnswerReschedulesAQuestionNotDueYet() throws Exception {
+    scheduled("Q1?", today().startOfToday().plusSeconds(86_400L * 5));
+
+    answer(quiz("Q1?"), "Q1?", "PARTIAL").andExpect(status().isOk());
+
+    // 3 days × 1.2 = 3.6 → 4 days; ease 2.5 − 0.15.
+    Map<String, Object> after = state("Q1?");
+    assertThat(((Timestamp) after.get("due_at")).toInstant()).isEqualTo(today().dueAt(4));
+    assertThat(((java.math.BigDecimal) after.get("ease")).doubleValue()).isEqualTo(2.35);
+    assertThat(after).containsEntry("reps", 2).containsEntry("lapses", 0);
   }
 
   @Test
@@ -535,8 +546,8 @@ class ReviewApiTests {
     dueDaysAgo("Q2?", 1);
 
     String quiz = quiz("Q1?", "Q2?");
-    answer(quiz, "Q1?", "GOT_IT");
-    answer(quiz, "Q2?", "GOT_IT");
+    answer(quiz, "Q1?", "GOT_IT").andExpect(status().isOk());
+    answer(quiz, "Q2?", "GOT_IT").andExpect(status().isOk());
 
     assertThat(((Timestamp) state("Q1?").get("due_at")).toInstant()).isEqualTo(later);
     assertThat(state("Q1?")).containsEntry("reps", 2);

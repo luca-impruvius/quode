@@ -11,6 +11,8 @@ class Sm2Scheduler implements SchedulingStrategy {
 
   private static final int MIN_EASE = 130;
   private static final int MAX_EASE = 300;
+  // A hundred years: far beyond any real review, and no int overflow.
+  static final int MAX_INTERVAL = 36_500;
 
   @Override
   public Schedule next(Schedule current, Grade grade) {
@@ -37,9 +39,9 @@ class Sm2Scheduler implements SchedulingStrategy {
     };
   }
 
-  // interval × hundredths / 100, rounded half up.
+  // interval × hundredths / 100, rounded half up, at most MAX_INTERVAL.
   private static int times(int interval, int hundredths) {
-    return (int) ((interval * (long) hundredths + 50) / 100);
+    return (int) Math.min(MAX_INTERVAL, (interval * (long) hundredths + 50) / 100);
   }
 
   private static int clamp(int ease) {

@@ -80,9 +80,12 @@ class ImportDryRunTests {
     importAs(true);
     assertThat(rows("question")).isZero();
     assertThat(rows("topic")).isZero();
+    assertThat(rows("review_state")).isZero();
 
     importAs(false);
     assertThat(rows("question")).isEqualTo(2);
     assertThat(rows("topic")).isEqualTo(2);
+    // Both are enrolled for review, the draft too (M3).
+    assertThat(rows("review_state")).isEqualTo(2);
   }
 }

@@ -81,12 +81,14 @@ class ReviewStates {
         state.questionId());
   }
 
-  void setLearnNext(UUID ownerId, UUID questionId, boolean learnNext) {
+  /** Add to review (as new) or keep the state, with this Learn next setting, in one statement. */
+  void enrolWithLearnNext(UUID ownerId, UUID questionId, boolean learnNext) {
     jdbc.update(
-        "update review_state set learn_next = ? where owner_id = ? and question_id = ?",
-        learnNext,
+        "insert into review_state (owner_id, question_id, learn_next) values (?, ?, ?)"
+            + " on conflict (owner_id, question_id) do update set learn_next = excluded.learn_next",
         ownerId,
-        questionId);
+        questionId,
+        learnNext);
   }
 
   /** Remove from review: the schedule and its history go too (the spec's trade-off). */

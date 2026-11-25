@@ -88,7 +88,6 @@ class ReviewController {
     return view(me, id);
   }
 
-  // Each step is one statement; enrolling twice is harmless (on conflict do nothing).
   @PutMapping("/questions/{id}/review")
   QuestionReview saveQuestionReview(@PathVariable UUID id, @RequestBody ReviewControls input) {
     if (input.enrolled() == null || input.learnNext() == null) {
@@ -96,12 +95,10 @@ class ReviewController {
     }
     UUID me = currentUser.id();
     requireOwn(me, id);
-    if (!input.enrolled()) {
-      states.remove(me, id);
-    } else if (states.find(me, id, false).isEmpty()) {
-      states.enrol(me, id, input.learnNext());
+    if (input.enrolled()) {
+      states.enrolWithLearnNext(me, id, input.learnNext());
     } else {
-      states.setLearnNext(me, id, input.learnNext());
+      states.remove(me, id);
     }
     return view(me, id);
   }

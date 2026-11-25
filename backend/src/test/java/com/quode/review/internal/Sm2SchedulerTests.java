@@ -84,6 +84,12 @@ class Sm2SchedulerTests {
   }
 
   @Test
+  void intervalsStopAtAHundredYears() {
+    assertThat(after(new Schedule(30_000, 3.0, 9, 0), Grade.GOT_IT).intervalDays())
+        .isEqualTo(Sm2Scheduler.MAX_INTERVAL);
+  }
+
+  @Test
   void gradesComeFromAttemptOutcomes() {
     assertThat(Grade.ofOutcome("CORRECT")).isEqualTo(Grade.GOT_IT);
     assertThat(Grade.ofOutcome("PARTIAL")).isEqualTo(Grade.PARTIAL);
