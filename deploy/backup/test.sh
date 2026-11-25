@@ -69,7 +69,7 @@ expect() {
 SCRIPT=backup.sh
 run "a good backup" 0
 expect "it starts the check" 'hc.example/ping/backup/start' yes
-expect "it uploads the dump" 'docker run .*rclone.* copyto /dump/quode-.*\.dump r2:quode-backups/quode-' yes
+expect "it uploads the dump" 'docker run .*rclone.* copyto /dump/quode-.*\.dump r2:quode-backups/quode-.*\.dump --s3-no-check-bucket' yes
 expect "it pings success with the size" 'curl .*uploaded quode-.*\(100 bytes\) https://hc.example/ping/backup$' yes
 expect "it never puts a secret in arguments" 'stub-secret|stub-key' no
 
@@ -88,7 +88,33 @@ run "a failed upload" 1 STUB_UPLOAD_EXIT=1
 expect "a failed upload alerts" 'upload to R2 failed.*ping/backup/fail' yes
 expect "a failed upload never pings success" 'uploaded quode-' no
 
+# Settings missing from .env must be reported, not end the script silently.
+cp "$root/quode/.env" "$root/env.full"
+without() { grep -v "^$1=" "$root/env.full" >"$root/quode/.env"; }
+
+without R2_BUCKET
+run "missing R2 settings" 1
+expect "missing R2 settings alert" 'R2 settings are missing.*ping/backup/fail' yes
+expect "missing R2 settings dump nothing" 'pg_dump' no
+
+without HC_BACKUP_URL
+run "no healthchecks URL" 0
+expect "no healthchecks URL still uploads" 'docker run' yes
+expect "no healthchecks URL pings nothing" 'curl' no
+grep -q "HC_BACKUP_URL is not set" "$root/out" || {
+  echo "FAIL no healthchecks URL: not logged"
+  failures=$((failures + 1))
+}
+
 SCRIPT=disk-check.sh
+without HC_DISK_URL
+run "no disk check URL" 1 STUB_DISK=42
+grep -q "HC_DISK_URL is not set" "$root/out" || {
+  echo "FAIL no disk check URL: not logged"
+  failures=$((failures + 1))
+}
+cp "$root/env.full" "$root/quode/.env"
+
 run "a disk below 80%" 0 STUB_DISK=42
 expect "below 80% pings success" 'disk 42% used https://hc.example/ping/disk$' yes
 run "a disk at 80%" 0 STUB_DISK=80

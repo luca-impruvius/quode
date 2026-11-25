@@ -19,7 +19,7 @@ Everything lives in `/home/deploy/quode/`, as the `deploy` user:
 /home/deploy/quode/
 ├── compose.yml, Caddyfile, initdb/   copied from this folder
 ├── deploy.sh                         copied from this folder, chmod 755
-├── backup/                           copied from this folder (backup.sh, disk-check.sh, restore-test.sh, crontab)
+├── backup/                           copied from this folder (the scripts, counts.sql, crontab)
 ├── backup.log                        written by the backup cron jobs
 ├── .env                              chmod 600, from .env.example and the password manager
 └── .previous-tag, .deploy.lock       written by deploy.sh
@@ -47,7 +47,7 @@ Host quode-prod
    `cd ~/quode && cp .env.example .env && chmod 600 .env && nano .env`.
    Generate the two database passwords with `openssl rand -hex 32` (hex needs no quoting anywhere), and save everything in the password manager.
    Then check that no key name was mistyped (a wrong name is silently ignored, and the backend fails to start):
-   `diff <(grep -o '^[A-Z_]*=' .env.example | sort) <(grep -o '^[A-Z_]*=' .env | sort)` prints nothing when they match.
+   `diff <(grep -o '^[A-Z0-9_]*=' .env.example | sort) <(grep -o '^[A-Z0-9_]*=' .env | sort)` prints nothing when they match.
 3. **Log in to the registry once.** On GitHub, go to Settings → Developer settings → Personal access tokens → Tokens (classic) and create a token with **`read:packages` only** and an expiry, saved in the password manager. Then:
    `docker login ghcr.io -u luca-impruvius`. Paste the token when asked. Docker stores it unencrypted in `~/.docker/config.json`, which is why the token can only read packages.
 4. **Publish images:** GitHub → Actions → **Images & deploy** → Run workflow on `main`. Copy the run's commit SHA into `QUODE_TAG` in `.env`. Until the deploy key is set up (below), that run's deploy job fails; on a first deployment that's expected.
@@ -106,9 +106,9 @@ Roll forward the same way, with the newer SHA.
 
 Both ways pull the tag from GHCR first, so they fail ("nothing changed") if cleanup has trimmed it, GHCR is down or the registry token has expired. The previous tag in `deploy.sh status` is always kept on the server, so it can still be started by hand: in `~/quode`, set `QUODE_TAG=<full-commit-sha>` in `.env`, then `docker compose up -d`, and check `docker compose ps` and `https://quode.app/api/health`. To rehearse a rollback, use that previous tag.
 
-**Copy these by hand.** The deploy key can't copy files, so when `compose.yml`, the `Caddyfile`, `initdb/` or `deploy.sh` change, copy them before the merge, or right after:
+**Copy these by hand.** The deploy key can't copy files, so when `compose.yml`, the `Caddyfile`, `initdb/`, `deploy.sh`, `backup/` or `.env.example` change, copy them before the merge, or right after:
 - for example `scp deploy/compose.yml quode-prod:quode/`;
-- the deploy job warns when the server's `compose.yml`, `Caddyfile` or `deploy.sh` differs from the commit's (not on rollback runs with **tag**);
+- the deploy job warns when the server's `compose.yml`, `Caddyfile` or `deploy.sh` differs from the commit's (not on rollback runs with **tag**); it doesn't check `backup/`;
 - for a Caddyfile-only change: `docker compose exec caddy caddy reload --config /etc/caddy/Caddyfile`.
 
 ### Setting up the deploy key (once)
@@ -140,31 +140,35 @@ Every night at 02:30 UTC, `backup/backup.sh` dumps the database (`pg_dump`, cust
 2. **R2 token.** R2 → Manage API tokens → Create token: **Object Read & Write**, applied to `quode-backups` only, no expiry or a long one. Save the Access Key ID, Secret Access Key and the EU endpoint (`https://<account-id>.eu.r2.cloudflarestorage.com`) in the password manager.
 3. **healthchecks.io.** Create two checks with email alerts: **quode backup** (period 1 day, grace 2 hours) and **quode disk** (period 1 day, grace 2 hours). Copy their ping URLs.
 4. **UptimeRobot.** New HTTP(s) monitor for `https://quode.app/api/health`, every 5 minutes, alerting your email.
-5. **Server.** Copy the folder and fill in `.env` (the owner types the secrets):
-   - `scp -r deploy/backup quode-prod:quode/` and `ssh quode-prod chmod 755 quode/backup/backup.sh quode/backup/disk-check.sh quode/backup/restore-test.sh`;
-   - add the `R2_*` and `HC_*` lines from `.env.example` to `~/quode/.env`, then run the key-name check from step 2 of the first deployment;
-   - `crontab -l` should print nothing (or keep what it prints), then `crontab ~/quode/backup/crontab`.
+5. **Server.** Copy the files and fill in `.env` (the owner types the secrets):
+   - from the repository root on the laptop: `scp -r deploy/backup deploy/.env.example quode-prod:quode/`, then `ssh quode-prod chmod 755 quode/backup/backup.sh quode/backup/disk-check.sh quode/backup/restore-test.sh`;
+   - add the `R2_*` and `HC_*` lines from `.env.example` to `~/quode/.env` (`nano ~/quode/.env`), then run the key-name check from step 2 of the first deployment: it prints nothing when they match;
+   - `timedatectl` should show `Time zone: Etc/UTC`, since cron uses the server's clock (`sudo timedatectl set-timezone Etc/UTC` if not);
+   - `crontab -l`: if it prints lines, add them to `~/quode/backup/crontab` first, because the next command replaces the whole crontab. Then `crontab ~/quode/backup/crontab`.
 6. **First run and restore test**, on the server in `~/quode`:
    - `backup/backup.sh`: it ends with `done: quode-<time>.dump`, the dump is in the bucket and the backup check is green;
-   - `backup/restore-test.sh`: it downloads the newest dump into a throwaway container, restores it and prints the latest migration and the row counts; compare them with production;
+   - `backup/restore-test.sh`: it downloads the newest dump into a throwaway container, restores it and prints the latest migration and the row counts. Compare them with production: `docker compose exec -T postgres psql -U quode -d quode -f - < backup/counts.sql` (the same unless someone used the app in between);
    - `backup/disk-check.sh`: the disk check turns green.
-7. **Test the alerts once:** on healthchecks.io, use the check's ⋯ → "Ping now" with `/fail` (or `curl -fsS -m 10 <ping-url>/fail` on the server), and pause/resume the UptimeRobot monitor; each should send an email.
+7. **Test the alerts once:** on the server, `curl -fsS -m 10 "$(grep '^HC_BACKUP_URL=' ~/quode/.env | cut -d= -f2-)/fail"` marks the backup check down and should email you; the next backup (or running `backup/backup.sh`) turns it green again. For UptimeRobot, pause and resume the monitor, or use its test notification; each should send an email.
 
 ### Running
 
 - **Log:** `~/quode/backup.log`.
 - **A backup alert:** read the log's last lines; the failure reason is also in the check's log on healthchecks.io. Run `backup/backup.sh` by hand once it's fixed.
-- **A disk alert:** `df -h /`, `docker system df`; `docker image prune -a` removes images no container uses (the previous tag is pulled again if needed).
+- **A disk alert:** `df -h /`, `docker system df`; `docker image prune -a` removes images no container uses (the previous tag is pulled again if needed); `backup.log` and `deploy.log` can be truncated.
 - **Monthly:** copy the newest dump to the laptop (a copy outside Cloudflare, ADR-0036), for example `rclone` or the R2 dashboard's download.
 - **Restore test:** again after every Postgres major upgrade (`docs/architecture.md` §8).
 
 ### Restoring production from a dump
 
-This replaces production data: only with Luca's explicit yes. On the server in `~/quode`, with the dump at `~/latest.dump`:
-1. `docker compose stop backend caddy`.
-2. `docker compose exec -T postgres dropdb -U quode quode && docker compose exec -T postgres createdb -U quode quode`.
-3. `docker compose exec -T postgres pg_restore -U quode -d quode --no-owner --exit-on-error < ~/latest.dump`.
-4. `docker compose up -d`, then check `https://quode.app/api/health` and sign in. The dump carries the read-only role's grants (the role itself lives on the server), so `quode_readonly` works as before.
+This replaces production data: only with Luca's explicit yes. On the server in `~/quode` (after a lost server, first rebuild it with `docs/runbooks/server-setup.md`, start the stack from "First deployment" and fill in `.env` with the `R2_*` lines):
+1. **Get the dump and prove it restores:** `backup/restore-test.sh --keep ~/latest.dump` downloads the newest one (or pass a file: `backup/restore-test.sh --keep ~/latest.dump <file.dump>`), restores it into a throwaway container and keeps a copy only if that worked.
+2. **Keep a copy of what's there now:** `docker compose exec -T postgres pg_dump -U quode -d quode --format=custom > ~/before-restore.dump`.
+3. **Stop the app:** `docker compose stop caddy backend`.
+4. **Put the dump inside the container:** `docker compose cp ~/latest.dump postgres:/tmp/latest.dump` (pg_restore needs a file, not a pipe).
+5. **Replace the database:** `docker compose exec -T postgres dropdb -U quode --force quode`, then `docker compose exec -T postgres createdb -U quode quode`. `--force` closes other connections, for example DBeaver's.
+6. **Restore, all or nothing:** `docker compose exec -T postgres pg_restore -U quode -d quode --no-owner --single-transaction --exit-on-error /tmp/latest.dump`, then `docker compose exec -T postgres rm /tmp/latest.dump`. If it fails, the database stays empty: fix the cause and repeat, or restore `~/before-restore.dump` the same way.
+7. **Start and check:** `docker compose up -d`, `docker compose exec -T postgres psql -U quode -d quode -f - < backup/counts.sql`, `https://quode.app/api/health`, and sign in. The dump carries the read-only role's grants (the role itself lives on the server), so `quode_readonly` works as before.
 
 ## Day to day
 

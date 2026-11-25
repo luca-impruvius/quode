@@ -4,7 +4,7 @@
 #
 # 1. pg_dump in the custom format (compressed) from the postgres container.
 # 2. Refuses a dump over 500 MB: it alerts instead of uploading (R2 free-tier guard).
-# 3. Checks that pg_restore can read the archive.
+# 3. Checks that pg_restore can read the whole archive.
 # 4. Uploads it to the R2 bucket, where a lifecycle rule deletes objects after 14 days.
 # 5. Pings healthchecks.io: /start, then success or /fail with the reason. No ping = an alert.
 #
@@ -19,7 +19,8 @@ RCLONE_IMAGE=rclone/rclone:1.71.0
 
 log() { echo "backup: $(date -u +%Y-%m-%dT%H:%M:%SZ) $*"; }
 
-env_value() { grep -E "^$1=" .env | tail -n 1 | cut -d= -f2-; }
+# A missing key is an empty value, so the checks below can report it.
+env_value() { grep -E "^$1=" .env | tail -n 1 | cut -d= -f2- || true; }
 
 # $1: "" (success), /start or /fail; $2: a message for the check's log (never a secret).
 ping_check() {
@@ -33,10 +34,14 @@ ping_check() {
 }
 
 fail() {
+  trap - ERR
   log "error: $*"
   ping_check /fail "$*"
   exit 1
 }
+
+# Anything else that fails is reported at once, not only when the check's grace time runs out.
+trap 'fail "unexpected error on line $LINENO"' ERR
 
 workdir=$(mktemp -d)
 trap 'rm -rf "$workdir"' EXIT
@@ -44,6 +49,14 @@ trap 'rm -rf "$workdir"' EXIT
 ping_check /start
 name="quode-$(date -u +%Y-%m-%dT%H%M%SZ).dump"
 dump="$workdir/$name"
+
+bucket=$(env_value R2_BUCKET)
+endpoint=$(env_value R2_ENDPOINT)
+access_key=$(env_value R2_ACCESS_KEY_ID)
+secret_key=$(env_value R2_SECRET_ACCESS_KEY)
+if [ -z "$bucket" ] || [ -z "$endpoint" ] || [ -z "$access_key" ] || [ -z "$secret_key" ]; then
+  fail "R2 settings are missing in .env (R2_ENDPOINT, R2_BUCKET, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY)"
+fi
 
 log "dumping to $name"
 docker compose exec -T postgres pg_dump -U "$(env_value DB_USER)" -d quode --format=custom \
@@ -54,19 +67,17 @@ size=$(wc -c <"$dump" | tr -d ' ')
 [ "$size" -le "$MAX_BYTES" ] ||
   fail "the dump is $size bytes, over the $MAX_BYTES limit: not uploaded"
 
+# Reads every block (writing the SQL to /dev/null, no database touched), so a truncated dump fails.
 # pg_restore needs a seekable file, so the check reads a copy inside the container.
 docker compose exec -T postgres sh -c \
-  'f=$(mktemp) && cat >"$f" && pg_restore --list "$f" >/dev/null; s=$?; rm -f "$f"; exit $s' \
+  'f=$(mktemp) && cat >"$f" && pg_restore -f /dev/null "$f"; s=$?; rm -f "$f"; exit $s' \
   <"$dump" || fail "pg_restore can't read the dump"
 
 export RCLONE_CONFIG_R2_TYPE=s3
 export RCLONE_CONFIG_R2_PROVIDER=Cloudflare
-export RCLONE_CONFIG_R2_ENDPOINT RCLONE_CONFIG_R2_ACCESS_KEY_ID RCLONE_CONFIG_R2_SECRET_ACCESS_KEY
-RCLONE_CONFIG_R2_ENDPOINT=$(env_value R2_ENDPOINT)
-RCLONE_CONFIG_R2_ACCESS_KEY_ID=$(env_value R2_ACCESS_KEY_ID)
-RCLONE_CONFIG_R2_SECRET_ACCESS_KEY=$(env_value R2_SECRET_ACCESS_KEY)
-bucket=$(env_value R2_BUCKET)
-[ -n "$bucket" ] && [ -n "$RCLONE_CONFIG_R2_ENDPOINT" ] || fail "R2 settings are missing in .env"
+export RCLONE_CONFIG_R2_ENDPOINT=$endpoint
+export RCLONE_CONFIG_R2_ACCESS_KEY_ID=$access_key
+export RCLONE_CONFIG_R2_SECRET_ACCESS_KEY=$secret_key
 
 log "uploading $size bytes"
 # The token can only reach its bucket, so rclone must not try to create or list buckets.

@@ -9,18 +9,22 @@ cd "$(dirname "$self")/.."
 
 LIMIT_PERCENT=80
 
-env_value() { grep -E "^$1=" .env | tail -n 1 | cut -d= -f2-; }
+log() { echo "disk-check: $(date -u +%Y-%m-%dT%H:%M:%SZ) $*"; }
+
+env_value() { grep -E "^$1=" .env | tail -n 1 | cut -d= -f2- || true; }
 
 url=$(env_value HC_DISK_URL)
-[ -n "$url" ] || {
-  echo "disk-check: HC_DISK_URL is not set" >&2
+if [ -z "$url" ]; then
+  log "error: HC_DISK_URL is not set"
   exit 1
-}
+fi
 
 used=$(df --output=pcent / | tail -n 1 | tr -dc '0-9')
 if [ "$used" -lt "$LIMIT_PERCENT" ]; then
+  log "disk ${used}% used"
   curl -fsS -m 10 --retry 5 -o /dev/null --data-raw "disk ${used}% used" "$url"
 else
+  log "disk ${used}% used, over ${LIMIT_PERCENT}%"
   curl -fsS -m 10 --retry 5 -o /dev/null --data-raw \
-    "disk ${used}% used, over ${LIMIT_PERCENT}%: run docker system prune, check logs" "$url/fail"
+    "disk ${used}% used, over ${LIMIT_PERCENT}%: see deploy/README.md, Backups and alerts" "$url/fail"
 fi
