@@ -137,13 +137,13 @@ Every night at 02:30 server time (Europe/Berlin on quode-prod), `backup/backup.s
 ### Setting up (once; the owner's accounts)
 
 1. **R2 bucket.** Cloudflare → R2 → Create bucket `quode-backups`, location **European Union** (jurisdiction). Settings → Object lifecycle rules → delete objects 14 days after upload. In Billing, add a budget alert at $1.
-2. **R2 token.** R2 → Manage API tokens → Create token: **Object Read & Write**, applied to `quode-backups` only, no expiry or a long one. Leave **Client IP Address Filtering** empty, or set it to the server's address only (`<vps-ip>/32`): a filter on your home address makes R2 answer the server with 403 Access Denied. Save the Access Key ID, Secret Access Key and the EU endpoint in the password manager. The endpoint must contain `.eu.` (`https://<account-id>.eu.r2.cloudflarestorage.com`): an EU-jurisdiction bucket isn't reachable on the plain one. Note the token's expiry in your calendar.
+2. **R2 token.** R2 → Manage API tokens → Create token: **Object Read & Write**, applied to `quode-backups` only, no expiry or a long one (note it in your calendar if it has one). Leave **Client IP Address Filtering** empty, or set it to the server's address only (`<vps-ip>/32`): a filter on your home address makes R2 answer the server with 403 Access Denied. Save the Access Key ID, Secret Access Key and the EU endpoint in the password manager. The endpoint must contain `.eu.` (`https://<account-id>.eu.r2.cloudflarestorage.com`): an EU-jurisdiction bucket isn't reachable on the plain one.
 3. **healthchecks.io.** Create two checks with email alerts: **quode backup** (period 1 day, grace 2 hours) and **quode disk** (period 1 day, grace 2 hours). Copy their ping URLs.
 4. **UptimeRobot.** New HTTP(s) monitor for `https://quode.app/api/health`, every 5 minutes, alerting your email.
 5. **Server.** Copy the files and fill in `.env` (the owner types the secrets):
    - from the repository root on the laptop: `scp -r deploy/backup deploy/.env.example quode-prod:quode/`, then `ssh quode-prod chmod 755 quode/backup/backup.sh quode/backup/disk-check.sh quode/backup/restore-test.sh`;
    - add the `R2_*` and `HC_*` lines from `.env.example` to `~/quode/.env` (`nano ~/quode/.env`), then run the key-name check from step 2 of the first deployment: it prints nothing when they match;
-   - `timedatectl` shows the time zone cron uses for the crontab's times (quode-prod: Europe/Berlin, so 02:30 and 07:00 Berlin time);
+   - `timedatectl` shows the time zone cron uses for the crontab's times (quode-prod: Europe/Berlin, so 02:30 and 07:00 Berlin time). On the spring clock change, 02:30 falls in the skipped hour; cron runs the job right after the change, and the checks' 2-hour grace covers the shift either way;
    - `crontab -l`: if it prints lines, add them to `~/quode/backup/crontab` first, because the next command replaces the whole crontab. Then `crontab ~/quode/backup/crontab`.
 6. **First run and restore test**, on the server in `~/quode`:
    - `backup/backup.sh`: it ends with `done: quode-<time>.dump`, the dump is in the bucket and the backup check is green;
@@ -153,7 +153,7 @@ Every night at 02:30 server time (Europe/Berlin on quode-prod), `backup/backup.s
 
 ### Setup record (2026-11-25)
 
-Scripts from `f260700` (#84), installed from the desktop PC with its own SSH key (`quode-desktop-pc` in `~/.ssh/authorized_keys`). Everything in the setup steps passed:
+Scripts from `f260700` (#84), installed from the desktop PC with its own SSH key (`quode-desktop-pc` in `~/.ssh/authorized_keys`; see `docs/runbooks/server-setup.md` on per-machine keys). Everything in the setup steps passed except UptimeRobot's alert email, still to test (step 7):
 
 - bucket `quode-backups` (EU) with the 14-day lifecycle rule; token `quode-backup-writer`, Object Read & Write on that bucket only, no IP filter, active until 2027-11-08;
 - first backup: a 51 KB dump uploaded, the healthchecks.io backup check green;
@@ -162,11 +162,11 @@ Scripts from `f260700` (#84), installed from the desktop PC with its own SSH key
 - crontab installed (Europe/Berlin clock); a test `/fail` ping emailed the alert;
 - UptimeRobot monitors `/api/health` every 5 minutes and shows Up.
 
-Two problems on the way, now in the steps above: the endpoint lacked `.eu.`, and the token's IP filter allowed only a home address (both gave 403).
+Two problems on the way, now in the steps above: the endpoint lacked `.eu.`, and the token's IP filter allowed only a home address (both gave 403 Access Denied).
 
 ### Running
 
-- **Log:** `~/quode/backup.log`.
+- **Log:** `~/quode/backup.log` (its times are UTC, so the 02:30 Berlin run shows as 00:30Z or 01:30Z).
 - **A backup alert:** read the log's last lines; the failure reason is also in the check's log on healthchecks.io. Run `backup/backup.sh` by hand once it's fixed.
 - **A disk alert:** `df -h /`, `docker system df`; `docker image prune -a` removes images no container uses (the previous tag is pulled again if needed); `backup.log` and `deploy.log` can be truncated.
 - **Monthly:** copy the newest dump to the laptop (a copy outside Cloudflare, ADR-0036), for example `rclone` or the R2 dashboard's download.
@@ -198,3 +198,4 @@ This replaces production data: only with Luca's explicit yes. On the server in `
 - **Read-only role password:** `docker compose exec postgres psql -U quode -d quode -c "ALTER ROLE quode_readonly PASSWORD '<new>'"`. Update `.env` too, though it's only read when the database is first created.
 - **Deploy key:** create a new key (step 1 of the setup), add its line on the server, update `DEPLOY_SSH_KEY`, run a deploy, then delete the old key's line from `~/.ssh/authorized_keys`.
 - **Google client secret:** create a new secret on the "Quode production" client, put it in `.env`, run `docker compose up -d backend`, then delete the old secret.
+- **R2 token** (it expires; healthchecks.io alerts when backups start failing with 403): create a new token with the same scope (Object Read & Write, `quode-backups` only, no IP filter), replace `R2_ACCESS_KEY_ID` and `R2_SECRET_ACCESS_KEY` in `~/quode/.env`, run `backup/backup.sh` and check that the backup check turns green, then delete the old token.
