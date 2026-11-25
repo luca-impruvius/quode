@@ -6,7 +6,7 @@
 3. **Check health and version** through an SSH tunnel to the management port (`ssh -L 8081:localhost:8081 quode-prod`): `localhost:8081/actuator/health`, `localhost:8081/actuator/info` (git commit and build time). The public check is `/api/health`.
 4. **More detail if needed:** raise the affected module to DEBUG via the Actuator `loggers` endpoint (`POST localhost:8081/actuator/loggers/com.quode.<module>` with `{"configuredLevel":"DEBUG"}`, same tunnel), reproduce, then set it back.
 5. **Inspect data** read-only with the `quode_readonly` role: `ssh -L 55432:localhost:5432 quode-prod`, then a database client on `localhost:55432` (details in `deploy/README.md`). It can't read the session tables.
-6. **If urgent, roll back first:** redeploy the previous commit's image tag. Safe because destructive migrations take two releases.
+6. **If urgent, roll back first:** deploy the previous commit's image tag (Actions → Images & deploy → Run workflow with **tag**, or `~/quode/deploy.sh deploy <sha>`; `deploy/README.md`). Safe because destructive migrations take two releases.
 7. **Reproduce locally** with a failing test. For data-dependent bugs, restore last night's backup into the local database.
 8. **Fix through the normal flow:** small PR, CI, review, merge, deploy. Never edit code on the server.
 9. **Close the loop:** keep the regression test, write the root cause in the issue, add a Quode question.

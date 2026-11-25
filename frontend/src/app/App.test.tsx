@@ -63,7 +63,7 @@ describe('App shell', () => {
     ).toBeInTheDocument();
   });
 
-  it('has a tab bar whose other tabs say Coming soon', async () => {
+  it('has a tab bar with Today, Library, Add, Quizzes and Me', async () => {
     signedIn();
     renderAt('/');
     const nav = await screen.findByRole('navigation', { name: messages.tabs.label });
@@ -79,12 +79,11 @@ describe('App shell', () => {
       messages.tabs.me,
     ]);
 
-    // Library has its own tests (LibraryPage.test.tsx).
-    for (const tab of [messages.tabs.quizzes]) {
-      await userEvent.click(screen.getByRole('link', { name: tab }));
-      expect(await screen.findByRole('heading', { name: tab })).toBeInTheDocument();
-      expect(screen.getByText(messages.comingSoon)).toBeInTheDocument();
-    }
+    // Library and Quizzes have their own tests (LibraryPage.test.tsx, QuizPage.test.tsx).
+    await userEvent.click(screen.getByRole('link', { name: messages.tabs.quizzes }));
+    expect(
+      await screen.findByRole('heading', { name: messages.quizzes.title }),
+    ).toBeInTheDocument();
 
     // The add button opens the editor (EditorPage.test.tsx).
     await userEvent.click(screen.getByRole('link', { name: messages.tabs.today }));

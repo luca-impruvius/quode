@@ -20,7 +20,7 @@ Domain rules: [domain.md](../domain.md) §1 and §4 (rules 9 and 10).
 - **Order:** the list comes in display order: parents before their children, siblings A–Z ignoring case.
 - **Move:** to another topic or to the top level. Moving under itself or one of its descendants → 409. The name must also be free among the new siblings.
 - **Delete:** only a leaf that no question links to, archived questions included. Sub-topics → 409 "Move or delete its sub-topics first."; questions → 409 "Questions use this topic.".
-- **Counts:** distinct non-archived questions in the topic and all its descendants (recursive CTE). A question tagged under Java and Collections counts once under Java.
+- **Counts:** distinct non-archived questions ready to study (drafts excluded, M2) in the topic and all its descendants (recursive CTE). A question tagged under Java and Collections counts once under Java.
 - **Starter topics:** the seed tree in domain.md §1 (8 roots, 37 topics), created for the current user only, on request, and only while they have no topics. Otherwise 409.
 - **Concurrency:** writes to one owner's tree are serialized (a PostgreSQL advisory lock per owner, held until commit), so two simultaneous moves can't create a cycle together.
 - **Module boundary:** `taxonomy` doesn't know about questions. It asks every `com.quode.taxonomy.TopicUsage` bean (implemented by `question` from M1-04) for counts and for "is this topic used?". With none, every count is 0 and nothing is in use.
