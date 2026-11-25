@@ -5,6 +5,7 @@ import { LibraryPage } from '../pages/LibraryPage';
 import { LoginPage } from '../pages/LoginPage';
 import { MePage } from '../pages/MePage';
 import { NotFoundPage } from '../pages/NotFoundPage';
+import { QuizzesPage } from '../pages/QuizzesPage';
 import { TodayPage } from '../pages/TodayPage';
 import { AppShell } from './AppShell';
 import { RequireSignIn } from './RequireSignIn';
@@ -24,6 +25,14 @@ export const routes: RouteObject[] = [
       },
       { path: 'add', lazy: editor },
       {
+        path: 'quiz/:id',
+        lazy: () => import('../pages/QuizPage').then((m) => ({ Component: m.QuizPage })),
+      },
+      {
+        path: 'import',
+        lazy: () => import('../pages/ImportPage').then((m) => ({ Component: m.ImportPage })),
+      },
+      {
         path: 'questions/:id',
         lazy: () =>
           import('../pages/QuestionDetailPage').then((m) => ({ Component: m.QuestionDetailPage })),
@@ -34,7 +43,7 @@ export const routes: RouteObject[] = [
         children: [
           { index: true, element: <TodayPage /> },
           { path: 'library', element: <LibraryPage /> },
-          { path: 'quizzes', element: <ComingSoonPage title={messages.tabs.quizzes} /> },
+          { path: 'quizzes', element: <QuizzesPage /> },
           { path: 'me', element: <MePage /> },
           { path: 'stats', element: <ComingSoonPage title={messages.me.stats} /> },
           { path: '*', element: <NotFoundPage /> },

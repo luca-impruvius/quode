@@ -43,13 +43,35 @@ final class QuestionRules {
   private QuestionRules() {}
 
   static Optional<String> check(QuestionInput q) {
+    return check(q, false);
+  }
+
+  /**
+   * The rules for a DRAFT (bulk import, M2): everything except the answer. A choice draft may have
+   * no options yet, or options with none marked correct; a flashcard or open draft no answer.
+   */
+  static Optional<String> checkDraft(QuestionInput q) {
+    return check(q, true);
+  }
+
+  /** Whether the question still lacks its answer: no correct option, or no answer text. */
+  static boolean needsAnswer(QuestionInput q) {
+    if (q.type() == null) {
+      return false;
+    }
+    return q.type().isChoice()
+        ? q.optionsOrEmpty().stream().noneMatch(o -> o != null && o.correct())
+        : isBlank(q.answerMd());
+  }
+
+  private static Optional<String> check(QuestionInput q, boolean draft) {
     if (q.type() == null) {
       return Optional.of(TYPE);
     }
     if (isBlank(q.promptMd()) || tooLong(q.promptMd(), MAX_PROMPT)) {
       return Optional.of(PROMPT);
     }
-    if (!q.type().isChoice() && isBlank(q.answerMd())) {
+    if (!draft && !q.type().isChoice() && isBlank(q.answerMd())) {
       return Optional.of(ANSWER_REQUIRED);
     }
     if (tooLong(q.answerMd(), MAX_TEXT)) {
@@ -75,12 +97,16 @@ final class QuestionRules {
     if (q.primaryTopicId() == null || !topics.contains(q.primaryTopicId())) {
       return Optional.of(PRIMARY);
     }
-    return checkOptions(q.type(), q.optionsOrEmpty());
+    return checkOptions(q.type(), q.optionsOrEmpty(), draft);
   }
 
-  private static Optional<String> checkOptions(QuestionType type, List<OptionInput> options) {
+  private static Optional<String> checkOptions(
+      QuestionType type, List<OptionInput> options, boolean draft) {
     if (!type.isChoice()) {
       return options.isEmpty() ? Optional.empty() : Optional.of(NO_OPTIONS);
+    }
+    if (draft && options.isEmpty()) {
+      return Optional.empty();
     }
     if (options.size() < MIN_OPTIONS
         || options.size() > MAX_OPTIONS
@@ -93,6 +119,9 @@ final class QuestionRules {
       }
     }
     long correct = options.stream().filter(OptionInput::correct).count();
+    if (draft && correct == 0) {
+      return Optional.empty();
+    }
     if (type == QuestionType.SINGLE_CHOICE && correct != 1) {
       return Optional.of(SINGLE_CORRECT);
     }

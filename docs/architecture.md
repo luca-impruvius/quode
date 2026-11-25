@@ -79,7 +79,7 @@ Each module is a top-level package. Its root package holds the public API (servi
 | `taxonomy` | topic tree, descendant queries | user |
 | `question` | question, answer_option, question_topic | taxonomy, user |
 | `quiz` | quiz, quiz_question, filter evaluation | question |
-| `study` | study_session, attempt, grading | quiz, question, review (queue only) |
+| `study` | study_session, attempt, grading | question (`QuestionCatalog`), user; later quiz and review (queue only) |
 | `review` | review_state, scheduler, daily queue | question; listens to `AttemptRecorded` |
 
 `study` publishes `AttemptRecorded`; `review` applies the asymmetric quiz rule (ADR-0012). Modulith's event publication registry keeps the event if the listener fails.

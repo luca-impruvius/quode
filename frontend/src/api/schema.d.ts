@@ -36,6 +36,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/imports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["importQuestions"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/questions": {
         parameters: {
             query?: never;
@@ -46,6 +62,22 @@ export interface paths {
         get: operations["list_1"];
         put?: never;
         post: operations["create_1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/questions/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["export"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -126,6 +158,70 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["unflag"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/study/sessions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["startSession"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/study/sessions/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getSession"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/study/sessions/{id}/answers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["answerQuestion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/study/sessions/{id}/finish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["finishSession"];
         delete?: never;
         options?: never;
         head?: never;
@@ -216,15 +312,109 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        AnswerInput: {
+            grade?: string | null;
+            /** Format: uuid */
+            questionId?: string;
+            selectedOptionIds?: string[];
+        };
+        AnswerResult: {
+            answerMd: string | null;
+            correctOptionIds: string[];
+            explanationMd: string | null;
+            outcome: string;
+            session: components["schemas"]["SessionView"];
+        };
+        CardOption: {
+            /** Format: uuid */
+            id: string;
+            textMd: string;
+        };
         CreateTopic: {
             name?: string;
             /** Format: uuid */
             parentId?: string;
         };
+        ExportFile: {
+            questions: components["schemas"]["ExportItem"][];
+            /** Format: int32 */
+            remaining: number;
+            topic: string | null;
+        };
+        ExportItem: {
+            answer: string | null;
+            /** Format: int32 */
+            difficulty: number;
+            explanation: string | null;
+            /** Format: uuid */
+            id: string;
+            options: components["schemas"]["ExportOption"][];
+            prompt: string;
+            sourceUrl: string | null;
+            topics: string[];
+            /** @enum {string} */
+            type: "FLASHCARD" | "SINGLE_CHOICE" | "MULTIPLE_CHOICE" | "OPEN_TEXT";
+        };
+        ExportOption: {
+            correct: boolean;
+            text: string;
+        };
+        FinishResult: {
+            /** Format: int32 */
+            answered: number;
+            /** Format: int32 */
+            correct: number;
+            missed: components["schemas"]["MissedQuestion"][];
+            missedQuestionIds: string[];
+            /** Format: int32 */
+            partial: number;
+            /** Format: int32 */
+            total: number;
+            /** Format: int32 */
+            wrong: number;
+        };
         FlagInput: {
             note?: string;
             /** Format: int64 */
             version?: number;
+        };
+        ImportInput: {
+            questions?: components["schemas"]["ImportItem"][];
+            topic?: string | null;
+        };
+        ImportItem: {
+            answer?: string | null;
+            /** Format: int32 */
+            difficulty?: number;
+            explanation?: string | null;
+            id?: string | null;
+            options?: components["schemas"]["ImportOption"][];
+            prompt?: string | null;
+            sourceUrl?: string | null;
+            topics?: string[];
+            type?: string | null;
+        };
+        ImportOption: {
+            correct?: boolean;
+            text?: string;
+        };
+        ImportProblem: {
+            /** Format: int32 */
+            index: number;
+            reason: string;
+        };
+        ImportReport: {
+            /** Format: int32 */
+            created: number;
+            /** Format: int32 */
+            drafts: number;
+            /** Format: int32 */
+            filled: number;
+            problems: components["schemas"]["ImportProblem"][];
+            /** Format: int32 */
+            skippedDuplicates: number;
+            /** Format: int32 */
+            topicsCreated: number;
         };
         LibraryItem: {
             archived: boolean;
@@ -258,6 +448,11 @@ export interface components {
             name: string;
             timeZone: string;
         };
+        MissedQuestion: {
+            /** Format: uuid */
+            id: string;
+            promptMd: string;
+        };
         MoveTopic: {
             /** Format: uuid */
             parentId: string | null;
@@ -271,6 +466,16 @@ export interface components {
             /** Format: uuid */
             id: string;
             textMd: string;
+        };
+        QuestionCard: {
+            answerMd: string | null;
+            explanationMd: string | null;
+            /** Format: uuid */
+            id: string;
+            options: components["schemas"]["CardOption"][];
+            promptMd: string;
+            /** @enum {string} */
+            type: "FLASHCARD" | "SINGLE_CHOICE" | "MULTIPLE_CHOICE" | "OPEN_TEXT";
         };
         QuestionInput: {
             answerMd?: string | null;
@@ -317,6 +522,29 @@ export interface components {
         };
         RenameTopic: {
             name?: string;
+        };
+        SessionView: {
+            /** Format: int32 */
+            answered: number;
+            /** Format: int32 */
+            correct: number;
+            current: components["schemas"]["QuestionCard"] | null;
+            /** Format: date-time */
+            finishedAt: string | null;
+            /** Format: uuid */
+            id: string;
+            kind: string;
+            /** Format: int32 */
+            total: number;
+        };
+        StartSession: {
+            /** Format: int32 */
+            count?: number;
+            kind?: string | null;
+            mode?: string | null;
+            questionIds?: string[];
+            shuffle?: boolean;
+            topicIds?: string[];
         };
         TopicItem: {
             /** Format: uuid */
@@ -391,6 +619,32 @@ export interface operations {
             };
         };
     };
+    importQuestions: {
+        parameters: {
+            query?: {
+                dryRun?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ImportInput"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImportReport"];
+                };
+            };
+        };
+    };
     list_1: {
         parameters: {
             query?: {
@@ -440,6 +694,29 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["QuestionView"];
+                };
+            };
+        };
+    };
+    export: {
+        parameters: {
+            query?: {
+                status?: string;
+                topicId?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExportFile"];
                 };
             };
         };
@@ -592,6 +869,100 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["QuestionView"];
+                };
+            };
+        };
+    };
+    startSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StartSession"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionView"];
+                };
+            };
+        };
+    };
+    getSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionView"];
+                };
+            };
+        };
+    };
+    answerQuestion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AnswerInput"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnswerResult"];
+                };
+            };
+        };
+    };
+    finishSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FinishResult"];
                 };
             };
         };

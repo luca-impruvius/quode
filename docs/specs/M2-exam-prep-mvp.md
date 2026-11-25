@@ -29,17 +29,17 @@ Domain rules: [domain.md](../domain.md) §4. This spec adds rules 12 and 13 ther
   ```
   `type` is one of the four existing types. `answer`, `explanation`, `difficulty` (default 2), `sourceUrl` and extra `topics` are optional. Topic paths use `›` and are created when missing (limits of [M1-topics](M1-topics.md) apply).
 - **Pasted-text layout** (parsed in the browser into the same JSON, then previewed): blocks separated by a blank line, each `Q:` prompt, options `A)`, `B)`, …, `Answer: B` or `Answer: B, D`, optional `Explanation:`. Anything messier is converted to JSON by Claude first; the app does not guess.
-- **Missing answers:** a choice question with no correct option, or a flashcard/open question with no answer, is imported as `DRAFT`. Drafts never appear in quizzes or reviews (rule 3). The Library gets a **Needs answer** filter (the DRAFT list).
-- **Fill answers later:** *Export* on the Needs-answer list produces the same JSON, with each question's `id`. Importing an item that has an `id` fills in a DRAFT question's options, answer and explanation and makes it `ACTIVE` once it satisfies the rules. A question that is already `ACTIVE` is never overwritten; the report says so.
+- **Missing answers:** a choice question with no correct option, or a flashcard/open question with no answer, is imported as `DRAFT`. Drafts never appear in quizzes or reviews (rule 3). The Library gets a **Needs answer** filter (the DRAFT list, `status=needs_answer`); the default Active list shows only questions ready to study.
+- **Fill answers later:** *Export* on the Needs-answer list produces the same JSON, with each question's `id`. Importing an item that has an `id` fills in a DRAFT question's options, answer and explanation (and difficulty or source link when given; type, prompt and topics stay) and makes it `ACTIVE` once it satisfies the rules. A file that only fills answers creates no topics. A question that is already `ACTIVE` is never overwritten; the report says so. An export holds at most 2,000 questions (one import), oldest first, and says how many remain; import the filled file and export again for the next batch.
 - **Duplicates:** a question whose prompt equals an existing one of the same user (ignoring case and repeated spaces) is skipped and counted.
-- **Validation:** each question is checked with the existing question rules. Invalid ones are listed (position and reason); the valid ones are still imported. One import is one database transaction.
+- **Validation:** each question is checked with the existing question rules. Invalid ones are listed (position from 1, and reason); the valid ones are still imported. One import is one database transaction. A value of the wrong JSON kind (say `options` that isn't a list) rejects the whole file with a 400, since the file can't be read; a malformed `id` is reported for that question only.
 - **Preview:** *Check* runs everything without saving and returns the same report. *Import* saves.
 
 ### Quick quiz
-- Start from a topic (its sub-topics included) or from the current Library filter. Choose how many (10 / 20 / 50 / all), which (all / not seen yet / missed before) and shuffle on or off. Only `ACTIVE`, non-archived questions are used.
+- Start from a topic (its sub-topics included) or from the current Library filter. Choose how many (10 / 20 / 50 / all, up to 2,000), which (all / not seen yet / missed before) and shuffle on or off. Only `ACTIVE`, non-archived questions are used.
 - Choice questions are graded at once: the correct options and the explanation appear after the answer. Flashcard and open questions: reveal the answer, then self-grade Got it / Partial / Missed (ADR-0005). `MULTIPLE_CHOICE` is all-or-nothing.
 - A quiz is a `study_session` of kind `ADHOC` that snapshots its question order and can be resumed (ADR-0002). It does not enrol questions into review (ADR-0012).
-- The end screen shows the score and the missed questions, and **Retry missed** starts a new quiz from them.
+- The end screen shows the score and the missed questions, and **Retry missed** starts a new quiz from them. Missed means answered Missed or Partial (or a wrong choice); a retry is started with `questionIds` instead of `topicIds`. Answers follow the snapshot order, one per question; a quiz with nothing to ask is refused (409). *Not seen yet* means never answered by this user; *missed before* means the latest answer was wrong or partial. A question archived or edited during a quiz stays in that quiz (the order is a snapshot, rule 8); new quizzes leave it out.
 
 ### Desktop layout
 - From 1024 px wide: a left sidebar replaces the bottom tab bar; content is centred up to about 1100 px. The Library shows the list and the selected question side by side. The editor uses two columns. Quiz cards are centred, with keyboard shortcuts (option letters, Enter for reveal/next, 1/2/3 for the grade).
@@ -56,6 +56,11 @@ All under `/api/v1`, signed in, CSRF token on writes, errors as Problem Details.
 | GET | `/study/sessions/{id}` | — | 200 current question and progress |
 | POST | `/study/sessions/{id}/answers` | `{questionId, selectedOptionIds[]}` or `{questionId, grade}` | 200 outcome, correct options, explanation |
 | POST | `/study/sessions/{id}/finish` | — | 200 score and missed question ids |
+
+## Module boundary
+- `taxonomy` exposes `TopicPaths.resolve(ownerId, paths)`: finds topics by path ("A › B", names matched ignoring case) and creates the missing ones in the caller's transaction, under the topic tree lock. `question` uses it for imports.
+
+- `question` exposes `QuestionCatalog` to `study`: studyable ids by topic trees, filtering given ids, and questions with their options for grading. `study` publishes `AttemptRecorded` after each answer; nothing listens yet (review comes later).
 
 ## Data
 - `V6__create_study_session_and_attempt.sql`: `study_session` and `attempt` as in [domain.md](../domain.md) §2. Additive only.
