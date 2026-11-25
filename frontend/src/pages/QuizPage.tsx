@@ -90,7 +90,7 @@ function Quiz({ id }: { id: string }) {
           <ChevronLeft aria-hidden="true" size={20} strokeWidth={2} />
           {review ? r.back : m.quit}
         </Link>
-        <p className="col-start-2 font-semibold">{review ? r.title : ''}</p>
+        {review && <p className="col-start-2 font-semibold">{r.title}</p>}
         {data && !done && (
           <span className="col-start-3 justify-self-end px-space-2 text-ink-muted">
             <span aria-hidden="true">{m.progress(position, data.total)}</span>
