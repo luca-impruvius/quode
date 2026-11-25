@@ -19,7 +19,7 @@ Domain rules: [domain.md](../domain.md) §4 (rules 1–4).
 - **Limits:** prompt 1–2,000 characters; answer and explanation up to 10,000 each; option text 1–2,000; difficulty 1–3; source link optional, `http://` or `https://`, up to 2,000.
 - **Correct options:** `SINGLE_CHOICE` exactly one; `MULTIPLE_CHOICE` at least one.
 - **Topics:** 1–5 different topics of the same user, exactly one of them primary (`primaryTopicId`).
-- **Status:** new questions are `ACTIVE`. `DRAFT` exists in the model only.
+- **Status:** new questions are `ACTIVE`. `DRAFT` exists in the model only (bulk import creates drafts from M2: [M2-exam-prep-mvp](M2-exam-prep-mvp.md)).
 - **Flag for fixing (M1-07):** flag a question with an optional note (trimmed, up to 200 characters); flagging again replaces the note; unflag clears both. **Saving an edit clears the flag** (the edit is the fix). Flag and unflag send the version like any other write.
 - **Archive instead of delete:** archive sets `archivedAt`; unarchive clears it. Archived questions don't count in topic counts, but still block deleting their topics.
 - **Optimistic locking:** every question has a `version`. Edit, archive, unarchive, flag and unflag send the version the client read; an older one → 409 "This question changed elsewhere. Reload to see the latest version." Edits of one question are also serialized with a row lock, so two saves of the same version give exactly one 200 and one 409.

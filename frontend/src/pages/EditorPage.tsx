@@ -25,6 +25,7 @@ import {
   toQuestionInput,
   type QuestionFormValues,
 } from '../lib/questionSchema';
+import { useDesktop } from '../app/useDesktop';
 import { messages } from '../messages';
 
 const e = messages.editor;
@@ -101,6 +102,7 @@ function EditorForm({
   });
   const { register, watch, setValue, formState } = form;
   const [moreOpen, setMoreOpen] = useState(false);
+  const desktop = useDesktop();
   const [picking, setPicking] = useState(false);
   const [saved, setSaved] = useState(false);
 
@@ -115,7 +117,8 @@ function EditorForm({
   // wrong, or Save would seem to do nothing.
   const hiddenError =
     formState.errors.explanationMd !== undefined || formState.errors.sourceUrl !== undefined;
-  const showMore = moreOpen || hiddenError;
+  // On desktop the second column has room, so More options start open there.
+  const showMore = moreOpen || hiddenError || desktop;
 
   const sourceErrorId = useId();
 
@@ -179,7 +182,7 @@ function EditorForm({
   const stale = save.error instanceof ApiError && save.error.status === 409;
 
   return (
-    <div className="mx-auto flex min-h-dvh max-w-md flex-col">
+    <div className="mx-auto flex min-h-dvh max-w-md flex-col lg:max-w-5xl">
       <header className="flex items-center justify-between border-b border-line px-space-3 py-space-2">
         <Link
           to={existing ? `/questions/${existing.id}` : '/library'}
@@ -196,89 +199,98 @@ function EditorForm({
         onSubmit={(event) => void submit('open')(event)}
         className="flex flex-1 flex-col"
       >
-        <main className="flex flex-1 flex-col gap-space-4 px-space-4 py-space-4">
+        <main className="flex flex-1 flex-col gap-space-4 px-space-4 py-space-4 lg:grid lg:grid-cols-2 lg:content-start lg:items-start lg:gap-x-space-6">
           {saved && (
-            <p role="status" className="rounded-md bg-correct-bg px-space-4 py-space-3">
+            <p
+              role="status"
+              className="rounded-md bg-correct-bg px-space-4 py-space-3 lg:col-span-2"
+            >
               {e.saved}
             </p>
           )}
-          <MarkdownField
-            label={e.question}
-            value={watch('promptMd')}
-            error={formState.errors.promptMd?.message}
-            rows={3}
-            textarea={register('promptMd')}
-          />
-          <MarkdownField
-            label={choice ? e.answerOptional : e.answer}
-            value={watch('answerMd')}
-            error={formState.errors.answerMd?.message}
-            hint={e.markdownHint}
-            textarea={register('answerMd')}
-          />
-          {choice && <OptionsEditor form={form} />}
-          <TopicChips
-            form={form}
-            paths={paths}
-            onAdd={() => setPicking(true)}
-            error={formState.errors.topicIds?.message}
-          />
+          <div className="flex flex-col gap-space-4">
+            <MarkdownField
+              label={e.question}
+              value={watch('promptMd')}
+              error={formState.errors.promptMd?.message}
+              rows={3}
+              textarea={register('promptMd')}
+            />
+            <MarkdownField
+              label={choice ? e.answerOptional : e.answer}
+              value={watch('answerMd')}
+              error={formState.errors.answerMd?.message}
+              hint={e.markdownHint}
+              textarea={register('answerMd')}
+            />
+            {choice && <OptionsEditor form={form} />}
+            <TopicChips
+              form={form}
+              paths={paths}
+              onAdd={() => setPicking(true)}
+              error={formState.errors.topicIds?.message}
+            />
+          </div>
 
-          <div className="h-px bg-line" />
-          <button
-            type="button"
-            aria-expanded={showMore}
-            onClick={() => setMoreOpen(!showMore)}
-            className="flex min-h-11 items-center justify-between font-bold"
-          >
-            {e.moreOptions}
-            <span aria-hidden="true">{showMore ? '▴' : '▾'}</span>
-          </button>
-          {showMore && (
-            <>
-              <Segmented
-                legend={e.type}
-                options={types.map((t) => ({ value: t, label: messages.questionTypes[t] }))}
-                value={type}
-                onChange={(t) => setValue('type', t, { shouldValidate: formState.isSubmitted })}
-              />
-              <Segmented
-                legend={e.difficulty}
-                options={e.difficulties.map((label, i) => ({ value: i + 1, label }))}
-                value={watch('difficulty')}
-                onChange={(d) => setValue('difficulty', d)}
-              />
-              <MarkdownField
-                label={e.explanation}
-                value={watch('explanationMd')}
-                error={formState.errors.explanationMd?.message}
-                rows={3}
-                textarea={register('explanationMd')}
-              />
-              <label className="flex flex-col gap-space-1">
-                <span className="font-bold">{e.source}</span>
-                <input
-                  type="url"
-                  inputMode="url"
-                  placeholder="https://"
-                  aria-invalid={formState.errors.sourceUrl !== undefined}
-                  aria-describedby={formState.errors.sourceUrl ? sourceErrorId : undefined}
-                  className="h-12 rounded-md border-2 border-line bg-surface px-space-3"
-                  {...register('sourceUrl')}
+          <div className="flex flex-col gap-space-4">
+            <div className="h-px bg-line lg:hidden" />
+            {!desktop && (
+              <button
+                type="button"
+                aria-expanded={showMore}
+                onClick={() => setMoreOpen(!showMore)}
+                className="flex min-h-11 items-center justify-between font-bold"
+              >
+                {e.moreOptions}
+                <span aria-hidden="true">{showMore ? '▴' : '▾'}</span>
+              </button>
+            )}
+            {showMore && (
+              <>
+                <Segmented
+                  legend={e.type}
+                  options={types.map((t) => ({ value: t, label: messages.questionTypes[t] }))}
+                  value={type}
+                  onChange={(t) => setValue('type', t, { shouldValidate: formState.isSubmitted })}
                 />
-              </label>
-              {formState.errors.sourceUrl && (
-                <span id={sourceErrorId} className="-mt-space-3 type-body-sm text-missed">
-                  {formState.errors.sourceUrl.message}
-                </span>
-              )}
-            </>
-          )}
+                <Segmented
+                  legend={e.difficulty}
+                  options={e.difficulties.map((label, i) => ({ value: i + 1, label }))}
+                  value={watch('difficulty')}
+                  onChange={(d) => setValue('difficulty', d)}
+                />
+                <MarkdownField
+                  label={e.explanation}
+                  value={watch('explanationMd')}
+                  error={formState.errors.explanationMd?.message}
+                  rows={3}
+                  textarea={register('explanationMd')}
+                />
+                <label className="flex flex-col gap-space-1">
+                  <span className="font-bold">{e.source}</span>
+                  <input
+                    type="url"
+                    inputMode="url"
+                    placeholder="https://"
+                    aria-invalid={formState.errors.sourceUrl !== undefined}
+                    aria-describedby={formState.errors.sourceUrl ? sourceErrorId : undefined}
+                    className="h-12 rounded-md border-2 border-line bg-surface px-space-3"
+                    {...register('sourceUrl')}
+                  />
+                </label>
+                {formState.errors.sourceUrl && (
+                  <span id={sourceErrorId} className="-mt-space-3 type-body-sm text-missed">
+                    {formState.errors.sourceUrl.message}
+                  </span>
+                )}
+              </>
+            )}
+          </div>
 
           {stale && (
             <div
               role="alert"
-              className="flex flex-col gap-space-2 rounded-md bg-missed-bg p-space-4"
+              className="flex flex-col gap-space-2 rounded-md bg-missed-bg p-space-4 lg:col-span-2"
             >
               <p className="font-semibold">{e.stale}</p>
               <p className="type-body-sm">{e.staleHint}</p>
@@ -291,7 +303,11 @@ function EditorForm({
               </button>
             </div>
           )}
-          {save.isError && !stale && <ErrorNotice error={save.error} />}
+          {save.isError && !stale && (
+            <div className="lg:col-span-2">
+              <ErrorNotice error={save.error} />
+            </div>
+          )}
         </main>
 
         <div

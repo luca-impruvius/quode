@@ -26,7 +26,7 @@ class QuestionTopicUsage implements TopicUsage {
         """
         select qt.topic_id, qt.question_id
           from question_topic qt join question q on q.id = qt.question_id
-         where q.owner_id = ? and q.archived_at is null
+         where q.owner_id = ? and q.archived_at is null and q.status = 'ACTIVE'
         """,
         rs -> {
           byTopic

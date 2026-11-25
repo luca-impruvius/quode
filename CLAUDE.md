@@ -1,9 +1,9 @@
 # CLAUDE.md
 
-Quode: mobile-first spaced-repetition study app. Single user for now (Phase 1). Claude implements and merges what Luca approves; Luca approves plans and reviews every PR (ADR-0038, ADR-0039).
+Quode: mobile-first spaced-repetition study app. Single user for now (Phase 1). Claude implements and merges when checks pass; Luca approves plans and checks results in the running app (ADR-0043; risky work still needs his yes, ADR-0039).
 
 ## Working model
-- You implement all code, tests, migrations and docs. Luca approves milestone plans and reviews every PR. You merge a PR only after Luca approves it in the session (ADR-0039).
+- You implement all code, tests, migrations and docs. Luca approves milestone plans and checks results on quode.app. You merge a PR when CI is green, the reviewer agent has nothing open and it is not `review:careful` (ADR-0043); `review:careful` PRs wait for Luca's yes (ADR-0039).
 - Stop and ask when:
   - something is ambiguous or not covered by the docs or ADRs;
   - a new decision is needed (propose an ADR);
@@ -18,8 +18,8 @@ Quode: mobile-first spaced-repetition study app. Single user for now (Phase 1). 
 2. Branch `<type>/<issue>-<slug>` from an up-to-date `main`.
 3. Tests first from the acceptance criteria. Run the full build and paste the output as evidence; don't claim success without it.
 4. Commit, then run the `reviewer` agent; fix every Blocking and Should-fix item.
-5. Small PRs (< ~400 lines) using the PR template, with `Closes #<issue>`. Title in Conventional Commits: `feat(review): ...`, scopes = module names, `frontend`, `infra`, `deps`, `adr`.
-6. Merge only on Luca's approval, per ADR-0039 and `/next-task` step 7: up to date with `main`, rebuilt, squash, never `--admin` or `--auto`.
+5. One PR per feature, backend and screens together where both are needed, up to about 800 lines of code (tests and generated API files don't count; ADR-0044), using the PR template, with `Closes #<issue>`. Title in Conventional Commits: `feat(review): ...`, scopes = module names, `frontend`, `infra`, `deps`, `adr`.
+6. Merge per ADR-0043 (ordinary PRs) or ADR-0039 (`review:careful`, after Luca's yes): up to date with `main`, rebuilt, squash, never `--admin` or `--auto`. After a deploy, run the spec's checklist on quode.app and report with screenshots.
 7. If a decision changes, update the living doc (`docs/architecture.md`, `docs/domain.md`, `docs/spaced-repetition.md`, `docs/conventions.md`, `docs/onboarding.md`) in the same PR, or add a new ADR in `docs/adr/`.
 
 ## Commands
@@ -43,7 +43,7 @@ Quode: mobile-first spaced-repetition study app. Single user for now (Phase 1). 
 - Timestamps `timestamptz` in UTC; "today" uses the user's time zone via an injected `Clock`.
 
 ## Never
-- Never merge a PR Luca hasn't approved, push to `main` directly or force-push.
+- Never merge a `review:careful` PR Luca hasn't approved, push to `main` directly or force-push.
 - Never edit a Flyway migration that is already merged; add a new one. Destructive schema changes take two releases.
 - Never add a dependency without stating its license; flag anything that is not OSI open source (see `docs/conventions.md`).
 - Never commit secrets, `.env` files, credentials or personal data. Never print secrets in logs.

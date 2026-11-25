@@ -38,6 +38,43 @@
         "tags" : [ "me-controller" ]
       }
     },
+    "/v1/imports" : {
+      "post" : {
+        "operationId" : "importQuestions",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "dryRun",
+          "required" : false,
+          "schema" : {
+            "type" : "boolean",
+            "default" : false
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ImportInput"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ImportReport"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "import-controller" ]
+      }
+    },
     "/v1/questions" : {
       "get" : {
         "operationId" : "list_1",
@@ -146,6 +183,41 @@
           }
         },
         "tags" : [ "question-controller" ]
+      }
+    },
+    "/v1/questions/export" : {
+      "get" : {
+        "operationId" : "export",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "status",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "default" : "DRAFT"
+          }
+        }, {
+          "in" : "query",
+          "name" : "topicId",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ExportFile"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "export-controller" ]
       }
     },
     "/v1/questions/{id}" : {
@@ -358,6 +430,125 @@
         "tags" : [ "question-controller" ]
       }
     },
+    "/v1/study/sessions" : {
+      "post" : {
+        "operationId" : "startSession",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/StartSession"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SessionView"
+                }
+              }
+            },
+            "description" : "Created"
+          }
+        },
+        "tags" : [ "study-controller" ]
+      }
+    },
+    "/v1/study/sessions/{id}" : {
+      "get" : {
+        "operationId" : "getSession",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SessionView"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "study-controller" ]
+      }
+    },
+    "/v1/study/sessions/{id}/answers" : {
+      "post" : {
+        "operationId" : "answerQuestion",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/AnswerInput"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AnswerResult"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "study-controller" ]
+      }
+    },
+    "/v1/study/sessions/{id}/finish" : {
+      "post" : {
+        "operationId" : "finishSession",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/FinishResult"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "study-controller" ]
+      }
+    },
     "/v1/topics" : {
       "get" : {
         "operationId" : "list",
@@ -523,6 +714,63 @@
   },
   "components" : {
     "schemas" : {
+      "AnswerInput" : {
+        "type" : "object",
+        "properties" : {
+          "grade" : {
+            "type" : [ "string", "null" ]
+          },
+          "questionId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "selectedOptionIds" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string",
+              "format" : "uuid"
+            }
+          }
+        }
+      },
+      "AnswerResult" : {
+        "type" : "object",
+        "properties" : {
+          "answerMd" : {
+            "type" : [ "string", "null" ]
+          },
+          "correctOptionIds" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string",
+              "format" : "uuid"
+            }
+          },
+          "explanationMd" : {
+            "type" : [ "string", "null" ]
+          },
+          "outcome" : {
+            "type" : "string"
+          },
+          "session" : {
+            "$ref" : "#/components/schemas/SessionView"
+          }
+        },
+        "required" : [ "answerMd", "correctOptionIds", "explanationMd", "outcome", "session" ]
+      },
+      "CardOption" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "textMd" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "id", "textMd" ]
+      },
       "CreateTopic" : {
         "type" : "object",
         "properties" : {
@@ -535,6 +783,118 @@
           }
         }
       },
+      "ExportFile" : {
+        "type" : "object",
+        "properties" : {
+          "questions" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ExportItem"
+            }
+          },
+          "remaining" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "topic" : {
+            "type" : [ "string", "null" ]
+          }
+        },
+        "required" : [ "questions", "remaining", "topic" ]
+      },
+      "ExportItem" : {
+        "type" : "object",
+        "properties" : {
+          "answer" : {
+            "type" : [ "string", "null" ]
+          },
+          "difficulty" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "explanation" : {
+            "type" : [ "string", "null" ]
+          },
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "options" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ExportOption"
+            }
+          },
+          "prompt" : {
+            "type" : "string"
+          },
+          "sourceUrl" : {
+            "type" : [ "string", "null" ]
+          },
+          "topics" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "type" : {
+            "type" : "string",
+            "enum" : [ "FLASHCARD", "SINGLE_CHOICE", "MULTIPLE_CHOICE", "OPEN_TEXT" ]
+          }
+        },
+        "required" : [ "answer", "difficulty", "explanation", "id", "options", "prompt", "sourceUrl", "topics", "type" ]
+      },
+      "ExportOption" : {
+        "type" : "object",
+        "properties" : {
+          "correct" : {
+            "type" : "boolean"
+          },
+          "text" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "correct", "text" ]
+      },
+      "FinishResult" : {
+        "type" : "object",
+        "properties" : {
+          "answered" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "correct" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "missed" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/MissedQuestion"
+            }
+          },
+          "missedQuestionIds" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string",
+              "format" : "uuid"
+            }
+          },
+          "partial" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "total" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "wrong" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        },
+        "required" : [ "answered", "correct", "missed", "missedQuestionIds", "partial", "total", "wrong" ]
+      },
       "FlagInput" : {
         "type" : "object",
         "properties" : {
@@ -546,6 +906,115 @@
             "format" : "int64"
           }
         }
+      },
+      "ImportInput" : {
+        "type" : "object",
+        "properties" : {
+          "questions" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ImportItem"
+            }
+          },
+          "topic" : {
+            "type" : [ "string", "null" ]
+          }
+        }
+      },
+      "ImportItem" : {
+        "type" : "object",
+        "properties" : {
+          "answer" : {
+            "type" : [ "string", "null" ]
+          },
+          "difficulty" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "explanation" : {
+            "type" : [ "string", "null" ]
+          },
+          "id" : {
+            "type" : [ "string", "null" ]
+          },
+          "options" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ImportOption"
+            }
+          },
+          "prompt" : {
+            "type" : [ "string", "null" ]
+          },
+          "sourceUrl" : {
+            "type" : [ "string", "null" ]
+          },
+          "topics" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "type" : {
+            "type" : [ "string", "null" ]
+          }
+        }
+      },
+      "ImportOption" : {
+        "type" : "object",
+        "properties" : {
+          "correct" : {
+            "type" : "boolean"
+          },
+          "text" : {
+            "type" : "string"
+          }
+        }
+      },
+      "ImportProblem" : {
+        "type" : "object",
+        "properties" : {
+          "index" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "reason" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "index", "reason" ]
+      },
+      "ImportReport" : {
+        "type" : "object",
+        "properties" : {
+          "created" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "drafts" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "filled" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "problems" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ImportProblem"
+            }
+          },
+          "skippedDuplicates" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "topicsCreated" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        },
+        "required" : [ "created", "drafts", "filled", "problems", "skippedDuplicates", "topicsCreated" ]
       },
       "LibraryItem" : {
         "type" : "object",
@@ -630,6 +1099,19 @@
         },
         "required" : [ "email", "name", "timeZone" ]
       },
+      "MissedQuestion" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "promptMd" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "id", "promptMd" ]
+      },
       "MoveTopic" : {
         "type" : "object",
         "properties" : {
@@ -666,6 +1148,35 @@
           }
         },
         "required" : [ "correct", "id", "textMd" ]
+      },
+      "QuestionCard" : {
+        "type" : "object",
+        "properties" : {
+          "answerMd" : {
+            "type" : [ "string", "null" ]
+          },
+          "explanationMd" : {
+            "type" : [ "string", "null" ]
+          },
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "options" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/CardOption"
+            }
+          },
+          "promptMd" : {
+            "type" : "string"
+          },
+          "type" : {
+            "type" : "string",
+            "enum" : [ "FLASHCARD", "SINGLE_CHOICE", "MULTIPLE_CHOICE", "OPEN_TEXT" ]
+          }
+        },
+        "required" : [ "answerMd", "explanationMd", "id", "options", "promptMd", "type" ]
       },
       "QuestionInput" : {
         "type" : "object",
@@ -787,6 +1298,74 @@
         "properties" : {
           "name" : {
             "type" : "string"
+          }
+        }
+      },
+      "SessionView" : {
+        "type" : "object",
+        "properties" : {
+          "answered" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "correct" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "current" : {
+            "anyOf" : [ {
+              "$ref" : "#/components/schemas/QuestionCard"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "finishedAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time"
+          },
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "kind" : {
+            "type" : "string"
+          },
+          "total" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        },
+        "required" : [ "answered", "correct", "current", "finishedAt", "id", "kind", "total" ]
+      },
+      "StartSession" : {
+        "type" : "object",
+        "properties" : {
+          "count" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "kind" : {
+            "type" : [ "string", "null" ]
+          },
+          "mode" : {
+            "type" : [ "string", "null" ]
+          },
+          "questionIds" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string",
+              "format" : "uuid"
+            }
+          },
+          "shuffle" : {
+            "type" : "boolean"
+          },
+          "topicIds" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string",
+              "format" : "uuid"
+            }
           }
         }
       },

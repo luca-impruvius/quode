@@ -1,6 +1,6 @@
 package com.quode.question.internal;
 
-/** DRAFT exists in the model only (no UI in M1); the app creates ACTIVE questions. */
+/** DRAFT: saved without its answer (bulk import, M2); never in quizzes or reviews. */
 enum QuestionStatus {
   DRAFT,
   ACTIVE

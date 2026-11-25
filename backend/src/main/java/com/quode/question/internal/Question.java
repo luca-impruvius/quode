@@ -22,6 +22,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.CurrentTimestamp;
 import org.hibernate.annotations.SourceType;
 import org.hibernate.annotations.UuidGenerator;
@@ -123,10 +124,13 @@ class Question {
   @Column(name = "updated_at", nullable = false)
   private Instant updatedAt;
 
+  // Batched lazy loads: an import that fills many questions reads their children in few queries.
+  @BatchSize(size = 100)
   @OneToMany(mappedBy = "question", cascade = CascadeType.ALL, orphanRemoval = true)
   @OrderBy("position")
   private List<AnswerOption> options = new ArrayList<>();
 
+  @BatchSize(size = 100)
   @ElementCollection
   @CollectionTable(name = "question_topic", joinColumns = @JoinColumn(name = "question_id"))
   private Set<TopicLink> topics = new HashSet<>();
@@ -173,6 +177,16 @@ class Question {
     while (options.size() > wantedOptions.size()) {
       options.removeLast();
     }
+  }
+
+  /** Saved without its answer yet (bulk import, M2): kept out of quizzes and reviews. */
+  void markDraft() {
+    status = QuestionStatus.DRAFT;
+  }
+
+  /** The answer is in: the question can be studied. */
+  void activate() {
+    status = QuestionStatus.ACTIVE;
   }
 
   void archive(Instant now) {
