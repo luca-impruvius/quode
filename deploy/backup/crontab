@@ -1,5 +1,5 @@
 # The deploy user's crontab on the server (M0-12). Install with: crontab ~/quode/backup/crontab
-# Times are the server's clock (UTC). Output goes to ~/quode/backup.log.
+# Times are the server's clock (quode-prod: Europe/Berlin). Output goes to ~/quode/backup.log.
 # m  h  dom mon dow  command
 30   2  *   *   *    /home/deploy/quode/backup/backup.sh >>/home/deploy/quode/backup.log 2>&1
 0    7  *   *   *    /home/deploy/quode/backup/disk-check.sh >>/home/deploy/quode/backup.log 2>&1
