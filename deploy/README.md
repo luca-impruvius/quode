@@ -132,24 +132,37 @@ The private key goes only to GitHub; it never passes through chat or the reposit
 
 ## Backups and alerts (M0-12)
 
-Every night at 02:30 UTC, `backup/backup.sh` dumps the database (`pg_dump`, custom format, compressed), checks that `pg_restore` can read it and uploads it to the R2 bucket (EU jurisdiction, ADR-0036), where a lifecycle rule deletes dumps after 14 days. A dump over 500 MB is not uploaded: the script alerts instead (free-tier guard). Every morning at 07:00 UTC, `backup/disk-check.sh` checks the disk. Both ping healthchecks.io, which emails when a ping fails or doesn't arrive. UptimeRobot checks `https://quode.app/api/health` every 5 minutes and emails when it's down.
+Every night at 02:30 server time (Europe/Berlin on quode-prod), `backup/backup.sh` dumps the database (`pg_dump`, custom format, compressed), checks that `pg_restore` can read it and uploads it to the R2 bucket (EU jurisdiction, ADR-0036), where a lifecycle rule deletes dumps after 14 days. A dump over 500 MB is not uploaded: the script alerts instead (free-tier guard). Every morning at 07:00 server time, `backup/disk-check.sh` checks the disk. Both ping healthchecks.io, which emails when a ping fails or doesn't arrive. UptimeRobot checks `https://quode.app/api/health` every 5 minutes and emails when it's down.
 
 ### Setting up (once; the owner's accounts)
 
 1. **R2 bucket.** Cloudflare → R2 → Create bucket `quode-backups`, location **European Union** (jurisdiction). Settings → Object lifecycle rules → delete objects 14 days after upload. In Billing, add a budget alert at $1.
-2. **R2 token.** R2 → Manage API tokens → Create token: **Object Read & Write**, applied to `quode-backups` only, no expiry or a long one. Save the Access Key ID, Secret Access Key and the EU endpoint (`https://<account-id>.eu.r2.cloudflarestorage.com`) in the password manager.
+2. **R2 token.** R2 → Manage API tokens → Create token: **Object Read & Write**, applied to `quode-backups` only, no expiry or a long one. Leave **Client IP Address Filtering** empty, or set it to the server's address only (`<vps-ip>/32`): a filter on your home address makes R2 answer the server with 403 Access Denied. Save the Access Key ID, Secret Access Key and the EU endpoint in the password manager. The endpoint must contain `.eu.` (`https://<account-id>.eu.r2.cloudflarestorage.com`): an EU-jurisdiction bucket isn't reachable on the plain one. Note the token's expiry in your calendar.
 3. **healthchecks.io.** Create two checks with email alerts: **quode backup** (period 1 day, grace 2 hours) and **quode disk** (period 1 day, grace 2 hours). Copy their ping URLs.
 4. **UptimeRobot.** New HTTP(s) monitor for `https://quode.app/api/health`, every 5 minutes, alerting your email.
 5. **Server.** Copy the files and fill in `.env` (the owner types the secrets):
    - from the repository root on the laptop: `scp -r deploy/backup deploy/.env.example quode-prod:quode/`, then `ssh quode-prod chmod 755 quode/backup/backup.sh quode/backup/disk-check.sh quode/backup/restore-test.sh`;
    - add the `R2_*` and `HC_*` lines from `.env.example` to `~/quode/.env` (`nano ~/quode/.env`), then run the key-name check from step 2 of the first deployment: it prints nothing when they match;
-   - `timedatectl` should show `Time zone: Etc/UTC`, since cron uses the server's clock (`sudo timedatectl set-timezone Etc/UTC` if not);
+   - `timedatectl` shows the time zone cron uses for the crontab's times (quode-prod: Europe/Berlin, so 02:30 and 07:00 Berlin time);
    - `crontab -l`: if it prints lines, add them to `~/quode/backup/crontab` first, because the next command replaces the whole crontab. Then `crontab ~/quode/backup/crontab`.
 6. **First run and restore test**, on the server in `~/quode`:
    - `backup/backup.sh`: it ends with `done: quode-<time>.dump`, the dump is in the bucket and the backup check is green;
    - `backup/restore-test.sh`: it downloads the newest dump into a throwaway container, restores it and prints the latest migration and the row counts. Compare them with production: `docker compose exec -T postgres psql -U quode -d quode -f - < backup/counts.sql` (the same unless someone used the app in between);
    - `backup/disk-check.sh`: the disk check turns green.
 7. **Test the alerts once:** on the server, `curl -fsS -m 10 "$(grep '^HC_BACKUP_URL=' ~/quode/.env | cut -d= -f2-)/fail"` marks the backup check down and should email you; the next backup (or running `backup/backup.sh`) turns it green again. For UptimeRobot, pause and resume the monitor, or use its test notification; each should send an email.
+
+### Setup record (2026-11-25)
+
+Scripts from `f260700` (#84), installed from the desktop PC with its own SSH key (`quode-desktop-pc` in `~/.ssh/authorized_keys`). Everything in the setup steps passed:
+
+- bucket `quode-backups` (EU) with the 14-day lifecycle rule; token `quode-backup-writer`, Object Read & Write on that bucket only, no IP filter, active until 2027-11-08;
+- first backup: a 51 KB dump uploaded, the healthchecks.io backup check green;
+- restore test: the dump restored into a throwaway container and matched production (migration 7, 1 user, 38 topics, 4 questions, 6 attempts, 4 review states);
+- disk check: 5% used, green;
+- crontab installed (Europe/Berlin clock); a test `/fail` ping emailed the alert;
+- UptimeRobot monitors `/api/health` every 5 minutes and shows Up.
+
+Two problems on the way, now in the steps above: the endpoint lacked `.eu.`, and the token's IP filter allowed only a home address (both gave 403).
 
 ### Running
 
