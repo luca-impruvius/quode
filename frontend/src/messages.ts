@@ -115,6 +115,8 @@ export const messages = {
     answer: 'Answer',
     explanation: 'Explanation',
     grades: { GOT_IT: 'Got it', PARTIAL: 'Partial', MISSED: 'Missed' },
+    keysChoice: 'Keys: A–F choose, Enter checks and goes on.',
+    keysCard: 'Keys: Enter reveals, then 1 Got it, 2 Partial, 3 Missed.',
     gradePrompt: 'How did you do?',
     chooseOne: 'Choose one',
     chooseAll: 'Choose all that apply',
@@ -245,6 +247,8 @@ export const messages = {
   },
   question: {
     back: 'Library',
+    panel: 'Selected question',
+    pick: 'Choose a question to see it here.',
     edit: 'Edit',
     primary: 'primary',
     answer: 'Answer',
