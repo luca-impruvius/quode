@@ -247,4 +247,18 @@ describe('Quiz keys on desktop', () => {
     );
     expect(await screen.findByText('Serverless containers?')).toBeInTheDocument();
   });
+
+  it('holding Enter acts once: it reveals, and grades nothing', async () => {
+    const fetchMock = mockApi({
+      '/api/me': me(),
+      '/api/v1/study/sessions/s1': () => Response.json(view({ answered: 1, current: card })),
+    });
+    const user = userEvent.setup();
+    renderAt('/quiz/s1');
+
+    expect(await screen.findByText('What is IAM?')).toBeInTheDocument();
+    await user.keyboard('{Enter>3}');
+    expect(screen.getByText('Access control.')).toBeInTheDocument();
+    expect(fetchMock.mock.calls.some(([u]) => String(u).endsWith('/answers'))).toBe(false);
+  });
 });

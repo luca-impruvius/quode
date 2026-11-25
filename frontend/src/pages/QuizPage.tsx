@@ -190,7 +190,7 @@ function Card({ card, feedback, busy, error, last, onChoose, onGrade, onNext }: 
         (tag === 'INPUT' && !['radio', 'checkbox'].includes((target as HTMLInputElement).type));
       // After a reveal, focus is on a grade button; the digits still grade from there.
       const gradeKey = !choice && revealed && /^[1-3]$/.test(key);
-      if (typing || ((tag === 'BUTTON' || tag === 'A') && !gradeKey)) {
+      if (typing || tag === 'A' || (tag === 'BUTTON' && !gradeKey)) {
         return;
       }
       if (choice && !answered && /^[a-f]$/.test(key)) {
