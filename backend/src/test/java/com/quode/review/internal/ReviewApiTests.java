@@ -436,6 +436,7 @@ class ReviewApiTests {
   @Test
   void backlogProtectionPausesNewQuestionsButLearnMoreStillAddsFive() throws Exception {
     limits(5, 1);
+    dueDaysAgo("Q5?", 1);
     dueDaysAgo("Q6?", 1);
     dueDaysAgo("Q7?", 1);
     dueDaysAgo("Q8?", 1);
@@ -444,10 +445,15 @@ class ReviewApiTests {
         .andExpect(jsonPath("$.due").value(1))
         .andExpect(jsonPath("$.newWaiting").value(0));
     String review = newReview("NONE");
-    assertThat(order(review)).hasSize(1);
+    assertThat(order(review)).containsExactly("Q5?");
     answerAll(review, "GOT_IT");
 
-    assertThat(order(newReview("LEARN_MORE"))).containsExactly("Q1?", "Q2?", "Q3?", "Q4?", "Q5?");
+    // Still 3 due, over twice the limit of 1: new questions stay paused, yet Learn more adds 5.
+    read("/review/today", me())
+        .andExpect(jsonPath("$.moreDue").value(3))
+        .andExpect(jsonPath("$.newWaiting").value(0));
+    assertThat(order(newReview("LEARN_MORE")))
+        .containsExactly("Q1?", "Q2?", "Q3?", "Q4?", "Serverless containers?");
   }
 
   @Test
@@ -497,6 +503,14 @@ class ReviewApiTests {
     send(post("/api/v1/study/sessions"), other(), "{\"kind\":\"REVIEW\",\"extra\":\"NONE\"}")
         .andExpect(status().isConflict());
     read("/questions/" + question("Q1?") + "/review", other()).andExpect(status().isNotFound());
+  }
+
+  @Test
+  void reviewEndpointsNeedASignedInUser() throws Exception {
+    mvc.perform(get("/api/v1/review/today").contextPath("/api"))
+        .andExpect(status().isUnauthorized());
+    mvc.perform(get("/api/v1/questions/" + question("Q1?") + "/review").contextPath("/api"))
+        .andExpect(status().isUnauthorized());
   }
 
   // --- quizzes and the schedule (ADR-0012) ---

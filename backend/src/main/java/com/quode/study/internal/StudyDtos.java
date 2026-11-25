@@ -24,7 +24,10 @@ final class StudyDtos {
       Integer count,
       @Schema(types = {"string", "null"}) String mode,
       Boolean shuffle,
-      @Schema(types = {"string", "null"}) String extra) {}
+      @Schema(
+              types = {"string", "null"},
+              allowableValues = {"NONE", "KEEP_GOING", "LEARN_MORE"})
+          String extra) {}
 
   /**
    * A question to answer. Choice questions come without their answer (graded by the server);
