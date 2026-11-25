@@ -81,17 +81,18 @@ function Quiz({ id }: { id: string }) {
 
   return (
     <div className="mx-auto flex min-h-dvh max-w-md flex-col lg:max-w-2xl">
-      <header className="flex items-center justify-between border-b border-line px-space-3 py-space-2">
+      {/* Three columns: the title stays centred whether or not the progress shows. */}
+      <header className="grid grid-cols-[1fr_auto_1fr] items-center border-b border-line px-space-3 py-space-2">
         <Link
           to={review ? '/' : '/quizzes'}
-          className="flex min-h-11 items-center gap-space-1 px-space-2 font-semibold"
+          className="flex min-h-11 items-center gap-space-1 justify-self-start px-space-2 font-semibold"
         >
           <ChevronLeft aria-hidden="true" size={20} strokeWidth={2} />
           {review ? r.back : m.quit}
         </Link>
-        {review && <p className="font-semibold">{r.title}</p>}
+        {review && <p className="col-start-2 font-semibold">{r.title}</p>}
         {data && !done && (
-          <span className="px-space-2 text-ink-muted">
+          <span className="col-start-3 justify-self-end px-space-2 text-ink-muted">
             <span aria-hidden="true">{m.progress(position, data.total)}</span>
             <span className="sr-only">{m.progressLong(position, data.total)}</span>
           </span>
