@@ -1,7 +1,7 @@
 # Daily review: the Today queue
 
 - Milestone: M3
-- Status: Proposed (awaiting Luca's approval)
+- Status: Approved (Luca, 2026-11-25)
 - Issues: to be created after approval
 - Design: reuse the design system and the quiz card from M2; no new hi-fi screens (ADR-0035)
 
