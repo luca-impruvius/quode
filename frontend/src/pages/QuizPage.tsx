@@ -3,6 +3,7 @@ import { ChevronLeft } from 'lucide-react';
 import { useEffect, useId, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import { ApiError } from '../api/client';
+import { reviewTodayKey, useReviewToday } from '../api/review';
 import {
   rememberedQuiz,
   rememberQuiz,
@@ -16,9 +17,12 @@ import {
 } from '../api/study';
 import { ErrorNotice } from '../components/ErrorNotice';
 import { Markdown } from '../components/Markdown';
+import { useMe } from '../app/useMe';
+import { daysFromToday } from '../lib/days';
 import { messages } from '../messages';
 
 const m = messages.quiz;
+const r = messages.review;
 const grades: SelfGrade[] = ['GOT_IT', 'PARTIAL', 'MISSED'];
 
 interface Feedback {
@@ -28,9 +32,11 @@ interface Feedback {
 }
 
 /**
- * One quick quiz (docs/specs/M2-exam-prep-mvp.md). Progress lives on the server, so reopening this
- * URL resumes at the same question. Choice questions are graded at once; flashcard and open ones
- * reveal their answer, then you grade yourself. After the last answer come the results.
+ * One quick quiz (docs/specs/M2-exam-prep-mvp.md), or a review (kind REVIEW,
+ * docs/specs/M3-daily-review.md): the same card, titled Review, leading back to Today. Progress
+ * lives on the server, so reopening this URL resumes at the same question. Choice questions are
+ * graded at once; flashcard and open ones reveal their answer, then you grade yourself. After the
+ * last answer come the results.
  */
 export function QuizPage() {
   const { id = '' } = useParams();
@@ -71,17 +77,19 @@ function Quiz({ id }: { id: string }) {
   const card = feedback?.card ?? data?.current ?? null;
   const done = data !== undefined && feedback === null && data.current === null;
   const position = data ? Math.min(data.answered + (feedback ? 0 : 1), data.total) : 0;
+  const review = data?.kind === 'REVIEW';
 
   return (
     <div className="mx-auto flex min-h-dvh max-w-md flex-col lg:max-w-2xl">
       <header className="flex items-center justify-between border-b border-line px-space-3 py-space-2">
         <Link
-          to="/quizzes"
+          to={review ? '/' : '/quizzes'}
           className="flex min-h-11 items-center gap-space-1 px-space-2 font-semibold"
         >
           <ChevronLeft aria-hidden="true" size={20} strokeWidth={2} />
-          {m.quit}
+          {review ? r.back : m.quit}
         </Link>
+        {review && <p className="font-semibold">{r.title}</p>}
         {data && !done && (
           <span className="px-space-2 text-ink-muted">
             <span aria-hidden="true">{m.progress(position, data.total)}</span>
@@ -92,7 +100,7 @@ function Quiz({ id }: { id: string }) {
       <main className="flex flex-1 flex-col gap-space-4 px-space-4 py-space-4">
         {session.isPending && <p className="text-ink-muted">{messages.loading}</p>}
         {session.isError && <ErrorNotice error={session.error} />}
-        {done && <Results id={id} />}
+        {done && (review ? <ReviewDone id={id} /> : <Results id={id} />)}
         {!done && card && (
           <Card
             key={card.id}
@@ -428,6 +436,65 @@ function Results({ id }: { id: string }) {
       <Link to="/quizzes" className="font-semibold underline">
         {m.backToQuizzes}
       </Link>
+    </section>
+  );
+}
+
+/** The end of a review: how many were reviewed, and when the next ones are due. */
+function ReviewDone({ id }: { id: string }) {
+  const queryClient = useQueryClient();
+  const finish = useMutation({
+    mutationFn: studyApi.finish,
+    // Today's counts follow the finished session.
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: reviewTodayKey }),
+  });
+  const today = useReviewToday();
+  const me = useMe();
+  const heading = useRef<HTMLHeadingElement>(null);
+  const { mutate } = finish;
+
+  useEffect(() => {
+    mutate(id);
+  }, [id, mutate]);
+  useEffect(() => {
+    if (finish.data) {
+      heading.current?.focus();
+    }
+  }, [finish.data]);
+
+  const back = (
+    <Link to="/" className="font-semibold underline">
+      {r.backToToday}
+    </Link>
+  );
+  if (finish.isError) {
+    return (
+      <>
+        <ErrorNotice error={finish.error} />
+        {back}
+      </>
+    );
+  }
+  if (!finish.data) {
+    return <p className="text-ink-muted">{messages.loading}</p>;
+  }
+  const counts = today.data;
+  const nextDueAt = counts?.nextDueAt ?? null;
+  // Reviews still due today (Keep going): said as well as when the next ones are due.
+  const moreToday = counts !== undefined && counts.due + counts.moreDue > 0;
+  return (
+    <section className="flex flex-col gap-space-4">
+      <h1 ref={heading} tabIndex={-1} className="type-title">
+        {r.doneTitle}
+      </h1>
+      <p className="type-display">{r.reviewed(finish.data.answered)}</p>
+      {nextDueAt !== null && (
+        <p className="text-ink-muted">
+          {messages.today.nextDue(daysFromToday(nextDueAt, me.data?.timeZone))}
+        </p>
+      )}
+      {moreToday && <p className="text-ink-muted">{r.moreToday}</p>}
+      {back}
     </section>
   );
 }

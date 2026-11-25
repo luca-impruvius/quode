@@ -14,6 +14,28 @@ export const messages = {
     title: 'Today',
     greeting: (firstName: string) => `Hello, ${firstName}`,
     duckAlt: 'The Quode duck',
+    counts: (due: number, fresh: number) => `${due} to review · ${fresh} new`,
+    start: 'Start review',
+    starting: 'Starting…',
+    continue: 'Continue',
+    continueHint: 'Your review from today, where you left it',
+    allDone: 'All done for today',
+    keepGoing: 'Keep going',
+    keepGoingHint: (n: number) => (n === 1 ? '1 more review waiting' : `${n} more reviews waiting`),
+    learnMore: 'Learn more',
+    learnMoreHint: (n: number) =>
+      n === 1 ? '1 new question waiting' : `${n} new questions waiting`,
+    nextDue: (days: number) =>
+      days <= 1 ? 'Next ones due tomorrow' : `Next ones due in ${days} days`,
+    nothingYet: 'Nothing to review yet. Add or import questions, and they show up here.',
+  },
+  review: {
+    title: 'Review',
+    back: 'Today',
+    doneTitle: 'Review done',
+    reviewed: (n: number) => (n === 1 ? '1 question reviewed' : `${n} questions reviewed`),
+    moreToday: 'More reviews are still waiting today. See Today.',
+    backToToday: 'Back to Today',
   },
   tabs: {
     label: 'Main',
