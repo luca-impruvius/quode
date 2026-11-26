@@ -1,7 +1,7 @@
 # Topics
 
 - Milestone: M1
-- Status: Approved
+- Status: Implemented in #39, #40
 - Issues: #30 (backend), #31 (screen)
 - Design: Topics (Quode Wireframes canvas)
 

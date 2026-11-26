@@ -1,7 +1,7 @@
 # Library
 
 - Milestone: M1
-- Status: Approved
+- Status: Implemented in #43, #44
 - Issues: #34 (Library), #35 (Flagged filter, M1-07)
 - Design: Library (Quode Wireframes canvas)
 
