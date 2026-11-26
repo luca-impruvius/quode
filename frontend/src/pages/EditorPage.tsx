@@ -328,7 +328,7 @@ function EditorForm({
           <button
             type="submit"
             disabled={save.isPending}
-            className="h-13 rounded-lg border-bold border-outline bg-accent font-bold text-on-accent shadow-pop active:translate-x-0.5 active:translate-y-0.5 active:shadow-none disabled:opacity-45 disabled:shadow-none"
+            className="h-13 rounded-lg border-bold border-outline bg-accent font-bold text-on-accent shadow-pop active:translate-x-0.5 active:translate-y-0.5 active:shadow-none disabled:primary-disabled"
           >
             {e.save}
           </button>

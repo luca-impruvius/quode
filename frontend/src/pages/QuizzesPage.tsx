@@ -107,7 +107,7 @@ export function QuizzesPage() {
             disabled={chosenTopic === ''}
             aria-disabled={start.isPending}
             onClick={onStart}
-            className="min-h-12 rounded-md border-bold border-outline bg-accent font-semibold text-on-accent disabled:opacity-45"
+            className="min-h-12 rounded-md border-bold border-outline bg-accent font-semibold text-on-accent disabled:primary-disabled"
           >
             {start.isPending ? m.starting : m.start}
           </button>

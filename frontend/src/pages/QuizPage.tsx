@@ -24,6 +24,9 @@ import { messages } from '../messages';
 const m = messages.quiz;
 const r = messages.review;
 const grades: SelfGrade[] = ['GOT_IT', 'PARTIAL', 'MISSED'];
+// Above this many characters (a scenario question) the prompt is set in regular weight: a long
+// paragraph in semibold is tiring to read.
+const longPrompt = 200;
 
 interface Feedback {
   card: QuestionCard;
@@ -98,6 +101,15 @@ function Quiz({ id }: { id: string }) {
           </span>
         )}
       </header>
+      {data && !done && (
+        <div aria-hidden="true" className="h-1 bg-surface-sunken">
+          <div
+            data-progress
+            className="h-full bg-accent transition-[width]"
+            style={{ width: `${Math.round((data.answered / Math.max(data.total, 1)) * 100)}%` }}
+          />
+        </div>
+      )}
       <main className="flex flex-1 flex-col gap-space-4 px-space-4 py-space-4">
         {session.isPending && <p className="text-ink-muted">{messages.loading}</p>}
         {session.isError && <ErrorNotice error={session.error} />}
@@ -231,8 +243,13 @@ function Card({ card, feedback, busy, error, last, onChoose, onGrade, onNext }: 
   const correct = new Set(feedback?.result.correctOptionIds ?? []);
   const button = 'min-h-12 rounded-md border-bold border-outline px-space-4 font-semibold';
   return (
-    <article aria-labelledby={promptId} className="flex flex-col gap-space-4">
-      <div id={promptId} ref={prompt} tabIndex={-1} className="type-question outline-none">
+    <article aria-labelledby={promptId} className="flex flex-1 flex-col gap-space-4">
+      <div
+        id={promptId}
+        ref={prompt}
+        tabIndex={-1}
+        className={`type-question outline-none ${card.promptMd.length > longPrompt ? 'long-prompt' : ''}`}
+      >
         <Markdown text={card.promptMd} />
       </div>
 
@@ -280,52 +297,56 @@ function Card({ card, feedback, busy, error, last, onChoose, onGrade, onNext }: 
         </fieldset>
       )}
 
-      {choice && !answered && (
-        <button
-          type="button"
-          disabled={chosen.length === 0}
-          aria-disabled={busy}
-          onClick={() => onChoose(chosen)}
-          className={`${button} bg-accent text-on-accent disabled:opacity-45`}
-        >
-          {m.check}
-        </button>
-      )}
-
-      {choice && feedback && (
-        <section id={outcomeId} className="flex flex-col gap-space-2">
-          <p className="font-semibold">
-            {feedback.result.outcome === 'CORRECT' ? m.correct : m.wrong}
-          </p>
-          {feedback.result.explanationMd && (
-            <div className="rounded-md bg-surface-sunken p-space-3">
-              <p className="type-label text-ink-muted">{m.explanation}</p>
-              <Markdown text={feedback.result.explanationMd} />
-            </div>
-          )}
-        </section>
-      )}
-
-      {!choice && !revealed && (
-        <button type="button" onClick={() => setRevealed(true)} className={button}>
-          {m.reveal}
-        </button>
+      {choice && feedback?.result.explanationMd && (
+        <div className="rounded-md bg-surface-sunken p-space-3">
+          <p className="type-label text-ink-muted">{m.explanation}</p>
+          <Markdown text={feedback.result.explanationMd} />
+        </div>
       )}
 
       {!choice && revealed && (
-        <>
-          <div className="flex flex-col gap-space-2 rounded-md bg-surface-sunken p-space-3">
-            <p className="type-label text-ink-muted">{m.answer}</p>
-            <Markdown text={card.answerMd ?? ''} />
-            {card.explanationMd && (
-              <>
-                <p className="type-label text-ink-muted">{m.explanation}</p>
-                <Markdown text={card.explanationMd} />
-              </>
-            )}
-          </div>
+        <div className="flex flex-col gap-space-2 rounded-md bg-surface-sunken p-space-3">
+          <p className="type-label text-ink-muted">{m.answer}</p>
+          <Markdown text={card.answerMd ?? ''} />
+          {card.explanationMd && (
+            <>
+              <p className="type-label text-ink-muted">{m.explanation}</p>
+              <Markdown text={card.explanationMd} />
+            </>
+          )}
+        </div>
+      )}
+
+      {/* Thumb zone: the next action, and the outcome it follows, stay pinned to the bottom of the
+          screen however long the question is. */}
+      <div className="sticky bottom-0 -mx-space-4 mt-auto -mb-space-4 flex flex-col gap-space-2 border-t border-line bg-bg px-space-4 pt-space-3 pb-[calc(var(--spacing-space-3)+env(safe-area-inset-bottom))]">
+        {choice && !answered && (
+          <button
+            type="button"
+            disabled={chosen.length === 0}
+            aria-disabled={busy}
+            onClick={() => onChoose(chosen)}
+            className={`${button} bg-accent text-on-accent disabled:primary-disabled`}
+          >
+            {m.check}
+          </button>
+        )}
+
+        {choice && feedback && (
+          <p id={outcomeId} className="font-semibold">
+            {feedback.result.outcome === 'CORRECT' ? m.correct : m.wrong}
+          </p>
+        )}
+
+        {!choice && !revealed && (
+          <button type="button" onClick={() => setRevealed(true)} className={button}>
+            {m.reveal}
+          </button>
+        )}
+
+        {!choice && revealed && (
           <fieldset className="flex flex-col gap-space-2">
-            <legend className="font-semibold">{m.gradePrompt}</legend>
+            <legend className="mb-space-2 font-semibold">{m.gradePrompt}</legend>
             <div className="flex gap-space-2">
               {grades.map((grade, i) => (
                 <button
@@ -341,24 +362,24 @@ function Card({ card, feedback, busy, error, last, onChoose, onGrade, onNext }: 
               ))}
             </div>
           </fieldset>
-        </>
-      )}
+        )}
 
-      {answered && (
-        <button
-          ref={next}
-          type="button"
-          aria-describedby={choice ? outcomeId : undefined}
-          onClick={onNext}
-          className={`${button} bg-accent text-on-accent`}
-        >
-          {last ? m.results : m.next}
-        </button>
-      )}
-      {error !== null && <ErrorNotice error={error} />}
-      <p className="hidden text-ink-muted type-body-sm lg:block">
-        {choice ? m.keysChoice : m.keysCard}
-      </p>
+        {answered && (
+          <button
+            ref={next}
+            type="button"
+            aria-describedby={choice ? outcomeId : undefined}
+            onClick={onNext}
+            className={`${button} bg-accent text-on-accent`}
+          >
+            {last ? m.results : m.next}
+          </button>
+        )}
+        {error !== null && <ErrorNotice error={error} />}
+        <p className="hidden text-ink-muted type-body-sm lg:block">
+          {choice ? m.keysChoice : m.keysCard}
+        </p>
+      </div>
     </article>
   );
 }

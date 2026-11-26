@@ -373,6 +373,61 @@ describe('Quiz', () => {
   });
 });
 
+describe('Quiz layout', () => {
+  it('keeps Check, then the outcome and Next, in the bar pinned to the bottom', async () => {
+    mockApi({
+      '/api/me': me(),
+      '/api/v1/study/sessions/s1': json(view({})),
+      'POST /api/v1/study/sessions/s1/answers': json({
+        outcome: 'CORRECT',
+        correctOptionIds: ['o2'],
+        answerMd: null,
+        explanationMd: null,
+        session: view({ answered: 1, current: card }),
+      }),
+    });
+    const user = userEvent.setup();
+    renderAt('/quiz/s1');
+
+    const check = await screen.findByRole('button', { name: m.check });
+    const bar = check.closest('.sticky');
+    expect(bar).not.toBeNull();
+    await user.click(screen.getByRole('radio', { name: 'Cloud Run' }));
+    await user.click(check);
+    const next = await screen.findByRole('button', { name: m.next });
+    expect(next.closest('.sticky')).toBe(bar);
+    expect(within(bar as HTMLElement).getByText(m.correct)).toBeInTheDocument();
+  });
+
+  it('fills the progress bar with the answered questions', async () => {
+    mockApi({
+      '/api/me': me(),
+      '/api/v1/study/sessions/s1': json(view({ total: 4, answered: 1 })),
+    });
+    renderAt('/quiz/s1');
+
+    await screen.findByText('Which runs containers serverless?');
+    const fill = document.querySelector<HTMLElement>('[data-progress]');
+    expect(fill?.style.width).toBe('25%');
+  });
+
+  it('sets a long question in regular weight, a short one as usual', async () => {
+    const long = 'You run a service. '.repeat(15) + 'What should you do?';
+    mockApi({
+      '/api/me': me(),
+      '/api/v1/study/sessions/s1': json(view({ current: { ...single, promptMd: long } })),
+      '/api/v1/study/sessions/s2': json(view({ id: 's2' })),
+    });
+    const router = renderAt('/quiz/s1');
+    const prompt = await screen.findByText(long);
+    expect(prompt.closest('.type-question')).toHaveClass('long-prompt');
+
+    await act(() => router.navigate('/quiz/s2'));
+    const short = await screen.findByText('Which runs containers serverless?');
+    expect(short.closest('.type-question')).not.toHaveClass('long-prompt');
+  });
+});
+
 describe('Quizzes tab', () => {
   it('starts a quiz on a topic with count, mode and shuffle', async () => {
     const fetchMock = mockApi({
