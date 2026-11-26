@@ -3,7 +3,7 @@ import { ChevronLeft } from 'lucide-react';
 import { useEffect, useId, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import { ApiError } from '../api/client';
-import { reviewTodayKey, useReviewToday } from '../api/review';
+import { reviewTodayKey, useAddToReview, useOutOfReview, useReviewToday } from '../api/review';
 import {
   rememberedQuiz,
   rememberQuiz,
@@ -431,6 +431,7 @@ function Results({ id }: { id: string }) {
           >
             {m.retryMissed(r.missed.length)}
           </button>
+          <AddMissedToReview ids={r.missed.map((q) => q.id)} />
         </>
       )}
       {retry.isError && <ErrorNotice error={retry.error} />}
@@ -438,6 +439,38 @@ function Results({ id }: { id: string }) {
         {m.backToQuizzes}
       </Link>
     </section>
+  );
+}
+
+/**
+ * Missed questions taken out of review earlier go back in, as new. Everything is enrolled when
+ * created, so this shows only for those (docs/specs/M3-daily-review.md, quizzes and the schedule).
+ */
+function AddMissedToReview({ ids }: { ids: string[] }) {
+  const outOfReview = useOutOfReview(ids);
+  const add = useAddToReview();
+  const [added, setAdded] = useState(0);
+
+  return (
+    <>
+      {outOfReview.length > 0 && (
+        <button
+          type="button"
+          aria-disabled={add.isPending}
+          onClick={() =>
+            !add.isPending &&
+            add.mutate(outOfReview, { onSuccess: (saved) => setAdded(saved.length) })
+          }
+          className="min-h-12 rounded-md border-bold border-outline font-semibold"
+        >
+          {m.addMissed(outOfReview.length)}
+        </button>
+      )}
+      <p role="status" className="type-body-sm text-ink-muted empty:hidden">
+        {added > 0 ? m.addedMissed(added) : ''}
+      </p>
+      {add.isError && <ErrorNotice error={add.error} />}
+    </>
   );
 }
 

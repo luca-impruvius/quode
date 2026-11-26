@@ -77,7 +77,7 @@ Domain rules 3, 5, 6, 7 and 8 already describe this ([domain.md](../domain.md) �
   - when everything is done: "All done for today", with Keep going / Learn more when more questions are waiting, and the next due time.
 - **Review session:** the quiz card (instant grading, reveal and self-grade, keyboard shortcuts on desktop), titled "Review". The end screen shows how many were reviewed, and when the next ones are due (from `GET /review/today`).
 - **Me → Settings:** "New per day" (0–100) and "Reviews per day" (1–500).
-- **Question detail:** **Learn next** (a toggle) and **Remove from review** / **Add to review**. "Next review: in 3 days" (or "New") is shown under Status.
+- **Question detail:** **Learn next** (a toggle, shown while the question is new) and **Remove from review** / **Add to review**. "Next review: in 3 days" (or "New") is shown under Status.
 
 ## API
 All under `/api/v1`, signed in, CSRF token on writes, errors as Problem Details.

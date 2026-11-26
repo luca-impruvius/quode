@@ -64,6 +64,9 @@ function library() {
       requests.push(url);
       return Response.json({ items: [item], page: 0, size: 20, totalElements: 1, hasNext: false });
     }
+    if (url.pathname === '/api/v1/questions/q1/review') {
+      return Response.json({ enrolled: true, learnNext: false, dueAt: null, isNew: true });
+    }
     if (url.pathname === '/api/v1/questions/q1') {
       return Response.json(question);
     }
