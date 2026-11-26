@@ -1,8 +1,8 @@
 # Exam-prep MVP: import, quizzes, desktop
 
 - Milestone: M2
-- Status: Implemented in #68, #69, #71, #72, #73, #74, #75 (approved by Luca, 2026-11-24)
-- Issues: #60–#67
+- Status: Implemented in #68, #69, #70, #71, #72, #73, #74, #75 (approved by Luca, 2026-11-24)
+- Issues: #60, #61, #62, #63, #64, #65, #66
 - Design: reuse the design system; no new hi-fi screens (ADR-0035)
 
 ## Goal
