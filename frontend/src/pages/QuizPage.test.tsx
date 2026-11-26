@@ -1,6 +1,6 @@
 import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { QuestionCard, SessionView } from '../api/study';
 import { messages } from '../messages';
 import { topics } from '../test/questionFixtures';
@@ -53,6 +53,8 @@ function bodyOf(fetchMock: ReturnType<typeof mockApi>, url: string): unknown {
 
 afterEach(() => {
   localStorage.clear();
+  // jsdom has no scrollIntoView; some tests stub it.
+  Reflect.deleteProperty(Element.prototype, 'scrollIntoView');
 });
 
 const enrolledReview = { enrolled: true, learnNext: false, dueAt: null, isNew: true };
@@ -400,6 +402,57 @@ describe('Quiz layout', () => {
     const next = await screen.findByRole('button', { name: m.next });
     expect(next.closest('.sticky')).toBe(bar);
     expect(within(bar as HTMLElement).getByText(m.correct)).toBeInTheDocument();
+  });
+
+  it('scrolls what Check and Reveal show into view above the bar', async () => {
+    const scroll = vi.fn();
+    Element.prototype.scrollIntoView = scroll;
+    mockApi({
+      '/api/me': me(),
+      '/api/v1/study/sessions/s1': json(view({})),
+      'POST /api/v1/study/sessions/s1/answers': json({
+        outcome: 'WRONG',
+        correctOptionIds: ['o2'],
+        answerMd: null,
+        explanationMd: 'No cluster to run.',
+        session: view({ answered: 1, current: card }),
+      }),
+    });
+    const user = userEvent.setup();
+    renderAt('/quiz/s1');
+
+    await user.click(await screen.findByRole('radio', { name: 'GKE' }));
+    await user.click(screen.getByRole('button', { name: m.check }));
+    await screen.findByText('No cluster to run.');
+    expect(scroll).toHaveBeenLastCalledWith({ block: 'nearest' });
+    expect(scroll.mock.contexts.at(-1)).toContainElement(screen.getByText('No cluster to run.'));
+
+    await user.click(screen.getByRole('button', { name: m.next }));
+    await user.click(await screen.findByRole('button', { name: m.reveal }));
+    expect(scroll.mock.contexts.at(-1)).toContainElement(screen.getByText('Access control.'));
+  });
+
+  it('scrolls the marked options into view when there is no explanation', async () => {
+    const scroll = vi.fn();
+    Element.prototype.scrollIntoView = scroll;
+    mockApi({
+      '/api/me': me(),
+      '/api/v1/study/sessions/s1': json(view({})),
+      'POST /api/v1/study/sessions/s1/answers': json({
+        outcome: 'CORRECT',
+        correctOptionIds: ['o2'],
+        answerMd: null,
+        explanationMd: null,
+        session: view({ answered: 1, current: card }),
+      }),
+    });
+    const user = userEvent.setup();
+    renderAt('/quiz/s1');
+
+    await user.click(await screen.findByRole('radio', { name: 'Cloud Run' }));
+    await user.click(screen.getByRole('button', { name: m.check }));
+    await screen.findByRole('button', { name: m.next });
+    expect(scroll.mock.contexts.at(-1)).toBe(screen.getByRole('group', { name: m.chooseOne }));
   });
 
   it('fills the progress bar with the answered questions', async () => {

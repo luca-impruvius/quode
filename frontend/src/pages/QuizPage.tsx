@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { ChevronLeft } from 'lucide-react';
-import { useEffect, useId, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState, type RefObject } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import { ApiError } from '../api/client';
 import { reviewTodayKey, useAddToReview, useOutOfReview, useReviewToday } from '../api/review';
@@ -159,7 +159,7 @@ function Card({ card, feedback, busy, error, last, onChoose, onGrade, onNext }: 
   const explanationId = useId();
   // Shown after Check or Reveal, scrolled into view: the focus goes to the pinned bar, which
   // never scrolls the page itself.
-  const shown = useRef<HTMLDivElement>(null);
+  const shown = useRef<HTMLElement>(null);
   const prompt = useRef<HTMLDivElement>(null);
   const next = useRef<HTMLButtonElement>(null);
   const firstGrade = useRef<HTMLButtonElement>(null);
@@ -262,7 +262,13 @@ function Card({ card, feedback, busy, error, last, onChoose, onGrade, onNext }: 
       </div>
 
       {choice && (
-        <fieldset className="flex flex-col gap-space-2">
+        <fieldset
+          // Without an explanation, the marked options are what Check shows.
+          ref={
+            feedback?.result.explanationMd ? undefined : (shown as RefObject<HTMLFieldSetElement>)
+          }
+          className="flex scroll-mb-40 flex-col gap-space-2"
+        >
           <legend className="text-ink-muted type-body-sm">
             {multiple ? m.chooseAll : m.chooseOne}
           </legend>
@@ -308,7 +314,7 @@ function Card({ card, feedback, busy, error, last, onChoose, onGrade, onNext }: 
       {choice && feedback?.result.explanationMd && (
         <div
           id={explanationId}
-          ref={shown}
+          ref={shown as RefObject<HTMLDivElement>}
           className="scroll-mb-40 rounded-md bg-surface-sunken p-space-3"
         >
           <p className="type-label text-ink-muted">{m.explanation}</p>
@@ -318,7 +324,7 @@ function Card({ card, feedback, busy, error, last, onChoose, onGrade, onNext }: 
 
       {!choice && revealed && (
         <div
-          ref={shown}
+          ref={shown as RefObject<HTMLDivElement>}
           className="flex scroll-mb-40 flex-col gap-space-2 rounded-md bg-surface-sunken p-space-3"
         >
           <p className="type-label text-ink-muted">{m.answer}</p>
