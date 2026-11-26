@@ -466,6 +466,9 @@ describe('Question detail review controls', () => {
     renderAt('/questions/q1');
 
     expect(await screen.findByRole('button', { name: d.unarchive })).toBeInTheDocument();
+    // The review read has answered (the fact still shows), yet no controls appear.
+    const term = await screen.findByText(d.nextReview);
+    expect(await within(term.parentElement as HTMLElement).findByText(d.isNew)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: d.removeFromReview })).not.toBeInTheDocument();
     expect(screen.queryByRole('switch', { name: d.learnNext })).not.toBeInTheDocument();
   });
