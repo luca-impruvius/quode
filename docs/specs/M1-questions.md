@@ -1,7 +1,7 @@
 # Questions
 
 - Milestone: M1
-- Status: Approved
+- Status: Implemented in #41, #42, #44
 - Issues: #32 (backend), #33 (editor and detail), #35 (flag for fixing)
 - Design: Editor, QuestionDetail (Quode Wireframes canvas)
 
