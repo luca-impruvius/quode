@@ -38,6 +38,7 @@ Short, plain and a little warm. The duck may be playful; the interface copy is n
 
 - Corners: `radius-md` for buttons, inputs and options; `radius-lg` for cards; `radius-pill` for chips, progress and the add button.
 - Depth comes from outlines, not blur. `shadow-pop` is the only shadow, reserved for the primary action; pressing removes it and shifts the button 2px down-right.
+- A button that can't be pressed yet goes quiet: `surface-sunken` fill, `ink-muted` text, `line` border, no shadow. Never a faded yellow, which reads as muddy olive on the dark theme.
 
 ## Spacing
 

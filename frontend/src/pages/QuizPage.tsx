@@ -102,12 +102,14 @@ function Quiz({ id }: { id: string }) {
         )}
       </header>
       {data && !done && (
-        <div aria-hidden="true" className="h-1 bg-surface-sunken">
-          <div
-            data-progress
-            className="h-full bg-accent transition-[width]"
-            style={{ width: `${Math.round((data.answered / Math.max(data.total, 1)) * 100)}%` }}
-          />
+        <div aria-hidden="true" className="px-space-4 pt-space-3">
+          <div className="h-2 overflow-hidden rounded-pill bg-surface-sunken">
+            <div
+              data-progress
+              className="h-full rounded-pill bg-ink transition-[width] motion-reduce:transition-none"
+              style={{ width: `${Math.round((data.answered / Math.max(data.total, 1)) * 100)}%` }}
+            />
+          </div>
         </div>
       )}
       <main className="flex flex-1 flex-col gap-space-4 px-space-4 py-space-4">
@@ -154,6 +156,10 @@ function Card({ card, feedback, busy, error, last, onChoose, onGrade, onNext }: 
   const [revealed, setRevealed] = useState(false);
   const promptId = useId();
   const outcomeId = useId();
+  const explanationId = useId();
+  // Shown after Check or Reveal, scrolled into view: the focus goes to the pinned bar, which
+  // never scrolls the page itself.
+  const shown = useRef<HTMLDivElement>(null);
   const prompt = useRef<HTMLDivElement>(null);
   const next = useRef<HTMLButtonElement>(null);
   const firstGrade = useRef<HTMLButtonElement>(null);
@@ -167,11 +173,13 @@ function Card({ card, feedback, busy, error, last, onChoose, onGrade, onNext }: 
   useEffect(() => {
     if (answered) {
       next.current?.focus();
+      shown.current?.scrollIntoView?.({ block: 'nearest' });
     }
   }, [answered]);
   useEffect(() => {
     if (revealed) {
       firstGrade.current?.focus();
+      shown.current?.scrollIntoView?.({ block: 'nearest' });
     }
   }, [revealed]);
 
@@ -280,7 +288,7 @@ function Card({ card, feedback, busy, error, last, onChoose, onGrade, onNext }: 
                   checked={picked}
                   disabled={answered}
                   onChange={() => toggle(option.id)}
-                  className="mt-1 size-5"
+                  className="mt-1 size-5 scroll-mb-40"
                 />
                 <span className="flex-1">
                   <Markdown text={option.textMd} />
@@ -298,14 +306,21 @@ function Card({ card, feedback, busy, error, last, onChoose, onGrade, onNext }: 
       )}
 
       {choice && feedback?.result.explanationMd && (
-        <div className="rounded-md bg-surface-sunken p-space-3">
+        <div
+          id={explanationId}
+          ref={shown}
+          className="scroll-mb-40 rounded-md bg-surface-sunken p-space-3"
+        >
           <p className="type-label text-ink-muted">{m.explanation}</p>
           <Markdown text={feedback.result.explanationMd} />
         </div>
       )}
 
       {!choice && revealed && (
-        <div className="flex flex-col gap-space-2 rounded-md bg-surface-sunken p-space-3">
+        <div
+          ref={shown}
+          className="flex scroll-mb-40 flex-col gap-space-2 rounded-md bg-surface-sunken p-space-3"
+        >
           <p className="type-label text-ink-muted">{m.answer}</p>
           <Markdown text={card.answerMd ?? ''} />
           {card.explanationMd && (
@@ -368,7 +383,13 @@ function Card({ card, feedback, busy, error, last, onChoose, onGrade, onNext }: 
           <button
             ref={next}
             type="button"
-            aria-describedby={choice ? outcomeId : undefined}
+            aria-describedby={
+              choice
+                ? feedback?.result.explanationMd
+                  ? `${outcomeId} ${explanationId}`
+                  : outcomeId
+                : undefined
+            }
             onClick={onNext}
             className={`${button} bg-accent text-on-accent`}
           >

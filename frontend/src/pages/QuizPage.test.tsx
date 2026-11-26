@@ -197,6 +197,9 @@ describe('Quiz', () => {
     expect(screen.getByRole('button', { name: m.next })).toHaveAccessibleDescription(
       new RegExp(m.wrong),
     );
+    expect(screen.getByRole('button', { name: m.next })).toHaveAccessibleDescription(
+      /No cluster to run/,
+    );
 
     await user.click(screen.getByRole('button', { name: m.next }));
     expect(await screen.findByText('What is IAM?')).toBeInTheDocument();

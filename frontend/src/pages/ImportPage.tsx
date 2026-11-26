@@ -158,7 +158,7 @@ export function ImportPage() {
             aria-disabled={busy}
             aria-describedby={!upToDate && text.trim() !== '' && !busy ? ids.hint : undefined}
             onClick={() => send(false)}
-            className={`${button} bg-accent text-on-accent disabled:primary-disabled aria-disabled:opacity-45`}
+            className={`${button} bg-accent text-on-accent disabled:primary-disabled aria-disabled:primary-disabled`}
           >
             {busy && run.variables?.dryRun === false ? m.importing : m.import}
           </button>

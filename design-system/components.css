@@ -10,7 +10,7 @@
 .qd-btn--lg { height: 56px; font-size: 18px; padding: 0 24px; }
 .qd-btn--block { width: 100%; }
 .qd-btn:focus-visible, .qd-chip:focus-visible, .qd-option:focus-visible, .qd-tab:focus-visible, .qd-fab:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
-.qd-btn:disabled { opacity: 0.45; cursor: not-allowed; box-shadow: none; }
+.qd-btn:disabled { background: var(--surface-sunken); color: var(--ink-muted); border-color: var(--line); cursor: not-allowed; box-shadow: none; }
 
 /* Grade buttons */
 .qd-grade { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }

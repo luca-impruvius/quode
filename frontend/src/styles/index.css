@@ -20,11 +20,12 @@
   color: var(--qd-ink-muted);
   border-color: var(--qd-line);
   box-shadow: none;
+  cursor: not-allowed;
 }
 
 /* A long question (a scenario) is set in regular weight; bold stays bold. */
 @layer components {
-  .long-prompt :where(p, li) {
+  .long-prompt :where(p, li, blockquote, td) {
     font-weight: 400;
   }
 }
