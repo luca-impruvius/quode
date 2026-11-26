@@ -12,3 +12,20 @@
     outline-offset: 2px;
   }
 }
+
+/* A primary button that can't be pressed yet goes quiet: a faded yellow reads as muddy olive on
+   the dark theme. */
+@utility primary-disabled {
+  background-color: var(--qd-surface-sunken);
+  color: var(--qd-ink-muted);
+  border-color: var(--qd-line);
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+/* A long question (a scenario) is set in regular weight; bold stays bold. */
+@layer components {
+  .long-prompt :where(p, li, blockquote, td) {
+    font-weight: 400;
+  }
+}

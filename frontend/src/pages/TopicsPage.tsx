@@ -308,7 +308,7 @@ function SheetActions({
       <button
         type="submit"
         disabled={busy}
-        className="h-12 rounded-md border-bold border-outline bg-accent font-bold text-on-accent shadow-pop disabled:opacity-45 disabled:shadow-none"
+        className="h-12 rounded-md border-bold border-outline bg-accent font-bold text-on-accent shadow-pop disabled:primary-disabled"
       >
         {label}
       </button>

@@ -306,7 +306,7 @@ function FlagSheet({ question: q, onClose }: { question: QuestionView; onClose: 
           <button
             type="submit"
             disabled={flag.isPending}
-            className="h-12 rounded-md border-bold border-outline bg-accent font-bold text-on-accent shadow-pop disabled:opacity-45 disabled:shadow-none"
+            className="h-12 rounded-md border-bold border-outline bg-accent font-bold text-on-accent shadow-pop disabled:primary-disabled"
           >
             {d.flagSave}
           </button>
@@ -421,7 +421,7 @@ function ReviewControls({ id }: { id: string }) {
                     { onSettled: () => setConfirming(false) },
                   )
                 }
-                className="h-12 rounded-md border-bold border-outline bg-accent font-bold text-on-accent shadow-pop disabled:opacity-45 disabled:shadow-none"
+                className="h-12 rounded-md border-bold border-outline bg-accent font-bold text-on-accent shadow-pop disabled:primary-disabled"
               >
                 {d.removeConfirm}
               </button>
