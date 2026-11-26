@@ -324,6 +324,10 @@ export const messages = {
     learnNextHint: 'Comes first among the new questions',
     removeFromReview: 'Remove from review',
     addToReview: 'Add to review',
+    removeTitle: 'Remove from review?',
+    removeBody:
+      'Its schedule and review history are deleted. Add to review brings it back only as new. It stays in quizzes.',
+    removeConfirm: 'Remove',
   },
   comingSoon: 'Coming soon',
   loading: 'Loading…',

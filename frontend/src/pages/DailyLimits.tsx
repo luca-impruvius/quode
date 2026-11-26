@@ -43,7 +43,10 @@ export function DailyLimits() {
     }
   }, [settings.data, reset]);
 
-  const submit = handleSubmit((values) => save.mutate(values));
+  // Reset from the answer too: the same values may come back as the same cached object.
+  const submit = handleSubmit((values) =>
+    save.mutate(values, { onSuccess: (saved) => reset(asFields(saved)) }),
+  );
 
   return (
     <form

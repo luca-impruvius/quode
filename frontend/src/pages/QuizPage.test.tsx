@@ -1,4 +1,4 @@
-import { screen, waitFor, within } from '@testing-library/react';
+import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it } from 'vitest';
 import type { QuestionCard, SessionView } from '../api/study';
@@ -132,8 +132,10 @@ describe('Quiz results: Add missed to review', () => {
         3,
       ),
     );
-    // Let the answers land before checking that the button stays away.
-    await new Promise((resolve) => setTimeout(resolve, 50));
+    // Let the answers resolve and React render them before checking that the button stays away.
+    await act(async () => {
+      await Promise.all(fetchMock.mock.results.map((result) => result.value as unknown));
+    });
     expect(screen.queryByRole('button', { name: /to review/ })).not.toBeInTheDocument();
   });
 

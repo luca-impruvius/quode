@@ -11,9 +11,9 @@ import {
 import { useQuestionReview, useSaveQuestionReview, type QuestionReview } from '../api/review';
 import { useMe } from '../app/useMe';
 import { ErrorNotice } from '../components/ErrorNotice';
-import { daysFromToday } from '../lib/days';
 import { Markdown } from '../components/Markdown';
 import { Sheet } from '../components/Sheet';
+import { daysFromToday } from '../lib/days';
 import { messages } from '../messages';
 
 const d = messages.question;
@@ -217,7 +217,8 @@ function Details({ question: q }: { question: QuestionView }) {
         <NextReview id={q.id} />
       </dl>
 
-      <ReviewControls id={q.id} />
+      {/* Archived questions never enter the queue: no controls that would look like they do. */}
+      {!archived && <ReviewControls id={q.id} />}
 
       {q.sourceUrl && (
         <p className="type-body-sm">
@@ -322,7 +323,7 @@ function NextReview({ id }: { id: string }) {
   return (
     <Fact
       label={d.nextReview}
-      value={review.data ? nextReviewText(review.data, me.data?.timeZone) : '…'}
+      value={review.data ? nextReviewText(review.data, me.data?.timeZone) : messages.loading}
       wide
     />
   );
@@ -342,7 +343,19 @@ function nextReviewText(review: QuestionReview, timeZone: string | undefined): s
 function ReviewControls({ id }: { id: string }) {
   const review = useQuestionReview(id);
   const save = useSaveQuestionReview(id);
+  const [confirming, setConfirming] = useState(false);
   const r = review.data;
+
+  function removeOrAdd(current: QuestionReview) {
+    if (!current.enrolled) {
+      save.mutate({ enrolled: true, learnNext: false });
+    } else if (current.isNew) {
+      // Nothing to lose yet: no schedule or history.
+      save.mutate({ enrolled: false, learnNext: false });
+    } else {
+      setConfirming(true);
+    }
+  }
 
   return (
     <section aria-label={d.review} className="flex flex-col gap-space-3">
@@ -381,11 +394,40 @@ function ReviewControls({ id }: { id: string }) {
         <button
           type="button"
           disabled={save.isPending}
-          onClick={() => save.mutate({ enrolled: !r.enrolled, learnNext: false })}
+          onClick={() => removeOrAdd(r)}
           className="h-12 rounded-md border-bold border-outline font-semibold disabled:opacity-45"
         >
           {r.enrolled ? d.removeFromReview : d.addToReview}
         </button>
+      )}
+      {confirming && (
+        <Sheet title={d.removeTitle} onClose={() => setConfirming(false)}>
+          <div className="flex flex-col gap-space-4">
+            <p>{d.removeBody}</p>
+            <div className="grid grid-cols-2 gap-space-3">
+              <button
+                type="button"
+                onClick={() => setConfirming(false)}
+                className="h-12 rounded-md border-bold border-outline font-semibold"
+              >
+                {d.cancel}
+              </button>
+              <button
+                type="button"
+                disabled={save.isPending}
+                onClick={() =>
+                  save.mutate(
+                    { enrolled: false, learnNext: false },
+                    { onSettled: () => setConfirming(false) },
+                  )
+                }
+                className="h-12 rounded-md border-bold border-outline bg-accent font-bold text-on-accent shadow-pop disabled:opacity-45 disabled:shadow-none"
+              >
+                {d.removeConfirm}
+              </button>
+            </div>
+          </div>
+        </Sheet>
       )}
     </section>
   );

@@ -403,9 +403,14 @@ describe('Question detail review controls', () => {
     renderAt('/questions/q1');
 
     await user.click(await screen.findByRole('button', { name: d.removeFromReview }));
+    // A reviewed question loses its history: ask first.
+    const dialog = await screen.findByRole('dialog', { name: d.removeTitle });
+    expect(dialog).toHaveTextContent(d.removeBody);
+    await user.click(within(dialog).getByRole('button', { name: d.removeConfirm }));
 
     expect(await screen.findByText(d.notInReview)).toBeInTheDocument();
     expect(bodyOfPut(fetchMock)).toEqual({ enrolled: false, learnNext: false });
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(screen.queryByRole('switch', { name: d.learnNext })).not.toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: d.addToReview }));
@@ -413,6 +418,56 @@ describe('Question detail review controls', () => {
     expect(await screen.findByText(d.isNew)).toBeInTheDocument();
     expect(bodyOfPut(fetchMock)).toEqual({ enrolled: true, learnNext: false });
     expect(screen.getByRole('button', { name: d.removeFromReview })).toBeInTheDocument();
+  });
+
+  it('keeps a reviewed question in review when the removal is cancelled', async () => {
+    const fetchMock = mockApi({
+      '/api/me': me(),
+      '/api/v1/questions/q1/review': reviewOf({ isNew: false, dueAt: '2026-11-27T22:00:00Z' }),
+      '/api/v1/questions/q1': Response.json(questionView()),
+    });
+    const user = userEvent.setup();
+    renderAt('/questions/q1');
+
+    await user.click(await screen.findByRole('button', { name: d.removeFromReview }));
+    const dialog = await screen.findByRole('dialog', { name: d.removeTitle });
+    await user.click(within(dialog).getByRole('button', { name: d.cancel }));
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(fetchMock.mock.calls.some(([, init]) => init?.method === 'PUT')).toBe(false);
+  });
+
+  it('removes a new question at once: it has no history to lose', async () => {
+    const fetchMock = mockApi({
+      '/api/me': me(),
+      '/api/v1/questions/q1/review': reviewOf(),
+      'PUT /api/v1/questions/q1/review': () =>
+        reviewOf({ enrolled: false, isNew: false, learnNext: false }),
+      '/api/v1/questions/q1': Response.json(questionView()),
+      '/api/v1/review/today': Response.json({}),
+    });
+    const user = userEvent.setup();
+    renderAt('/questions/q1');
+
+    await user.click(await screen.findByRole('button', { name: d.removeFromReview }));
+
+    expect(await screen.findByText(d.notInReview)).toBeInTheDocument();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(bodyOfPut(fetchMock)).toEqual({ enrolled: false, learnNext: false });
+  });
+
+  it('has no review controls on an archived question', async () => {
+    mockApi({
+      '/api/me': me(),
+      '/api/v1/questions/q1/review': reviewOf(),
+      '/api/v1/questions/q1': Response.json(questionView({ archivedAt: '2026-11-20T10:00:00Z' })),
+    });
+
+    renderAt('/questions/q1');
+
+    expect(await screen.findByRole('button', { name: d.unarchive })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: d.removeFromReview })).not.toBeInTheDocument();
+    expect(screen.queryByRole('switch', { name: d.learnNext })).not.toBeInTheDocument();
   });
 
   it('shows the reference when saving fails, and stays usable', async () => {
