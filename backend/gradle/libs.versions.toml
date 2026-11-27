@@ -1,13 +1,13 @@
 [versions]
-spring-boot = "4.1.2"
+spring-boot = "4.2.0"
 spring-dependency-management = "1.1.7"
-spring-modulith = "2.1.2"
-spotless = "8.11.0"
+spring-modulith = "2.2.0"
+spotless = "8.12.0"
 # Pinned to 1.36.1: 1.37.0 broke Spotless 8.10.x; 2.0.0 (Spotless 8.11+ default) adds
 # non-whitespace cleanups and needs its own reformat PR.
 google-java-format = "1.36.1"
 gradle-git-properties = "4.0.1"
-springdoc = "3.2.0"
+springdoc = "3.2.1"
 
 [libraries]
 # Versions of Spring Boot starters, Flyway, the PostgreSQL driver and Testcontainers come from the
